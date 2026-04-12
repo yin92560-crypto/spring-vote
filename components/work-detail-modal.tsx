@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { VotePillButton } from "@/components/vote-pill-button";
+import { useI18n } from "@/lib/i18n-context";
 import type { Work } from "@/lib/types";
 
 type Props = {
@@ -42,6 +43,7 @@ export function WorkDetailModal({
   onShareCopied,
   onShareCopyFailed,
 }: Props) {
+  const { t } = useI18n();
   const [fullPreview, setFullPreview] = useState(false);
   const [fullPreviewShown, setFullPreviewShown] = useState(false);
   const [fullImageLoaded, setFullImageLoaded] = useState(false);
@@ -175,7 +177,7 @@ export function WorkDetailModal({
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
         <button
           type="button"
-          aria-label="关闭详情背景"
+          aria-label={t("detailCloseBackdrop")}
           className="work-detail-backdrop absolute inset-0 bg-rose-950/35 backdrop-blur-xl"
           onClick={onClose}
         />
@@ -191,7 +193,7 @@ export function WorkDetailModal({
               <>
                 <button
                   type="button"
-                  aria-label="上一张作品"
+                  aria-label={t("detailPrevAria")}
                   className="work-detail-nav-btn absolute left-2 top-1/2 z-[2] flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-lg font-bold text-rose-900/90 sm:left-3 sm:h-12 sm:w-12 sm:text-xl"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -202,7 +204,7 @@ export function WorkDetailModal({
                 </button>
                 <button
                   type="button"
-                  aria-label="下一张作品"
+                  aria-label={t("detailNextAria")}
                   className="work-detail-nav-btn absolute right-2 top-1/2 z-[2] flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-lg font-bold text-rose-900/90 sm:right-3 sm:h-12 sm:w-12 sm:text-xl"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -216,7 +218,7 @@ export function WorkDetailModal({
             <button
               type="button"
               className="group relative z-[1] mx-auto block h-full w-full cursor-zoom-in overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400/80"
-              aria-label="查看原图全屏预览"
+              aria-label={t("detailViewHdAria")}
               onClick={(e) => {
                 e.stopPropagation();
                 openFullPreview();
@@ -233,7 +235,7 @@ export function WorkDetailModal({
                 className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/35 px-3 py-1 text-xs text-white/95 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100"
                 aria-hidden
               >
-                🔍 点击看原图
+                {t("detailViewHdHint")}
               </span>
             </button>
           </div>
@@ -241,7 +243,7 @@ export function WorkDetailModal({
           <div className="border-t border-emerald-200/35 bg-gradient-to-b from-white/45 to-emerald-50/20 px-5 py-5 sm:px-8 sm:py-6">
             <div className="mb-4 flex flex-wrap items-start gap-3">
               <span className="card-badge-no font-mono text-sm font-bold tabular-nums text-emerald-950 shadow-sm">
-                编号 {work.displayNo}
+                {t("displayNoLabel")} {work.displayNo}
               </span>
               <h2
                 id="work-detail-title"
@@ -251,11 +253,11 @@ export function WorkDetailModal({
               </h2>
             </div>
             <p className="mb-6 text-base text-rose-900/85">
-              当前票数：
+              {t("detailVotesLine")}
               <strong className="tabular-nums text-rose-950">{work.votes}</strong>{" "}
-              票
+              {t("votesUnit")}
               <span className="ml-2 text-sm text-rose-800/65">
-                （今日您还可投 {remaining} 票）
+                {t("detailRemainingToday", { n: remaining })}
               </span>
             </p>
 
@@ -265,21 +267,21 @@ export function WorkDetailModal({
                 onClick={() => void handleShare()}
                 className="order-1 rounded-xl border border-pink-300/70 bg-gradient-to-r from-white/60 via-rose-50/50 to-sky-50/45 px-6 py-3 text-sm font-semibold text-rose-900 shadow-sm backdrop-blur-sm transition hover:from-white/80 hover:border-pink-400/80 sm:order-1"
               >
-                分享拉票
+                {t("share")}
               </button>
               <button
                 type="button"
                 onClick={onClose}
                 className="order-3 rounded-xl border border-rose-200/90 bg-white/50 px-6 py-3 text-sm font-medium text-rose-900 backdrop-blur-sm transition hover:bg-white/80 sm:order-2 sm:w-auto"
               >
-                关闭
+                {t("close")}
               </button>
               <VotePillButton
                 disabled={remaining <= 0 || voting}
                 onVote={onVote}
                 className="vote-pill-btn-lg order-2 w-full sm:order-3 sm:min-w-[200px]"
               >
-                {voting ? "提交中…" : "为 TA 投一票"}
+                {voting ? t("voteSubmitting") : t("voteForTa")}
               </VotePillButton>
             </div>
           </div>
@@ -293,7 +295,7 @@ export function WorkDetailModal({
           }`}
           role="dialog"
           aria-modal="true"
-          aria-label="原图全屏预览"
+          aria-label={t("detailViewHdAria")}
           onClick={closeFullPreview}
         >
           <button
@@ -304,14 +306,14 @@ export function WorkDetailModal({
             }}
             className="absolute right-3 top-3 z-20 rounded-xl border border-white/25 bg-white/12 px-4 py-2 text-sm font-medium text-white/95 shadow-lg backdrop-blur-md transition hover:bg-white/22 hover:shadow-[0_0_24px_rgba(244,143,177,0.35)] sm:right-5 sm:top-5"
           >
-            关闭预览
+            {t("closePreview")}
           </button>
 
           <p
             className="pointer-events-none absolute left-3 top-3 z-20 max-w-[min(100%,20rem)] rounded-lg bg-white/10 px-3 py-1.5 text-xs text-white/85 backdrop-blur-md sm:left-5 sm:top-5"
             aria-hidden
           >
-            原图 · Supabase Storage 原始文件
+            {t("hdOriginal")}
           </p>
 
           <div
@@ -335,7 +337,7 @@ export function WorkDetailModal({
                     className="full-preview-spinner-ring h-12 w-12 sm:h-14 sm:w-14"
                     role="status"
                   />
-                  <span className="text-sm text-pink-100/90">原图加载中…</span>
+                  <span className="text-sm text-pink-100/90">{t("loadingHd")}</span>
                 </div>
               )}
               {/* eslint-disable-next-line @next/next/no-img-element */}

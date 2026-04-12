@@ -1,0 +1,376 @@
+"use client";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+
+export type Locale = "zh" | "en" | "ja";
+
+const STORAGE_KEY = "spring-vote-locale";
+
+/** 与三语词库保持一致的键；缺失时回退为 key */
+export type MessageKey =
+  | "title"
+  | "subtitle"
+  | "heroDesc"
+  | "remainingVotes"
+  | "rank"
+  | "admin"
+  | "upload"
+  | "search"
+  | "prev"
+  | "next"
+  | "searchPlaceholder"
+  | "searchAria"
+  | "vote"
+  | "voteCard"
+  | "votesLabel"
+  | "votesUnit"
+  | "viewDetailHint"
+  | "displayNoLabel"
+  | "worksTotal"
+  | "worksFiltered"
+  | "worksHint"
+  | "noWorks"
+  | "noWorksHint"
+  | "goAdmin"
+  | "noMatch"
+  | "noMatchHint"
+  | "toastRequestFail"
+  | "toastVoteOk"
+  | "toastVoteFail"
+  | "shareCopied"
+  | "shareFailed"
+  | "footerTagline"
+  | "footerCopyright"
+  | "loadingSpring"
+  | "loadingWorks"
+  | "champion"
+  | "runnerUp"
+  | "thirdPlace"
+  | "placeRank"
+  | "topThree"
+  | "otherRanks"
+  | "rankPageTitle"
+  | "rankPageDesc"
+  | "rankSyncHint"
+  | "backHome"
+  | "rankLoadError"
+  | "rankEmpty"
+  | "rankEmptyDesc"
+  | "language"
+  | "langZh"
+  | "langEn"
+  | "langJa"
+  | "detailCloseBackdrop"
+  | "detailPrevAria"
+  | "detailNextAria"
+  | "detailViewHdAria"
+  | "detailViewHdHint"
+  | "detailVotesLine"
+  | "detailRemainingToday"
+  | "share"
+  | "close"
+  | "voteSubmitting"
+  | "voteForTa"
+  | "closePreview"
+  | "hdOriginal"
+  | "loadingHd";
+
+const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
+  zh: {
+    title: "捕捉春日计划",
+    subtitle: "2026华勤全球员工春日摄影大赛",
+    heroDesc:
+      "用镜头定格全球华勤人的春日瞬间。每位员工每日可投 3 票。",
+    remainingVotes: "今日剩余票数",
+    rank: "排行榜",
+    admin: "管理后台",
+    upload: "上传作品",
+    search: "搜索编号",
+    prev: "上一张",
+    next: "下一张",
+    searchPlaceholder: "搜索作品名称，或输入编号如 001",
+    searchAria: "搜索作品",
+    vote: "投票",
+    voteCard: "投一票",
+    votesLabel: "得票",
+    votesUnit: "票",
+    viewDetailHint: "点击查看大图与详情",
+    displayNoLabel: "编号",
+    worksTotal: "共 {count} 件作品",
+    worksFiltered: " · 当前展示 {count} 件",
+    worksHint:
+      "（编号按提交时间：001 最早；点击大图查看详情，链接可含 ?id=编号）",
+    noWorks: "暂无参赛作品",
+    noWorksHint: "请前往后台添加作品名称与图片（上传至 Supabase Storage）",
+    goAdmin: "前往后台",
+    noMatch: "未找到匹配的作品",
+    noMatchHint: "请尝试其他关键词，或按三位编号（如 002）精确查找",
+    toastRequestFail: "请求失败",
+    toastVoteOk: "投票成功，感谢支持",
+    toastVoteFail: "无法投票",
+    shareCopied: "链接已复制，快去发给同事拉票吧！",
+    shareFailed: "复制失败，请手动复制浏览器地址栏中的链接",
+    footerTagline: "扎根生长 · 春华秋实",
+    footerCopyright: "© 2026 华勤技术 · 捕捉春日计划",
+    loadingSpring: "春意加载中…",
+    loadingWorks: "作品列表加载中…",
+    champion: "冠军",
+    runnerUp: "亚军",
+    thirdPlace: "季军",
+    placeRank: "第 {n} 名",
+    topThree: "前三名",
+    otherRanks: "其他名次",
+    rankPageTitle: "春日人气排行榜",
+    rankPageDesc:
+      "全部作品按实时得票数从高到低排序；前三名登上领奖台，其余作品以紧凑列表展示排名。",
+    rankSyncHint: "投票或管理变更后会自动刷新；切换回此标签时也会更新",
+    backHome: "返回首页",
+    rankLoadError: "榜单暂时无法加载",
+    rankEmpty: "暂无参赛作品",
+    rankEmptyDesc: "榜单将在作品上传并获票后显示",
+    language: "语言",
+    langZh: "中文",
+    langEn: "English",
+    langJa: "日本語",
+    detailCloseBackdrop: "关闭详情背景",
+    detailPrevAria: "上一张作品",
+    detailNextAria: "下一张作品",
+    detailViewHdAria: "查看原图全屏预览",
+    detailViewHdHint: "🔍 点击看原图",
+    detailVotesLine: "当前票数：",
+    detailRemainingToday: "（今日您还可投 {n} 票）",
+    share: "分享拉票",
+    close: "关闭",
+    voteSubmitting: "提交中…",
+    voteForTa: "为 TA 投一票",
+    closePreview: "关闭预览",
+    hdOriginal: "原图 · Supabase Storage 原始文件",
+    loadingHd: "原图加载中…",
+  },
+  en: {
+    title: "Spring Capture Project",
+    subtitle: "2026 Huaqin Global Spring Photo Contest",
+    heroDesc:
+      "Capture spring moments worldwide. Each employee may cast 3 votes per day.",
+    remainingVotes: "Votes left today",
+    rank: "Leaderboard",
+    admin: "Admin",
+    upload: "Upload",
+    search: "Search ID",
+    prev: "Prev",
+    next: "Next",
+    searchPlaceholder: "Search by title or ID (e.g. 001)",
+    searchAria: "Search works",
+    vote: "Vote",
+    voteCard: "Vote",
+    votesLabel: "Votes",
+    votesUnit: "votes",
+    viewDetailHint: "Click for details",
+    displayNoLabel: "No.",
+    worksTotal: "{count} works total",
+    worksFiltered: " · showing {count}",
+    worksHint:
+      "(IDs follow submit order: 001 earliest; open card for details, URL may use ?id=)",
+    noWorks: "No entries yet",
+    noWorksHint: "Add titles and images in Admin (Supabase Storage).",
+    goAdmin: "Go to admin",
+    noMatch: "No matching works",
+    noMatchHint: "Try other keywords or a 3-digit ID (e.g. 002).",
+    toastRequestFail: "Request failed",
+    toastVoteOk: "Vote recorded. Thank you!",
+    toastVoteFail: "Cannot vote",
+    shareCopied: "Link copied. Share it with your team!",
+    shareFailed: "Copy failed. Copy the URL from the address bar.",
+    footerTagline: "Rooted in growth · Spring to harvest",
+    footerCopyright: "© 2026 Huaqin · Spring Capture Project",
+    loadingSpring: "Loading spring…",
+    loadingWorks: "Loading works…",
+    champion: "Champion",
+    runnerUp: "Runner-up",
+    thirdPlace: "Third",
+    placeRank: "No. {n}",
+    topThree: "Top 3",
+    otherRanks: "Other ranks",
+    rankPageTitle: "Spring Popularity Leaderboard",
+    rankPageDesc:
+      "All works sorted by live vote count; top three on the podium, others in a compact list.",
+    rankSyncHint: "Refreshes after votes or admin changes; updates when you return to this tab.",
+    backHome: "Back to home",
+    rankLoadError: "Leaderboard could not load",
+    rankEmpty: "No entries yet",
+    rankEmptyDesc: "The board appears once works exist and receive votes.",
+    language: "Language",
+    langZh: "中文",
+    langEn: "English",
+    langJa: "日本語",
+    detailCloseBackdrop: "Close detail backdrop",
+    detailPrevAria: "Previous work",
+    detailNextAria: "Next work",
+    detailViewHdAria: "View full-resolution image",
+    detailViewHdHint: "🔍 View original",
+    detailVotesLine: "Votes: ",
+    detailRemainingToday: "({n} votes left today)",
+    share: "Share link",
+    close: "Close",
+    voteSubmitting: "Submitting…",
+    voteForTa: "Vote for this entry",
+    closePreview: "Close preview",
+    hdOriginal: "Original · Supabase Storage",
+    loadingHd: "Loading original…",
+  },
+  ja: {
+    title: "春の瞬間を捉える",
+    subtitle: "2026 華勤グローバル社員・春の写真コンテスト",
+    heroDesc:
+      "世界中の華勤の春を切り取ろう。お一人様 1 日 3 票まで投票できます。",
+    remainingVotes: "本日の残り票",
+    rank: "ランキング",
+    admin: "管理",
+    upload: "投稿する",
+    search: "番号検索",
+    prev: "前へ",
+    next: "次へ",
+    searchPlaceholder: "作品名または番号（例 001）で検索",
+    searchAria: "作品を検索",
+    vote: "投票する",
+    voteCard: "投票する",
+    votesLabel: "得票",
+    votesUnit: "票",
+    viewDetailHint: "タップで詳細",
+    displayNoLabel: "番号",
+    worksTotal: "全 {count} 点",
+    worksFiltered: " · 表示 {count} 点",
+    worksHint:
+      "（番号は投稿順：001 が最古；詳細はカードをタップ、URL は ?id= も可）",
+    noWorks: "まだ作品がありません",
+    noWorksHint: "管理画面からタイトルと画像を追加してください（Supabase Storage）。",
+    goAdmin: "管理へ",
+    noMatch: "該当する作品がありません",
+    noMatchHint: "別のキーワードか 3 桁番号（例 002）で試してください。",
+    toastRequestFail: "リクエストに失敗しました",
+    toastVoteOk: "投票しました。ありがとうございます",
+    toastVoteFail: "投票できません",
+    shareCopied: "リンクをコピーしました。共有してください",
+    shareFailed: "コピーに失敗しました。アドレスバーからコピーしてください",
+    footerTagline: "根を張り、春実る",
+    footerCopyright: "© 2026 華勤技術 · 春の瞬間を捉える",
+    loadingSpring: "春を読み込み中…",
+    loadingWorks: "作品を読み込み中…",
+    champion: "優勝",
+    runnerUp: "準優勝",
+    thirdPlace: "三位",
+    placeRank: "{n}位",
+    topThree: "トップ3",
+    otherRanks: "その他の順位",
+    rankPageTitle: "春の人気ランキング",
+    rankPageDesc:
+      "全作品をリアルタイム票数の多い順に表示。上位三名は表彰台、その他はリストで順位を表示します。",
+    rankSyncHint: "投票や管理操作後に自動更新。このタブに戻ると最新表示になります。",
+    backHome: "トップへ戻る",
+    rankLoadError: "ランキングを読み込めませんでした",
+    rankEmpty: "まだ作品がありません",
+    rankEmptyDesc: "作品の投稿と投票が始まると表示されます。",
+    language: "言語",
+    langZh: "中文",
+    langEn: "English",
+    langJa: "日本語",
+    detailCloseBackdrop: "詳細を閉じる",
+    detailPrevAria: "前の作品",
+    detailNextAria: "次の作品",
+    detailViewHdAria: "原寸プレビュー",
+    detailViewHdHint: "🔍 原画を見る",
+    detailVotesLine: "現在の票数：",
+    detailRemainingToday: "（本日あと {n} 票）",
+    share: "リンクを共有",
+    close: "閉じる",
+    voteSubmitting: "送信中…",
+    voteForTa: "この作品に投票",
+    closePreview: "プレビューを閉じる",
+    hdOriginal: "原画 · Supabase Storage",
+    loadingHd: "原画を読み込み中…",
+  },
+};
+
+function interpolate(
+  template: string,
+  vars?: Record<string, string | number>
+): string {
+  if (!vars) return template;
+  return template.replace(/\{(\w+)\}/g, (_, k: string) =>
+    vars[k] !== undefined ? String(vars[k]) : `{${k}}`
+  );
+}
+
+type I18nContextValue = {
+  locale: Locale;
+  setLocale: (l: Locale) => void;
+  t: (key: MessageKey, vars?: Record<string, string | number>) => string;
+};
+
+const I18nContext = createContext<I18nContextValue | null>(null);
+
+export function I18nProvider({ children }: { children: React.ReactNode }) {
+  const [locale, setLocaleState] = useState<Locale>("zh");
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw === "zh" || raw === "en" || raw === "ja") {
+          setLocaleState(raw);
+        }
+      } catch {
+        /* ignore */
+      }
+    }, 0);
+    return () => window.clearTimeout(id);
+  }, []);
+
+  useEffect(() => {
+    const lang =
+      locale === "zh" ? "zh-CN" : locale === "ja" ? "ja" : "en";
+    document.documentElement.lang = lang;
+  }, [locale]);
+
+  const setLocale = useCallback((l: Locale) => {
+    setLocaleState(l);
+    try {
+      localStorage.setItem(STORAGE_KEY, l);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const t = useCallback(
+    (key: MessageKey, vars?: Record<string, string | number>) => {
+      const table = MESSAGES[locale];
+      const raw = table[key] ?? MESSAGES.zh[key] ?? key;
+      return interpolate(raw, vars);
+    },
+    [locale]
+  );
+
+  const value = useMemo(
+    () => ({ locale, setLocale, t }),
+    [locale, setLocale, t]
+  );
+
+  return (
+    <I18nContext.Provider value={value}>{children}</I18nContext.Provider>
+  );
+}
+
+export function useI18n(): I18nContextValue {
+  const ctx = useContext(I18nContext);
+  if (!ctx) {
+    throw new Error("useI18n must be used within I18nProvider");
+  }
+  return ctx;
+}

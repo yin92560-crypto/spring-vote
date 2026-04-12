@@ -14,12 +14,15 @@ import { WorkDetailModal } from "@/components/work-detail-modal";
 import { filterWorksBySearch } from "@/lib/work-display";
 import { findWorkByDisplayQuery } from "@/lib/work-query-id";
 import type { Work } from "@/lib/types";
+import { LanguageSwitcher } from "@/components/language-switcher";
 import { SpringLoadingIndicator } from "@/components/spring-loading";
 import { VotePillButton } from "@/components/vote-pill-button";
+import { useI18n } from "@/lib/i18n-context";
 import { notifyVoteDataChanged } from "@/lib/vote-sync";
 import { useVoteHomeState } from "@/lib/use-vote-store";
 
 function SpringFooter() {
+  const { t } = useI18n();
   const rawId = useId();
   const uid = rawId.replace(/:/g, "");
 
@@ -58,14 +61,31 @@ function SpringFooter() {
 
       <div className="relative z-[2] border-t border-emerald-200/35 bg-gradient-to-b from-transparent via-[#e8f5e9]/55 to-[#fdf8fc]/92 px-6 pb-14 pt-8 text-center backdrop-blur-sm">
         <p className="text-sm font-medium text-rose-900/80 drop-shadow-sm">
-          <span className="text-emerald-900/85">扎根生长 · 春华秋实</span>
+          <span className="text-emerald-900/85">{t("footerTagline")}</span>
           <span className="mx-2 text-emerald-800/35" aria-hidden>
             |
           </span>
-          © 2026 华勤技术 · 捕捉春日计划
+          {t("footerCopyright")}
         </p>
       </div>
     </footer>
+  );
+}
+
+function HomeLoadingFallbackInner() {
+  const { t } = useI18n();
+  return (
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-6 pt-[calc(var(--nav-safe)+1rem)] sm:px-6">
+      <SpringLoadingIndicator label={t("loadingSpring")} />
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <div
+              key={i}
+              className="glass-panel aspect-[4/3] animate-pulse rounded-3xl bg-emerald-50/15"
+            />
+          ))}
+        </div>
+    </div>
   );
 }
 
@@ -75,23 +95,14 @@ function HomeLoadingFallback() {
       <header className="site-nav-fixed">
         <div className="mx-auto h-14 max-w-6xl bg-gradient-to-r from-emerald-100/20 via-white/25 to-rose-100/20 px-6" />
       </header>
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-6 pt-[calc(var(--nav-safe)+1rem)] sm:px-6">
-        <SpringLoadingIndicator />
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="glass-panel aspect-[4/3] animate-pulse rounded-3xl bg-emerald-50/15"
-            />
-          ))}
-        </div>
-      </div>
+      <HomeLoadingFallbackInner />
       <SpringFooter />
     </div>
   );
 }
 
 function HomePageContent() {
+  const { t } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -164,18 +175,18 @@ function HomePageContent() {
       error?: string;
     };
     if (!res.ok) {
-      setToast(j.error ?? "请求失败");
+      setToast(j.error ?? t("toastRequestFail"));
       setTimeout(() => setToast(null), 2400);
       return false;
     }
     if (j.ok) {
-      setToast("投票成功，感谢支持");
+      setToast(t("toastVoteOk"));
       notifyVoteDataChanged();
       router.refresh();
       await refresh();
       return true;
     }
-    setToast(j.reason ?? "无法投票");
+    setToast(j.reason ?? t("toastVoteFail"));
     setTimeout(() => setToast(null), 2400);
     return false;
   };
@@ -210,7 +221,7 @@ function HomePageContent() {
             </span>
             <div>
               <p className="text-sm font-medium text-rose-900/80">
-                今日剩余票数
+                {t("remainingVotes")}
               </p>
               <p className="text-2xl font-semibold tabular-nums text-rose-950">
                 {remaining}
@@ -222,17 +233,18 @@ function HomePageContent() {
             </div>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-3">
+            <LanguageSwitcher />
             <Link
               href="/rank"
               className="inline-flex items-center justify-center rounded-full border border-pink-300/75 bg-white/50 px-5 py-2.5 text-sm font-medium text-rose-900 shadow-sm backdrop-blur-sm transition-all duration-300 ease-out hover:border-pink-400/90 hover:bg-white/85 hover:shadow-md"
             >
-              排行榜
+              {t("rank")}
             </Link>
             <Link
               href="/admin"
               className="btn-sakura inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-medium text-white shadow-md"
             >
-              管理后台
+              {t("admin")}
             </Link>
           </div>
         </div>
@@ -241,16 +253,13 @@ function HomePageContent() {
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-8 pt-[calc(var(--nav-safe)+1rem)] sm:px-6">
         <section className="text-center">
           <h1 className="font-display text-4xl font-normal leading-tight sm:text-5xl">
-            <span className="text-gradient-spring-title">
-              捕捉春日计划
-            </span>
+            <span className="text-gradient-spring-title">{t("title")}</span>
           </h1>
           <p className="mt-3 text-lg font-medium leading-snug text-rose-900/90 sm:text-xl">
-            2026华勤全球员工春日摄影大赛
+            {t("subtitle")}
           </p>
           <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-rose-900/75">
-            用镜头定格全球华勤人的春日瞬间。每位员工每日可投{" "}
-            <span className="font-medium text-rose-800">3</span> 票。
+            {t("heroDesc")}
           </p>
         </section>
 
@@ -273,11 +282,11 @@ function HomePageContent() {
           voting={voteModalPending}
           onVote={() => void voteFromModal()}
           onShareCopied={() => {
-            setToast("链接已复制，快去发给同事拉票吧！");
+            setToast(t("shareCopied"));
             setTimeout(() => setToast(null), 3200);
           }}
           onShareCopyFailed={() => {
-            setToast("复制失败，请手动复制浏览器地址栏中的链接");
+            setToast(t("shareFailed"));
             setTimeout(() => setToast(null), 3200);
           }}
         />
@@ -285,22 +294,20 @@ function HomePageContent() {
         <section className="mt-14">
           {works.length === 0 ? (
             <div className="glass-panel rounded-3xl px-8 py-16 text-center">
-              <p className="text-lg text-rose-900/80">暂无参赛作品</p>
-              <p className="mt-2 text-sm text-rose-800/65">
-                请前往后台添加作品名称与图片（上传至 Supabase Storage）
-              </p>
+              <p className="text-lg text-rose-900/80">{t("noWorks")}</p>
+              <p className="mt-2 text-sm text-rose-800/65">{t("noWorksHint")}</p>
               <Link
                 href="/admin"
                 className="btn-sakura mt-8 inline-flex rounded-full px-8 py-3 text-sm font-medium text-white shadow-md"
               >
-                前往后台
+                {t("goAdmin")}
               </Link>
             </div>
           ) : (
             <>
               <div className="mx-auto max-w-xl">
                 <label htmlFor="work-search" className="sr-only">
-                  搜索作品
+                  {t("searchAria")}
                 </label>
                 <div className="search-glow glass-panel flex items-center gap-3 rounded-2xl border border-emerald-100/45 bg-gradient-to-r from-white/55 via-emerald-50/25 to-rose-50/40 px-4 py-3 backdrop-blur-md">
                   <span
@@ -314,28 +321,24 @@ function HomePageContent() {
                     type="search"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="搜索作品名称，或输入编号如 001"
+                    placeholder={t("searchPlaceholder")}
                     className="min-w-0 flex-1 bg-transparent text-sm text-rose-950 placeholder:text-rose-400/85 outline-none transition-all duration-300 ease-out"
                     autoComplete="off"
                   />
                 </div>
                 <p className="mt-2 text-center text-xs text-rose-800/55">
-                  共 {works.length} 件作品
+                  {t("worksTotal", { count: works.length })}
                   {searchQuery.trim()
-                    ? ` · 当前展示 ${filteredWorks.length} 件`
+                    ? t("worksFiltered", { count: filteredWorks.length })
                     : null}
-                  <span className="ml-1 text-rose-700/45">
-                    （编号按提交时间：001 最早；点击大图查看详情，链接可含 ?id=编号）
-                  </span>
+                  <span className="ml-1 text-rose-700/45">{t("worksHint")}</span>
                 </p>
               </div>
 
               {filteredWorks.length === 0 ? (
                 <div className="glass-panel mt-8 rounded-3xl px-8 py-14 text-center">
-                  <p className="text-rose-900/85">未找到匹配的作品</p>
-                  <p className="mt-2 text-sm text-rose-800/65">
-                    请尝试其他关键词，或按三位编号（如 002）精确查找
-                  </p>
+                  <p className="text-rose-900/85">{t("noMatch")}</p>
+                  <p className="mt-2 text-sm text-rose-800/65">{t("noMatchHint")}</p>
                 </div>
               ) : (
                 <ul className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -353,33 +356,33 @@ function HomePageContent() {
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={w.imageUrl}
-                            alt={`${w.title}（编号 ${w.displayNo}）`}
+                            alt={`${w.title} (${t("displayNoLabel")} ${w.displayNo})`}
                             className="h-full w-full object-cover transition-transform duration-500 ease-out will-change-transform group-hover:scale-105"
                           />
                           <div className="card-caption-overlay pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-3 pt-12">
                             <p className="text-xs font-semibold drop-shadow-md">
                               <span className="card-badge-no text-emerald-950/95">
-                                编号 {w.displayNo}
+                                {t("displayNoLabel")} {w.displayNo}
                               </span>
                             </p>
                             <p className="truncate text-lg font-medium text-white drop-shadow-md">
                               {w.title}
                             </p>
                             <p className="mt-1 text-[11px] text-white/90 drop-shadow">
-                              点击查看大图与详情
+                              {t("viewDetailHint")}
                             </p>
                           </div>
                         </button>
                         <div className="flex items-center justify-between gap-3 px-4 py-4">
                           <span className="text-sm text-rose-800/80">
-                            得票{" "}
+                            {t("votesLabel")}{" "}
                             <strong className="text-rose-950">{w.votes}</strong>
                           </span>
                           <VotePillButton
                             disabled={remaining <= 0}
                             onVote={() => voteFromCard(w.id)}
                           >
-                            投一票
+                            {t("voteCard")}
                           </VotePillButton>
                         </div>
                       </article>

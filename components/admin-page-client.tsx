@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { SpringLoadingIndicator } from "@/components/spring-loading";
+import { useI18n } from "@/lib/i18n-context";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { buildWorkTitleFromFile } from "@/lib/upload-naming";
@@ -13,6 +14,7 @@ type AdminPageClientProps = {
 };
 
 export function AdminPageClient({ onLogout }: AdminPageClientProps) {
+  const { t } = useI18n();
   const router = useRouter();
   const { works, loading } = useWorksList();
   const [titlePrefix, setTitlePrefix] = useState("");
@@ -161,7 +163,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
     return (
       <div className="mx-auto w-full max-w-3xl px-4 py-10">
         <div className="glass-panel rounded-3xl px-6 py-12">
-          <SpringLoadingIndicator label="作品列表加载中…" />
+          <SpringLoadingIndicator label={t("loadingWorks")} />
         </div>
       </div>
     );

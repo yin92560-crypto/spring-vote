@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n-context";
 import type { Work } from "@/lib/types";
 
 type Props = {
@@ -7,7 +10,6 @@ type Props = {
 
 const podiumStyles = {
   1: {
-    label: "冠军",
     emoji: "👑",
     card:
       "relative overflow-hidden rounded-[1.35rem] shadow-2xl ring-1 ring-amber-200/60",
@@ -16,7 +18,6 @@ const podiumStyles = {
     crown: "text-3xl drop-shadow sm:text-4xl",
   },
   2: {
-    label: "亚军",
     emoji: "🥈",
     card:
       "rank-podium-silver rank-podium-silver-breathe relative overflow-hidden rounded-3xl shadow-xl ring-2 ring-slate-300/90",
@@ -25,7 +26,6 @@ const podiumStyles = {
     crown: "text-2xl drop-shadow sm:text-3xl",
   },
   3: {
-    label: "季军",
     emoji: "🥉",
     card:
       "rank-podium-bronze rank-podium-bronze-breathe relative overflow-hidden rounded-3xl shadow-xl ring-2 ring-amber-800/50",
@@ -42,7 +42,10 @@ function PodiumCard({
   work: Work;
   place: 1 | 2 | 3;
 }) {
+  const { t } = useI18n();
   const s = podiumStyles[place];
+  const rankWord =
+    place === 1 ? t("champion") : place === 2 ? t("runnerUp") : t("thirdPlace");
   const cardBody = (
     <div
       className={`${s.card} relative flex flex-1 flex-col backdrop-blur-md ${
@@ -78,8 +81,8 @@ function PodiumCard({
             <span className={`${s.crown} rank-trophy-emerald`} aria-hidden>
               {s.emoji}
             </span>
-            <span>{s.label}</span>
-            <span className="opacity-90">第 {place} 名</span>
+            <span>{rankWord}</span>
+            <span className="opacity-90">{t("placeRank", { n: place })}</span>
           </div>
           <Link
             href={`/?id=${work.displayNo}`}
@@ -103,11 +106,14 @@ function PodiumCard({
             </Link>
           </p>
           <p className="text-sm text-rose-800/75">
-            编号 <span className="font-mono font-semibold">{work.displayNo}</span>
+            {t("displayNoLabel")}{" "}
+            <span className="font-mono font-semibold">{work.displayNo}</span>
           </p>
           <p className="mt-auto text-2xl font-bold tabular-nums text-rose-950">
             {work.votes}{" "}
-            <span className="text-base font-medium text-rose-800/70">票</span>
+            <span className="text-base font-medium text-rose-800/70">
+              {t("votesUnit")}
+            </span>
           </p>
         </div>
     </div>
@@ -127,6 +133,7 @@ function PodiumCard({
 }
 
 function RestRow({ work, rank }: { work: Work; rank: number }) {
+  const { t } = useI18n();
   return (
     <li>
       <Link
@@ -135,7 +142,7 @@ function RestRow({ work, rank }: { work: Work; rank: number }) {
       >
         <span
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-200/90 to-sky-100/80 font-mono text-lg font-bold tabular-nums text-rose-950 shadow-inner ring-1 ring-white/60 sm:h-12 sm:w-12 sm:text-xl"
-          aria-label={`第 ${rank} 名`}
+          aria-label={t("placeRank", { n: rank })}
         >
           {rank}
         </span>
@@ -152,14 +159,14 @@ function RestRow({ work, rank }: { work: Work; rank: number }) {
             {work.title}
           </p>
           <p className="mt-0.5 text-xs text-rose-800/65 sm:text-sm">
-            编号 {work.displayNo}
+            {t("displayNoLabel")} {work.displayNo}
           </p>
         </div>
         <div className="shrink-0 text-right">
           <p className="text-xl font-bold tabular-nums text-rose-950 sm:text-2xl">
             {work.votes}
           </p>
-          <p className="text-[11px] text-rose-800/60">票</p>
+          <p className="text-[11px] text-rose-800/60">{t("votesUnit")}</p>
         </div>
       </Link>
     </li>
@@ -167,16 +174,17 @@ function RestRow({ work, rank }: { work: Work; rank: number }) {
 }
 
 export function RankLeaderboard({ works }: Props) {
+  const { t } = useI18n();
   if (works.length === 0) {
     return (
       <div className="glass-panel rounded-3xl px-8 py-16 text-center">
-        <p className="text-lg text-rose-900/85">暂无参赛作品</p>
-        <p className="mt-2 text-sm text-rose-800/65">榜单将在作品上传并获票后显示</p>
+        <p className="text-lg text-rose-900/85">{t("rankEmpty")}</p>
+        <p className="mt-2 text-sm text-rose-800/65">{t("rankEmptyDesc")}</p>
         <Link
           href="/"
           className="btn-sakura mt-8 inline-flex rounded-xl px-8 py-3 text-sm font-medium text-white shadow-md"
         >
-          返回首页
+          {t("backHome")}
         </Link>
       </div>
     );
@@ -193,7 +201,7 @@ export function RankLeaderboard({ works }: Props) {
             id="rank-podium-heading"
             className="sr-only"
           >
-            前三名
+            {t("topThree")}
           </h2>
           <div className="flex flex-col items-stretch gap-8 md:flex-row md:items-end md:justify-center md:gap-6 lg:gap-8">
             {top3.length >= 2 && (
@@ -219,7 +227,7 @@ export function RankLeaderboard({ works }: Props) {
             id="rank-rest-heading"
             className="mb-6 font-display text-2xl font-medium text-rose-950 sm:text-3xl"
           >
-            其他名次
+            {t("otherRanks")}
           </h2>
           <ul className="grid gap-3 sm:grid-cols-1 sm:gap-4 lg:grid-cols-2">
             {rest.map((w, i) => (

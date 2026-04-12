@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_SC, Noto_Serif_SC } from "next/font/google";
+import { Providers } from "@/components/providers";
 import { SakuraFalling } from "@/components/SakuraFalling";
 import "./globals.css";
 
@@ -32,8 +33,10 @@ export default function RootLayout({
       className={`${notoSans.variable} ${notoSerif.variable} h-full antialiased`}
     >
       <body className="relative min-h-full overflow-x-hidden font-sans">
-        <SakuraFalling />
-        <div className="relative z-[3] flex min-h-full flex-col">{children}</div>
+        <Providers>
+          <SakuraFalling />
+          <div className="relative z-[3] flex min-h-full flex-col">{children}</div>
+        </Providers>
       </body>
     </html>
   );
