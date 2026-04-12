@@ -1,0 +1,358 @@
+"use client";
+
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { VotePillButton } from "@/components/vote-pill-button";
+import type { Work } from "@/lib/types";
+
+type Props = {
+  work: Work | null;
+  /** 当前列表可翻页范围（与首页筛选结果一致，通常为 filteredWorks） */
+  navigableWorks: Work[];
+  onNavigateTo: (w: Work) => void;
+  /** 当前作品专属分享链接（含 origin 与 ?id= 编号） */
+  shareUrl: string;
+  onClose: () => void;
+  remaining: number;
+  voting: boolean;
+  onVote: () => void;
+  onShareCopied?: () => void;
+  onShareCopyFailed?: () => void;
+};
+
+/** 与数据库中 image_url 一致，指向 Storage 桶内原始对象，不做尺寸压缩 */
+function originalImageUrl(work: Work): string {
+  return work.imageUrl;
+}
+
+export function WorkDetailModal({
+  work,
+  navigableWorks,
+  onNavigateTo,
+  shareUrl,
+  onClose,
+  remaining,
+  voting,
+  onVote,
+  onShareCopied,
+  onShareCopyFailed,
+}: Props) {
+  const [fullPreview, setFullPreview] = useState(false);
+  const [fullPreviewShown, setFullPreviewShown] = useState(false);
+  const [fullImageLoaded, setFullImageLoaded] = useState(false);
+  const closeFullTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const { index, canNavigate } = useMemo(() => {
+    if (!work || navigableWorks.length === 0) {
+      return { index: -1, canNavigate: false };
+    }
+    const i = navigableWorks.findIndex((w) => w.id === work.id);
+    const ok = i >= 0 && navigableWorks.length > 1;
+    return { index: i, canNavigate: ok };
+  }, [work, navigableWorks]);
+
+  const goPrev = useCallback(() => {
+    if (!work || !canNavigate || index < 0) return;
+    const len = navigableWorks.length;
+    const prevIndex = (index - 1 + len) % len;
+    onNavigateTo(navigableWorks[prevIndex]);
+  }, [work, canNavigate, index, navigableWorks, onNavigateTo]);
+
+  const goNext = useCallback(() => {
+    if (!work || !canNavigate || index < 0) return;
+    const len = navigableWorks.length;
+    const nextIndex = (index + 1) % len;
+    onNavigateTo(navigableWorks[nextIndex]);
+  }, [work, canNavigate, index, navigableWorks, onNavigateTo]);
+
+  const closeFullPreview = useCallback(() => {
+    setFullPreviewShown(false);
+    if (closeFullTimerRef.current) clearTimeout(closeFullTimerRef.current);
+    closeFullTimerRef.current = setTimeout(() => {
+      setFullPreview(false);
+      setFullImageLoaded(false);
+      closeFullTimerRef.current = null;
+    }, 320);
+  }, []);
+
+  const openFullPreview = useCallback(() => {
+    if (closeFullTimerRef.current) {
+      clearTimeout(closeFullTimerRef.current);
+      closeFullTimerRef.current = null;
+    }
+    setFullImageLoaded(false);
+    setFullPreview(true);
+  }, []);
+
+  useEffect(() => {
+    if (closeFullTimerRef.current) {
+      clearTimeout(closeFullTimerRef.current);
+      closeFullTimerRef.current = null;
+    }
+    const t = window.setTimeout(() => {
+      setFullPreview(false);
+      setFullPreviewShown(false);
+      setFullImageLoaded(false);
+    }, 0);
+    return () => window.clearTimeout(t);
+  }, [work?.id]);
+
+  useEffect(() => {
+    if (!fullPreview) return;
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setFullPreviewShown(true));
+    });
+    return () => cancelAnimationFrame(id);
+  }, [fullPreview]);
+
+  useEffect(() => {
+    if (!work) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [work]);
+
+  useEffect(() => {
+    if (!work) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (fullPreview) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          closeFullPreview();
+        }
+        return;
+      }
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      if (!canNavigate) return;
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        goPrev();
+        return;
+      }
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        goNext();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [
+    work,
+    fullPreview,
+    onClose,
+    closeFullPreview,
+    canNavigate,
+    goPrev,
+    goNext,
+  ]);
+
+  const handleShare = async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      onShareCopied?.();
+    } catch {
+      onShareCopyFailed?.();
+    }
+  };
+
+  if (!work) return null;
+
+  const hdUrl = originalImageUrl(work);
+
+  return (
+    <>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+        <button
+          type="button"
+          aria-label="关闭详情背景"
+          className="work-detail-backdrop absolute inset-0 bg-rose-950/35 backdrop-blur-xl"
+          onClick={onClose}
+        />
+
+        <div
+          className="work-detail-panel glass-panel relative z-[1] flex max-h-[min(92vh,900px)] w-full max-w-3xl flex-col overflow-hidden rounded-3xl shadow-2xl"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="work-detail-title"
+        >
+          <div className="relative max-h-[min(58vh,560px)] w-full shrink-0 overflow-hidden bg-rose-100/40 sm:max-h-[min(62vh,620px)]">
+            {canNavigate && (
+              <>
+                <button
+                  type="button"
+                  aria-label="上一张作品"
+                  className="work-detail-nav-btn absolute left-2 top-1/2 z-[2] flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-lg font-bold text-rose-900/90 sm:left-3 sm:h-12 sm:w-12 sm:text-xl"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goPrev();
+                  }}
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  aria-label="下一张作品"
+                  className="work-detail-nav-btn absolute right-2 top-1/2 z-[2] flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-lg font-bold text-rose-900/90 sm:right-3 sm:h-12 sm:w-12 sm:text-xl"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goNext();
+                  }}
+                >
+                  ›
+                </button>
+              </>
+            )}
+            <button
+              type="button"
+              className="group relative z-[1] mx-auto block h-full w-full cursor-zoom-in overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400/80"
+              aria-label="查看原图全屏预览"
+              onClick={(e) => {
+                e.stopPropagation();
+                openFullPreview();
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                key={work.id}
+                src={work.imageUrl}
+                alt=""
+                className="work-detail-img-fade mx-auto max-h-[min(58vh,560px)] w-full object-contain object-center transition-transform duration-500 ease-out will-change-transform group-hover:scale-105 sm:max-h-[min(62vh,620px)]"
+              />
+              <span
+                className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/35 px-3 py-1 text-xs text-white/95 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100"
+                aria-hidden
+              >
+                🔍 点击看原图
+              </span>
+            </button>
+          </div>
+
+          <div className="border-t border-emerald-200/35 bg-gradient-to-b from-white/45 to-emerald-50/20 px-5 py-5 sm:px-8 sm:py-6">
+            <div className="mb-4 flex flex-wrap items-start gap-3">
+              <span className="card-badge-no font-mono text-sm font-bold tabular-nums text-emerald-950 shadow-sm">
+                编号 {work.displayNo}
+              </span>
+              <h2
+                id="work-detail-title"
+                className="min-w-0 flex-1 font-display text-xl font-medium leading-snug text-rose-950 sm:text-2xl"
+              >
+                {work.title}
+              </h2>
+            </div>
+            <p className="mb-6 text-base text-rose-900/85">
+              当前票数：
+              <strong className="tabular-nums text-rose-950">{work.votes}</strong>{" "}
+              票
+              <span className="ml-2 text-sm text-rose-800/65">
+                （今日您还可投 {remaining} 票）
+              </span>
+            </p>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:justify-end sm:gap-3">
+              <button
+                type="button"
+                onClick={() => void handleShare()}
+                className="order-1 rounded-xl border border-pink-300/70 bg-gradient-to-r from-white/60 via-rose-50/50 to-sky-50/45 px-6 py-3 text-sm font-semibold text-rose-900 shadow-sm backdrop-blur-sm transition hover:from-white/80 hover:border-pink-400/80 sm:order-1"
+              >
+                分享拉票
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="order-3 rounded-xl border border-rose-200/90 bg-white/50 px-6 py-3 text-sm font-medium text-rose-900 backdrop-blur-sm transition hover:bg-white/80 sm:order-2 sm:w-auto"
+              >
+                关闭
+              </button>
+              <VotePillButton
+                disabled={remaining <= 0 || voting}
+                onVote={onVote}
+                className="vote-pill-btn-lg order-2 w-full sm:order-3 sm:min-w-[200px]"
+              >
+                {voting ? "提交中…" : "为 TA 投一票"}
+              </VotePillButton>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {fullPreview && (
+        <div
+          className={`fixed inset-0 z-[125] flex flex-col bg-black/88 backdrop-blur-md transition-[opacity] duration-300 ease-out ${
+            fullPreviewShown ? "opacity-100" : "opacity-0"
+          }`}
+          role="dialog"
+          aria-modal="true"
+          aria-label="原图全屏预览"
+          onClick={closeFullPreview}
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              closeFullPreview();
+            }}
+            className="absolute right-3 top-3 z-20 rounded-xl border border-white/25 bg-white/12 px-4 py-2 text-sm font-medium text-white/95 shadow-lg backdrop-blur-md transition hover:bg-white/22 hover:shadow-[0_0_24px_rgba(244,143,177,0.35)] sm:right-5 sm:top-5"
+          >
+            关闭预览
+          </button>
+
+          <p
+            className="pointer-events-none absolute left-3 top-3 z-20 max-w-[min(100%,20rem)] rounded-lg bg-white/10 px-3 py-1.5 text-xs text-white/85 backdrop-blur-md sm:left-5 sm:top-5"
+            aria-hidden
+          >
+            原图 · Supabase Storage 原始文件
+          </p>
+
+          <div
+            className="flex min-h-0 flex-1 cursor-zoom-out items-center justify-center px-3 pb-6 pt-14 sm:px-8 sm:pb-10 sm:pt-20"
+            onClick={closeFullPreview}
+          >
+            <div
+              className={`relative flex max-h-[min(88dvh,920px)] w-full max-w-[min(100%,1400px)] cursor-zoom-out items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                fullPreviewShown
+                  ? "translate-y-0 scale-100 opacity-100"
+                  : "translate-y-4 scale-[0.93] opacity-0"
+              }`}
+            >
+              {!fullImageLoaded && (
+                <div
+                  className="absolute inset-0 z-10 flex min-h-[200px] flex-col items-center justify-center gap-4 rounded-2xl bg-black/25"
+                  aria-live="polite"
+                  aria-busy="true"
+                >
+                  <div
+                    className="full-preview-spinner-ring h-12 w-12 sm:h-14 sm:w-14"
+                    role="status"
+                  />
+                  <span className="text-sm text-pink-100/90">原图加载中…</span>
+                </div>
+              )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                key={`full-${work.id}-${hdUrl}`}
+                src={hdUrl}
+                alt=""
+                className={`max-h-[min(88dvh,920px)] w-auto max-w-full cursor-zoom-out rounded-lg object-contain shadow-2xl ring-1 ring-white/10 transition-opacity duration-500 ease-out ${
+                  fullImageLoaded ? "opacity-100" : "opacity-0"
+                }`}
+                onLoad={() => setFullImageLoaded(true)}
+                onError={() => setFullImageLoaded(true)}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
