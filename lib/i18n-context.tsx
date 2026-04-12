@@ -35,7 +35,6 @@ export type MessageKey =
   | "displayNoLabel"
   | "worksTotal"
   | "worksFiltered"
-  | "worksHint"
   | "noWorks"
   | "noWorksHint"
   | "goAdmin"
@@ -105,10 +104,8 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     displayNoLabel: "编号",
     worksTotal: "共 {count} 件作品",
     worksFiltered: " · 当前展示 {count} 件",
-    worksHint:
-      "（编号按提交时间：001 最早；点击大图查看详情，链接可含 ?id=编号）",
     noWorks: "暂无参赛作品",
-    noWorksHint: "请前往后台添加作品名称与图片（上传至 Supabase Storage）",
+    noWorksHint: "请前往后台添加作品",
     goAdmin: "前往后台",
     noMatch: "未找到匹配的作品",
     noMatchHint: "请尝试其他关键词，或按三位编号（如 002）精确查找",
@@ -151,7 +148,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     voteSubmitting: "提交中…",
     voteForTa: "为 TA 投一票",
     closePreview: "关闭预览",
-    hdOriginal: "原图 · Supabase Storage 原始文件",
+    hdOriginal: "原图",
     loadingHd: "原图加载中…",
   },
   en: {
@@ -176,10 +173,8 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     displayNoLabel: "No.",
     worksTotal: "{count} works total",
     worksFiltered: " · showing {count}",
-    worksHint:
-      "(IDs follow submit order: 001 earliest; open card for details, URL may use ?id=)",
     noWorks: "No entries yet",
-    noWorksHint: "Add titles and images in Admin (Supabase Storage).",
+    noWorksHint: "Add works in Admin.",
     goAdmin: "Go to admin",
     noMatch: "No matching works",
     noMatchHint: "Try other keywords or a 3-digit ID (e.g. 002).",
@@ -222,7 +217,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     voteSubmitting: "Submitting…",
     voteForTa: "Vote for this entry",
     closePreview: "Close preview",
-    hdOriginal: "Original · Supabase Storage",
+    hdOriginal: "Original",
     loadingHd: "Loading original…",
   },
   ja: {
@@ -247,10 +242,8 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     displayNoLabel: "番号",
     worksTotal: "全 {count} 点",
     worksFiltered: " · 表示 {count} 点",
-    worksHint:
-      "（番号は投稿順：001 が最古；詳細はカードをタップ、URL は ?id= も可）",
     noWorks: "まだ作品がありません",
-    noWorksHint: "管理画面からタイトルと画像を追加してください（Supabase Storage）。",
+    noWorksHint: "管理画面から作品を追加してください",
     goAdmin: "管理へ",
     noMatch: "該当する作品がありません",
     noMatchHint: "別のキーワードか 3 桁番号（例 002）で試してください。",
@@ -293,7 +286,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     voteSubmitting: "送信中…",
     voteForTa: "この作品に投票",
     closePreview: "プレビューを閉じる",
-    hdOriginal: "原画 · Supabase Storage",
+    hdOriginal: "原画",
     loadingHd: "原画を読み込み中…",
   },
 };

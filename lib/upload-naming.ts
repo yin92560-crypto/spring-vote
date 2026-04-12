@@ -13,3 +13,14 @@ export function buildWorkTitleFromFile(file: File, titlePrefix: string): string 
   if (!p) return stem;
   return `${p}${stem}`;
 }
+
+/** 云端同步等场景：仅有文件名时使用 */
+export function buildWorkTitleFromFilename(
+  fileName: string,
+  titlePrefix: string
+): string {
+  const stem = fileNameStem(fileName);
+  const p = titlePrefix.trim();
+  if (!p) return stem;
+  return `${p}${stem}`;
+}

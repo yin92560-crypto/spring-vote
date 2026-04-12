@@ -89,12 +89,24 @@ function HomeLoadingFallbackInner() {
   );
 }
 
+function HomeSiteNav() {
+  const { t } = useI18n();
+  return (
+    <header className="site-nav-fixed">
+      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
+        <p className="font-display text-base font-medium text-rose-950 sm:text-lg">
+          <span className="text-gradient-spring-title">{t("title")}</span>
+        </p>
+        <LanguageSwitcher />
+      </div>
+    </header>
+  );
+}
+
 function HomeLoadingFallback() {
   return (
     <div className="flex w-full flex-1 flex-col">
-      <header className="site-nav-fixed">
-        <div className="mx-auto h-14 max-w-6xl bg-gradient-to-r from-emerald-100/20 via-white/25 to-rose-100/20 px-6" />
-      </header>
+      <HomeSiteNav />
       <HomeLoadingFallbackInner />
       <SpringFooter />
     </div>
@@ -213,53 +225,20 @@ function HomePageContent() {
 
   return (
     <div className="flex w-full flex-1 flex-col">
-      <header className="site-nav-fixed">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-3.5">
-          <div className="flex items-center gap-3">
-            <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-pink-400/90 to-sky-300/90 text-lg shadow-inner ring-1 ring-white/50">
-              🌸
-            </span>
-            <div>
-              <p className="text-sm font-medium text-rose-900/80">
-                {t("remainingVotes")}
-              </p>
-              <p className="text-2xl font-semibold tabular-nums text-rose-950">
-                {remaining}
-                <span className="text-base font-normal text-rose-800/60">
-                  {" "}
-                  / 3
-                </span>
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center justify-end gap-3">
-            <LanguageSwitcher />
-            <Link
-              href="/rank"
-              className="inline-flex items-center justify-center rounded-full border border-pink-300/75 bg-white/50 px-5 py-2.5 text-sm font-medium text-rose-900 shadow-sm backdrop-blur-sm transition-all duration-300 ease-out hover:border-pink-400/90 hover:bg-white/85 hover:shadow-md"
-            >
-              {t("rank")}
-            </Link>
-            <Link
-              href="/admin"
-              className="btn-sakura inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-medium text-white shadow-md"
-            >
-              {t("admin")}
-            </Link>
-          </div>
-        </div>
-      </header>
+      <HomeSiteNav />
 
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-8 pt-[calc(var(--nav-safe)+1rem)] sm:px-6">
         <section className="text-center">
           <h1 className="font-display text-4xl font-normal leading-tight sm:text-5xl">
-            <span className="text-gradient-spring-title">{t("title")}</span>
+            <span className="text-gradient-spring-title">{t("subtitle")}</span>
           </h1>
-          <p className="mt-3 text-lg font-medium leading-snug text-rose-900/90 sm:text-xl">
-            {t("subtitle")}
-          </p>
           <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-rose-900/75">
             {t("heroDesc")}
+          </p>
+          <p className="mt-6 text-sm font-medium text-rose-900/85">
+            {t("remainingVotes")}{" "}
+            <span className="tabular-nums text-lg text-rose-950">{remaining}</span>
+            <span className="text-rose-800/55"> / 3</span>
           </p>
         </section>
 
@@ -331,7 +310,6 @@ function HomePageContent() {
                   {searchQuery.trim()
                     ? t("worksFiltered", { count: filteredWorks.length })
                     : null}
-                  <span className="ml-1 text-rose-700/45">{t("worksHint")}</span>
                 </p>
               </div>
 

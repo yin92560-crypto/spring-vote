@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AdminDriveSync } from "@/components/admin-drive-sync";
 import { SpringLoadingIndicator } from "@/components/spring-loading";
 import { useI18n } from "@/lib/i18n-context";
 import { useRouter } from "next/navigation";
@@ -105,7 +106,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
       }
 
       if (failures.length === 0) {
-        setMessage(`已成功上传 ${ok} 张至 Supabase`);
+        setMessage(`已成功上传 ${ok} 张`);
       } else {
         setMessage(
           `完成：成功 ${ok} 张，失败 ${failures.length} 张。${failures.slice(0, 3).join("；")}${failures.length > 3 ? "…" : ""}`
@@ -174,9 +175,6 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl text-rose-950">作品管理</h1>
-          <p className="mt-1 text-sm text-rose-800/70">
-            数据与图片存储在 Supabase（works / votes / Storage 桶 photos）。
-          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {onLogout && (
@@ -207,7 +205,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
           autoComplete="off"
           value={adminSecret}
           onChange={(e) => setAdminSecret(e.target.value)}
-          placeholder="若服务端配置了 ADMIN_SECRET，删除作品与清零票数时需填写"
+          placeholder="请输入管理员口令"
           className="w-full rounded-lg border border-white/50 bg-white/40 px-3 py-2 text-sm outline-none ring-rose-300/40 focus:ring-2"
         />
       </div>
@@ -236,15 +234,12 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
             id="title-prefix"
             value={titlePrefix}
             onChange={(e) => setTitlePrefix(e.target.value)}
-            placeholder="例如：春游- 或 部门A-（将加在每张文件名前）"
+            placeholder="选填"
             className="w-full rounded-xl border border-white/60 bg-white/50 px-4 py-3 text-rose-950 placeholder:text-rose-400/80 outline-none ring-rose-300/50 backdrop-blur-sm focus:ring-2"
           />
-          <p className="mt-2 text-xs leading-relaxed text-rose-800/65">
-            每张作品标题 = <strong className="text-rose-900/90">前缀</strong> +{" "}
-            <strong className="text-rose-900/90">去掉扩展名的文件名</strong>
-            ；不填前缀则仅使用文件名。
-          </p>
         </div>
+
+        <AdminDriveSync adminSecret={adminSecret} titlePrefix={titlePrefix} />
 
         <div>
           <label
@@ -321,7 +316,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
             aria-live="polite"
           >
             <div className="mb-2 flex justify-between text-sm text-rose-900">
-              <span>正在上传至 Supabase…</span>
+              <span>正在上传…</span>
               <span className="tabular-nums font-medium">
                 {uploadDone} / {uploadTotal}
               </span>
@@ -332,9 +327,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
                 style={{ width: `${progressPct}%` }}
               />
             </div>
-            <p className="mt-2 text-xs text-rose-800/70">
-              按顺序逐张写入 Storage 与数据库，请勿关闭页面
-            </p>
+            <p className="mt-2 text-xs text-rose-800/70">请勿关闭页面</p>
           </div>
         )}
 
