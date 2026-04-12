@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Settings, Trophy } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Suspense,
@@ -93,11 +94,35 @@ function HomeSiteNav() {
   const { t } = useI18n();
   return (
     <header className="site-nav-fixed">
-      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
-        <p className="font-display text-base font-medium text-rose-950 sm:text-lg">
+      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+        <p className="min-w-0 font-display text-base font-medium text-rose-950 sm:text-lg">
           <span className="text-gradient-spring-title">{t("title")}</span>
         </p>
-        <LanguageSwitcher />
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+          <Link
+            href="/rank"
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/55 bg-white/40 px-3 py-2 text-sm font-medium shadow-sm backdrop-blur-md transition-colors hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/50"
+          >
+            <Trophy
+              className="size-4 shrink-0 text-rose-950/90"
+              strokeWidth={2}
+              aria-hidden
+            />
+            <span className="text-gradient-spring-title">{t("rank")}</span>
+          </Link>
+          <Link
+            href="/admin"
+            className="inline-flex items-center gap-1.5 rounded-full border border-white/55 bg-white/40 px-3 py-2 text-sm font-medium shadow-sm backdrop-blur-md transition-colors hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/50"
+          >
+            <Settings
+              className="size-4 shrink-0 text-rose-950/90"
+              strokeWidth={2}
+              aria-hidden
+            />
+            <span className="text-gradient-spring-title">{t("admin")}</span>
+          </Link>
+          <LanguageSwitcher />
+        </div>
       </div>
     </header>
   );
