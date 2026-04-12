@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { AdminDriveSync } from "@/components/admin-drive-sync";
+import { AdminFeishuSync } from "@/components/admin-feishu-sync";
 import { SpringLoadingIndicator } from "@/components/spring-loading";
 import { useI18n } from "@/lib/i18n-context";
 import { useRouter } from "next/navigation";
@@ -240,6 +241,8 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
         </div>
 
         <AdminDriveSync adminSecret={adminSecret} titlePrefix={titlePrefix} />
+
+        <AdminFeishuSync adminSecret={adminSecret} titlePrefix={titlePrefix} />
 
         <div>
           <label
