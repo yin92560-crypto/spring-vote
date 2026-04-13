@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Settings, Trophy } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
@@ -95,9 +96,19 @@ function HomeSiteNav() {
   return (
     <header className="site-nav-fixed">
       <div className="mx-auto flex min-h-14 w-full max-w-6xl items-center justify-between gap-2 px-3 py-2 sm:gap-3 sm:px-6 sm:py-0">
-        <p className="min-w-0 pr-1 font-display text-[0.95rem] font-medium text-stone-950 sm:text-lg">
-          <span className="text-gradient-spring-title">{t("title")}</span>
-        </p>
+        <div className="flex min-w-0 items-center gap-2 pr-1">
+          <Image
+            src="/huaqin-logo.svg"
+            alt="华勤 Logo"
+            width={88}
+            height={28}
+            className="h-7 w-auto shrink-0 rounded-md"
+            priority
+          />
+          <p className="min-w-0 font-display text-[0.95rem] font-medium text-stone-950 sm:text-lg">
+            <span className="text-gradient-spring-title">{t("title")}</span>
+          </p>
+        </div>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <Link
             href="/rank"
@@ -260,6 +271,9 @@ function HomePageContent() {
           <p className="mx-auto mt-5 max-w-2xl text-pretty text-base leading-relaxed text-stone-900/75">
             {t("heroDesc")}
           </p>
+          <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-stone-800/80">
+            投票规则：每人每日可投3票，快来为心仪作品助力吧
+          </p>
           <p className="mt-6 text-sm font-medium text-stone-900/85">
             {t("remainingVotes")}{" "}
             <span className="tabular-nums text-lg text-stone-950">{remaining}</span>
@@ -359,7 +373,7 @@ function HomePageContent() {
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img
                             src={w.imageUrl}
-                            alt={`${w.title} (${t("displayNoLabel")} ${w.displayNo})`}
+                            alt={`${w.workTitle || w.title} (${t("displayNoLabel")} ${w.displayNo})`}
                             className="h-full w-full object-cover transition-transform duration-500 ease-out will-change-transform group-hover:scale-105"
                           />
                           <div className="card-caption-overlay pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-3 pt-12">
@@ -369,7 +383,7 @@ function HomePageContent() {
                               </span>
                             </p>
                             <p className="truncate text-lg font-medium text-white drop-shadow-md">
-                              {w.title}
+                              {w.workTitle || w.title}
                             </p>
                             <p className="mt-1 text-[11px] text-white/90 drop-shadow">
                               {t("viewDetailHint")}
@@ -377,10 +391,18 @@ function HomePageContent() {
                           </div>
                         </button>
                         <div className="flex items-center justify-between gap-3 px-4 py-4">
-                          <span className="text-sm text-stone-800/80">
-                            {t("votesLabel")}{" "}
-                            <strong className="text-stone-950">{w.votes}</strong>
-                          </span>
+                          <div className="min-w-0">
+                            <p className="truncate font-semibold text-[#5b1f3f]">
+                              {w.workTitle || w.title}
+                            </p>
+                            <p className="mt-0.5 truncate text-xs text-stone-700/75">
+                              {t("authorLabel")}：{w.authorName || "-"}
+                            </p>
+                            <p className="mt-1 text-sm text-stone-800/80">
+                              {t("votesLabel")}{" "}
+                              <strong className="text-stone-950">{w.votes}</strong>
+                            </p>
+                          </div>
                           <VotePillButton
                             disabled={remaining <= 0}
                             onVote={() => voteFromCard(w.id)}

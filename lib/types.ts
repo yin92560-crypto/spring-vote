@@ -1,6 +1,10 @@
 export type Work = {
   id: string;
   title: string;
+  /** 新增：作品名称（为空时回退 title） */
+  workTitle: string;
+  /** 新增：参赛人姓名 */
+  authorName: string;
   imageUrl: string;
   votes: number;
   createdAt: string;

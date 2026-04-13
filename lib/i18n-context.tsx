@@ -30,6 +30,7 @@ export type MessageKey =
   | "vote"
   | "voteCard"
   | "votesLabel"
+  | "authorLabel"
   | "votesUnit"
   | "viewDetailHint"
   | "displayNoLabel"
@@ -85,8 +86,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
   zh: {
     title: "捕捉春日计划",
     subtitle: "2026华勤全球员工春日摄影大赛",
-    heroDesc:
-      "用镜头定格全球华勤人的春日瞬间。每位员工每日可投 3 票。",
+    heroDesc: "用镜头定格全球华勤人的春日瞬间。",
     remainingVotes: "今日剩余票数",
     rank: "排行榜",
     admin: "管理后台",
@@ -99,6 +99,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     vote: "投票",
     voteCard: "投一票",
     votesLabel: "得票",
+    authorLabel: "作者",
     votesUnit: "票",
     viewDetailHint: "点击查看大图与详情",
     displayNoLabel: "编号",
@@ -125,8 +126,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     topThree: "前三名",
     otherRanks: "其他名次",
     rankPageTitle: "春日人气排行榜",
-    rankPageDesc:
-      "全部作品按实时得票数从高到低排序；前三名登上领奖台，其余作品以紧凑列表展示排名。",
+    rankPageDesc: "所有作品都按实时得票数，快冲票帮你爱的作品挤去前排🥳",
     rankSyncHint: "投票或管理变更后会自动刷新；切换回此标签时也会更新",
     backHome: "返回首页",
     rankLoadError: "榜单暂时无法加载",
@@ -168,6 +168,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     vote: "Vote",
     voteCard: "Vote",
     votesLabel: "Votes",
+    authorLabel: "Author",
     votesUnit: "votes",
     viewDetailHint: "Click for details",
     displayNoLabel: "No.",
@@ -237,6 +238,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     vote: "投票する",
     voteCard: "投票する",
     votesLabel: "得票",
+    authorLabel: "作者",
     votesUnit: "票",
     viewDetailHint: "タップで詳細",
     displayNoLabel: "番号",

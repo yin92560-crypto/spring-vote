@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -7,9 +7,16 @@ import { notifyVoteDataChanged } from "@/lib/vote-sync";
 type Props = {
   adminSecret: string;
   titlePrefix: string;
+  authorName: string;
+  workTitle: string;
 };
 
-export function AdminFeishuSync({ adminSecret, titlePrefix }: Props) {
+export function AdminFeishuSync({
+  adminSecret,
+  titlePrefix,
+  authorName,
+  workTitle,
+}: Props) {
   const router = useRouter();
   const [tableUrl, setTableUrl] = useState("");
   const [syncing, setSyncing] = useState(false);
@@ -38,6 +45,8 @@ export function AdminFeishuSync({ adminSecret, titlePrefix }: Props) {
         body: JSON.stringify({
           tableUrl: tableUrl.trim(),
           titlePrefix,
+          authorName,
+          workTitle,
         }),
       });
       const j = (await res.json()) as {

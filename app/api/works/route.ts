@@ -14,7 +14,7 @@ export async function GET(request: Request) {
 
     const { data: works, error: wErr } = await supabase
       .from("works")
-      .select("id, title, image_url, created_at")
+      .select("id, title, work_title, author_name, image_url, created_at")
       .order("created_at", { ascending: false });
 
     if (wErr) {
@@ -41,6 +41,8 @@ export async function GET(request: Request) {
       (works ?? []).map((w) => ({
         id: w.id as string,
         title: w.title as string,
+        workTitle: (w.work_title as string | null) ?? (w.title as string),
+        authorName: (w.author_name as string | null) ?? "",
         imageUrl: w.image_url as string,
         votes: counts.get(w.id as string) ?? 0,
         createdAt: w.created_at as string,
@@ -72,6 +74,8 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const title = String(formData.get("title") ?? "");
+    const workTitle = String(formData.get("workTitle") ?? "");
+    const authorName = String(formData.get("authorName") ?? "");
     const file = formData.get("file");
 
     if (!(file instanceof File) || file.size === 0) {
@@ -106,9 +110,15 @@ export async function POST(request: Request) {
       data: { publicUrl },
     } = supabase.storage.from("photos").getPublicUrl(path);
 
+    const safeTitle = title.trim() || workTitle.trim() || "未命名作品";
+    const safeWorkTitle = workTitle.trim() || safeTitle;
+    const safeAuthorName = authorName.trim();
+
     const { error: insErr } = await supabase.from("works").insert({
       id: workId,
-      title: title.trim() || "未命名作品",
+      title: safeTitle,
+      work_title: safeWorkTitle,
+      author_name: safeAuthorName,
       image_path: path,
       image_url: publicUrl,
     });

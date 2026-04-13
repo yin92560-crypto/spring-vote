@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { RankLeaderboard } from "@/components/rank-leaderboard";
 import { RankPageVoteSync } from "@/components/rank-page-vote-sync";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -30,6 +31,14 @@ export function RankPageView({ rankResult }: { rankResult: RankResult }) {
       <header className="site-nav-fixed">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-6 sm:py-3.5">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <Image
+              src="/huaqin-logo.svg"
+              alt="华勤 Logo"
+              width={88}
+              height={28}
+              className="h-7 w-auto shrink-0 rounded-md"
+              priority
+            />
             <Link
               href="/"
               className="inline-flex min-h-9 items-center justify-center rounded-full border border-white/55 bg-white/45 px-3 py-2 text-xs font-medium text-stone-900 shadow-sm backdrop-blur-sm transition-all duration-300 ease-out hover:bg-white/70 sm:px-4 sm:text-sm"

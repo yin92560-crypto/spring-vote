@@ -11,7 +11,7 @@ export async function fetchWorksRankedByVotes(): Promise<Work[]> {
 
   const { data: works, error: wErr } = await supabase
     .from("works")
-    .select("id, title, image_url, created_at")
+    .select("id, title, work_title, author_name, image_url, created_at")
     .order("created_at", { ascending: false });
 
   if (wErr) {
@@ -38,6 +38,8 @@ export async function fetchWorksRankedByVotes(): Promise<Work[]> {
     (works ?? []).map((w) => ({
       id: w.id as string,
       title: w.title as string,
+      workTitle: (w.work_title as string | null) ?? (w.title as string),
+      authorName: (w.author_name as string | null) ?? "",
       imageUrl: w.image_url as string,
       votes: counts.get(w.id as string) ?? 0,
       createdAt: w.created_at as string,

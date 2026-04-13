@@ -26,6 +26,8 @@ type Body = {
   appToken?: string;
   tableId?: string;
   titlePrefix?: string;
+  authorName?: string;
+  workTitle?: string;
 };
 
 function sleep(ms: number): Promise<void> {
@@ -59,6 +61,8 @@ export async function POST(request: Request) {
   }
 
   const titlePrefix = String(body.titlePrefix ?? "");
+  const authorName = String(body.authorName ?? "").trim();
+  const manualWorkTitle = String(body.workTitle ?? "").trim();
   let appToken = String(body.appToken ?? "").trim();
   let tableId = String(body.tableId ?? "").trim();
   const tableUrl = String(body.tableUrl ?? "").trim();
@@ -179,6 +183,8 @@ export async function POST(request: Request) {
         buffer,
         contentType,
         title,
+        workTitle: manualWorkTitle || title,
+        authorName,
       });
 
       if (result.ok) {

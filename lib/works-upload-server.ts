@@ -19,6 +19,8 @@ export async function insertWorkFromImageBuffer(opts: {
   buffer: Buffer;
   contentType: string;
   title: string;
+  authorName?: string;
+  workTitle?: string;
 }): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
   try {
     const supabase = createAdminClient();
@@ -42,9 +44,15 @@ export async function insertWorkFromImageBuffer(opts: {
       data: { publicUrl },
     } = supabase.storage.from("photos").getPublicUrl(path);
 
+    const safeTitle = opts.title.trim() || "未命名作品";
+    const safeWorkTitle = opts.workTitle?.trim() || safeTitle;
+    const safeAuthorName = opts.authorName?.trim() || "";
+
     const { error: insErr } = await supabase.from("works").insert({
       id: workId,
-      title: opts.title.trim() || "未命名作品",
+      title: safeTitle,
+      work_title: safeWorkTitle,
+      author_name: safeAuthorName,
       image_path: path,
       image_url: publicUrl,
     });

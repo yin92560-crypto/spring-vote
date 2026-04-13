@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Noto_Sans_SC, Source_Serif_4 } from "next/font/google";
+import { Ma_Shan_Zheng, Noto_Sans_SC, Source_Serif_4 } from "next/font/google";
 import { Providers } from "@/components/providers";
 import "./globals.css";
 
@@ -13,6 +13,12 @@ const sourceSerif = Source_Serif_4({
   variable: "--font-source-serif",
   subsets: ["latin"],
   weight: ["400", "500", "600"],
+});
+
+const maShanZheng = Ma_Shan_Zheng({
+  variable: "--font-ma-shan-zheng",
+  subsets: ["latin"],
+  weight: "400",
 });
 
 export const metadata: Metadata = {
@@ -29,7 +35,7 @@ export default function RootLayout({
   return (
     <html
       lang="zh-CN"
-      className={`${notoSans.variable} ${sourceSerif.variable} h-full antialiased`}
+      className={`${notoSans.variable} ${sourceSerif.variable} ${maShanZheng.variable} h-full antialiased`}
     >
       <body className="relative min-h-full overflow-x-hidden font-sans">
         <Providers>

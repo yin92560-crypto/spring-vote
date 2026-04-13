@@ -1,6 +1,9 @@
 ﻿"use client";
 
 import Link from "next/link";
+import Image from "next/image";
+import { Download } from "lucide-react";
+import * as XLSX from "xlsx";
 import { AdminDriveSync } from "@/components/admin-drive-sync";
 import { AdminFeishuSync } from "@/components/admin-feishu-sync";
 import { SpringLoadingIndicator } from "@/components/spring-loading";
@@ -28,6 +31,9 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
   const [uploadDone, setUploadDone] = useState(0);
   const [uploadTotal, setUploadTotal] = useState(0);
   const [adminSecret, setAdminSecret] = useState("");
+  const [authorName, setAuthorName] = useState("");
+  const [workTitle, setWorkTitle] = useState("");
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (files.length === 0) {
@@ -85,6 +91,8 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
         const title = buildWorkTitleFromFile(file, titlePrefix);
         const fd = new FormData();
         fd.append("title", title);
+        fd.append("workTitle", workTitle.trim() || title);
+        fd.append("authorName", authorName.trim());
         fd.append("file", file);
 
         try {
@@ -117,6 +125,8 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
 
       clearSelection();
       setTitlePrefix("");
+      setWorkTitle("");
+      setAuthorName("");
     } finally {
       setUploading(false);
       setUploadTotal(0);
@@ -158,6 +168,76 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
     setTimeout(() => setMessage(null), 2000);
   };
 
+  const formatDateTime = (iso: string): string => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleString("zh-CN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    });
+  };
+
+  const exportVotesExcel = () => {
+    if (works.length === 0) {
+      setMessage("暂无可导出的作品数据");
+      setTimeout(() => setMessage(null), 2200);
+      return;
+    }
+    setExporting(true);
+    try {
+      const sorted = [...works].sort((a, b) => b.votes - a.votes);
+      const rows = sorted.map((w) => ({
+        作品编号: w.displayNo,
+        参赛人: w.authorName || "",
+        作品名称: w.workTitle || w.title || "",
+        当前票数: w.votes,
+        上传时间: formatDateTime(w.createdAt),
+      }));
+      const ws = XLSX.utils.json_to_sheet(rows, {
+        header: ["作品编号", "参赛人", "作品名称", "当前票数", "上传时间"],
+      });
+
+      const headerKeys = ["A1", "B1", "C1", "D1", "E1"] as const;
+      for (const key of headerKeys) {
+        if (!ws[key]) continue;
+        ws[key].s = {
+          font: { bold: true },
+          alignment: { horizontal: "center", vertical: "center" },
+        };
+      }
+      ws["!cols"] = [
+        { wch: 10 },
+        { wch: 14 },
+        { wch: 28 },
+        { wch: 10 },
+        { wch: 22 },
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "投票明细");
+      const stamp = new Date()
+        .toISOString()
+        .slice(0, 19)
+        .replaceAll("-", "")
+        .replaceAll(":", "")
+        .replace("T", "-");
+      XLSX.writeFileXLSX(wb, `vote-details-${stamp}.xlsx`);
+      setMessage("导出成功，已下载 Excel");
+      setTimeout(() => setMessage(null), 2500);
+    } catch (e) {
+      console.error(e);
+      setMessage("导出失败，请稍后重试");
+      setTimeout(() => setMessage(null), 3000);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const progressPct =
     uploadTotal > 0 ? Math.round((uploadDone / uploadTotal) * 100) : 0;
 
@@ -175,6 +255,16 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
       <div className="mb-7 flex flex-wrap items-center justify-between gap-3 sm:mb-8 sm:gap-4">
         <div>
+          <div className="mb-2 flex items-center gap-2">
+            <Image
+              src="/huaqin-logo.svg"
+              alt="华勤 Logo"
+              width={92}
+              height={30}
+              className="h-7 w-auto rounded-md"
+              priority
+            />
+          </div>
           <h1 className="font-display text-2xl text-stone-950 sm:text-3xl">作品管理</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -240,9 +330,47 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
           />
         </div>
 
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label
+              htmlFor="author-name"
+              className="mb-2 block text-sm font-medium text-stone-900"
+            >
+              参赛人姓名
+            </label>
+            <input
+              id="author-name"
+              value={authorName}
+              onChange={(e) => setAuthorName(e.target.value)}
+              placeholder="请输入参赛人姓名"
+              className="w-full rounded-xl border border-emerald-200/60 bg-white/55 px-4 py-3 text-sm text-stone-950 placeholder:text-stone-400/70 outline-none ring-emerald-200/40 backdrop-blur-sm focus:border-emerald-300/70 focus:ring-2"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="work-title"
+              className="mb-2 block text-sm font-medium text-stone-900"
+            >
+              作品名称
+            </label>
+            <input
+              id="work-title"
+              value={workTitle}
+              onChange={(e) => setWorkTitle(e.target.value)}
+              placeholder="请输入作品名称（可选）"
+              className="w-full rounded-xl border border-emerald-200/60 bg-white/55 px-4 py-3 text-sm text-stone-950 placeholder:text-stone-400/70 outline-none ring-emerald-200/40 backdrop-blur-sm focus:border-emerald-300/70 focus:ring-2"
+            />
+          </div>
+        </div>
+
         <AdminDriveSync adminSecret={adminSecret} titlePrefix={titlePrefix} />
 
-        <AdminFeishuSync adminSecret={adminSecret} titlePrefix={titlePrefix} />
+        <AdminFeishuSync
+          adminSecret={adminSecret}
+          titlePrefix={titlePrefix}
+          authorName={authorName}
+          workTitle={workTitle}
+        />
 
         <div>
           <label
@@ -352,15 +480,28 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
       <section>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-medium text-stone-950">已发布作品</h2>
-          {works.length > 0 && (
-            <button
-              type="button"
-              onClick={() => void resetVotes()}
-              className="text-sm text-stone-800/80 underline decoration-stone-300 underline-offset-2 hover:text-stone-950"
-            >
-              清零全部票数
-            </button>
-          )}
+          <div className="flex flex-wrap items-center gap-3">
+            {works.length > 0 && (
+              <button
+                type="button"
+                onClick={() => exportVotesExcel()}
+                disabled={exporting}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200/70 bg-white/45 px-3.5 py-2 text-sm font-medium text-[#5b1f3f] shadow-sm backdrop-blur-md transition hover:bg-white/65 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Download className="size-4" aria-hidden />
+                {exporting ? "导出中…" : "导出 Excel"}
+              </button>
+            )}
+            {works.length > 0 && (
+              <button
+                type="button"
+                onClick={() => void resetVotes()}
+                className="text-sm text-stone-800/80 underline decoration-stone-300 underline-offset-2 hover:text-stone-950"
+              >
+                清零全部票数
+              </button>
+            )}
+          </div>
         </div>
         {works.length === 0 ? (
           <p className="text-sm text-stone-800/65">暂无作品</p>

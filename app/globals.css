@@ -21,23 +21,44 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), "Source Serif Pro", "STSong", "SimSun", serif;
   font-weight: 400;
-  background: linear-gradient(
-    145deg,
-    #edf7ed 0%,
-    #e4f2e7 42%,
-    #d6eaf2 100%
-  );
+  background:
+    linear-gradient(
+      145deg,
+      rgba(236, 247, 237, 0.82) 0%,
+      rgba(228, 242, 231, 0.68) 42%,
+      rgba(214, 234, 242, 0.65) 100%
+    ),
+    url("/spring-bg.png");
+  background-position: center top;
+  background-size: cover;
+  background-repeat: no-repeat;
   background-attachment: fixed;
 }
 
-/* 轻微纸感颗粒，贴近插画海报质感 */
+/* 柔光遮罩，保证前景可读 */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.06;
+  opacity: 1;
+  background: linear-gradient(
+    180deg,
+    rgba(248, 252, 248, 0.56) 0%,
+    rgba(241, 249, 242, 0.42) 38%,
+    rgba(240, 247, 243, 0.5) 100%
+  );
+}
+
+/* 轻微纸感颗粒，贴近插画海报质感 */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.055;
   background-image:
     radial-gradient(rgba(70, 90, 78, 0.22) 0.45px, transparent 0.55px),
     radial-gradient(rgba(136, 154, 143, 0.14) 0.45px, transparent 0.55px);
@@ -58,14 +79,19 @@ select {
 }
 
 .font-display {
-  font-family: var(--font-display), "Noto Sans SC", "PingFang SC", sans-serif;
-  font-weight: 200;
-  letter-spacing: 0.02em;
+  font-family:
+    var(--font-ma-shan-zheng),
+    var(--font-display),
+    "Noto Sans SC",
+    "PingFang SC",
+    sans-serif;
+  font-weight: 400;
+  letter-spacing: 0.01em;
   color: var(--title-color);
 }
 
 .glass-panel {
-  background: rgba(255, 255, 255, 0.62);
+  background: rgba(255, 255, 255, 0.7);
   border: 1px solid rgba(179, 208, 177, 0.42);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -80,7 +106,7 @@ select {
   left: 0;
   right: 0;
   z-index: 50;
-  background: rgba(241, 249, 242, 0.72);
+  background: rgba(241, 249, 242, 0.84);
   border-bottom: 1px solid rgba(179, 208, 177, 0.45);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);

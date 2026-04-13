@@ -1,0 +1,17 @@
+<svg width="220" height="72" viewBox="0 0 220 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5B1F3F"/>
+      <stop offset="55%" stop-color="#6D2D4E"/>
+      <stop offset="100%" stop-color="#7A3B5B"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="218" height="70" rx="15" fill="rgba(255,255,255,0.45)" stroke="rgba(179,208,177,0.72)"/>
+  <g transform="translate(12,13)">
+    <rect x="0" y="0" width="48" height="46" rx="10" fill="rgba(183,217,180,0.35)"/>
+    <path d="M8 35V10H14V20H26V10H32V35H26V25H14V35H8Z" fill="url(#g1)"/>
+    <path d="M36 23C36 15.2 41.8 10 49.6 10H54V15H49.6C44.8 15 41.8 18.2 41.8 23C41.8 27.8 44.8 31 49.6 31H54V36H49.6C41.8 36 36 30.8 36 23Z" fill="url(#g1)"/>
+  </g>
+  <text x="76" y="33" fill="url(#g1)" font-family="'Noto Sans SC',sans-serif" font-size="18" font-weight="700">Nä€/</text>
+  <text x="76" y="52" fill="#6B7B71" font-family="'Noto Sans SC',sans-serif" font-size="11" letter-spacing="0.08em">HUAQIN TECHNOLOGY</text>
+</svg>

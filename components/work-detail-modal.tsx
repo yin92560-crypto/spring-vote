@@ -249,7 +249,7 @@ export function WorkDetailModal({
                 id="work-detail-title"
                 className="min-w-0 flex-1 font-display text-xl font-medium leading-snug text-stone-950 sm:text-2xl"
               >
-                {work.title}
+                {work.workTitle || work.title}
               </h2>
             </div>
             <p className="mb-6 text-base text-stone-900/85">
