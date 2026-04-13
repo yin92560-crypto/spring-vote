@@ -281,20 +281,26 @@ function HomePageContent() {
 
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-10 pt-[calc(var(--nav-safe)+1.15rem)] sm:px-6 sm:pt-[calc(var(--nav-safe)+1.25rem)]">
         <section className="text-center">
-          <div className="mx-auto max-w-3xl rounded-3xl bg-white/20 px-4 py-4 shadow-[0_12px_28px_rgba(0,0,0,0.16)] backdrop-blur-sm sm:px-8 sm:py-6">
-            <h1 className="font-display text-[1.95rem] font-semibold leading-[1.2] tracking-[0.01em] text-white [text-shadow:0_2px_10px_rgba(255,250,235,0.85),0_1px_2px_rgba(0,0,0,0.35)] sm:text-5xl sm:leading-[1.18]">
-              <span className="text-rose-50">{t("subtitle")}</span>
+          <div className="relative mx-auto max-w-4xl px-2 py-2 sm:px-4 sm:py-4">
+            <div className="pointer-events-none absolute left-1/2 top-1/2 h-[220px] w-[min(94vw,860px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.62)_0%,rgba(255,255,255,0.34)_38%,rgba(255,255,255,0.08)_65%,rgba(255,255,255,0)_100%)] blur-[2px]" />
+            <h1
+              className="font-display text-5xl font-black leading-[1.08] tracking-[0.02em] sm:text-6xl lg:text-7xl"
+              style={{ fontFamily: '"STKaiti", "KaiTi", "Noto Serif SC", serif' }}
+            >
+              <span className="bg-gradient-to-r from-amber-800 via-emerald-900 to-amber-900 bg-clip-text text-transparent drop-shadow-[0_2px_10px_rgba(255,255,255,0.8)]">
+                {t("subtitle")}
+              </span>
             </h1>
-            <p className="mx-auto mt-5 max-w-2xl text-pretty text-base font-semibold leading-relaxed text-white drop-shadow-md">
+            <p className="mx-auto mt-5 max-w-2xl text-pretty text-lg font-semibold leading-relaxed text-[#4a2f22] drop-shadow-md">
               {t("heroDesc")}
             </p>
-            <p className="mx-auto mt-2 max-w-2xl text-sm font-semibold leading-relaxed text-white drop-shadow-md">
+            <p className="mx-auto mt-2 max-w-2xl text-base font-semibold leading-relaxed text-[#4a2f22] drop-shadow-md">
               投票规则：每人每日可投3票，快来为心仪作品助力吧
             </p>
-            <p className="mt-6 text-sm font-semibold text-white drop-shadow-md">
+            <p className="mt-6 text-base font-semibold text-[#4a2f22] drop-shadow-md">
               {t("remainingVotes")}{" "}
-              <span className="tabular-nums text-lg text-white">{remaining}</span>
-              <span className="text-white/90"> / 3</span>
+              <span className="tabular-nums text-xl text-[#4a2f22]">{remaining}</span>
+              <span className="text-[#4a2f22]/85"> / 3</span>
             </p>
           </div>
         </section>
@@ -345,9 +351,9 @@ function HomePageContent() {
                 <label htmlFor="work-search" className="sr-only">
                   {t("searchAria")}
                 </label>
-                <div className="search-glow glass-panel flex items-center gap-3 rounded-2xl border border-[#4a2f22]/35 bg-gradient-to-r from-white/75 via-emerald-50/45 to-stone-50/55 px-4 py-3 shadow-[0_6px_18px_rgba(74,47,34,0.26)] backdrop-blur-md">
+                <div className="search-glow flex items-center gap-3 rounded-full border border-emerald-300/80 bg-white/72 px-5 py-3 shadow-[0_8px_20px_rgba(56,74,55,0.25)] backdrop-blur-md">
                   <span
-                    className="shrink-0 text-lg text-stone-400/90"
+                    className="shrink-0 text-lg text-emerald-900/70"
                     aria-hidden
                   >
                     🔍
@@ -358,7 +364,7 @@ function HomePageContent() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={t("searchPlaceholder")}
-                    className="min-w-0 flex-1 bg-transparent text-sm text-stone-800 placeholder:text-stone-400/85 outline-none transition-all duration-300 ease-out"
+                    className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-emerald-950 placeholder:text-emerald-900/55 outline-none transition-all duration-300 ease-out"
                     autoComplete="off"
                   />
                 </div>
