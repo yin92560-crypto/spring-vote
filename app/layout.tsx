@@ -1,19 +1,18 @@
 import type { Metadata } from "next";
-import { Noto_Sans_SC, Noto_Serif_SC } from "next/font/google";
+import { Noto_Sans_SC, Source_Serif_4 } from "next/font/google";
 import { Providers } from "@/components/providers";
-import { SakuraFalling } from "@/components/SakuraFalling";
 import "./globals.css";
 
 const notoSans = Noto_Sans_SC({
   variable: "--font-noto-sans",
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
+  weight: ["100", "200", "300"],
 });
 
-const notoSerif = Noto_Serif_SC({
-  variable: "--font-noto-serif",
+const sourceSerif = Source_Serif_4({
+  variable: "--font-source-serif",
   subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["400", "500", "600"],
 });
 
 export const metadata: Metadata = {
@@ -30,11 +29,10 @@ export default function RootLayout({
   return (
     <html
       lang="zh-CN"
-      className={`${notoSans.variable} ${notoSerif.variable} h-full antialiased`}
+      className={`${notoSans.variable} ${sourceSerif.variable} h-full antialiased`}
     >
       <body className="relative min-h-full overflow-x-hidden font-sans">
         <Providers>
-          <SakuraFalling />
           <div className="relative z-[3] flex min-h-full flex-col">{children}</div>
         </Providers>
       </body>

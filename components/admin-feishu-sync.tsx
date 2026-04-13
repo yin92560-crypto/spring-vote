@@ -74,11 +74,11 @@ export function AdminFeishuSync({ adminSecret, titlePrefix }: Props) {
   };
 
   return (
-    <section className="glass-panel mb-10 rounded-3xl border border-sky-200/50 bg-gradient-to-br from-sky-50/45 via-white/50 to-cyan-50/35 p-6 shadow-sm backdrop-blur-md sm:p-8">
-      <h2 className="font-display text-xl font-medium text-sky-950">
+    <section className="glass-panel mb-10 rounded-3xl border border-emerald-200/50 bg-gradient-to-br from-emerald-50/45 via-white/50 to-cyan-50/35 p-6 shadow-sm backdrop-blur-md sm:p-8">
+      <h2 className="font-display text-xl font-medium text-teal-950">
         飞书一键导入
       </h2>
-      <p className="mt-2 text-sm leading-relaxed text-sky-900/80">
+      <p className="mt-2 text-sm leading-relaxed text-teal-900/80">
         从飞书多维表格读取「附件」列中的图片，写入作品库。请确保应用已开通多维表格与云文档相关权限。
       </p>
 
@@ -86,7 +86,7 @@ export function AdminFeishuSync({ adminSecret, titlePrefix }: Props) {
         <div>
           <label
             htmlFor="feishu-table-url"
-            className="mb-2 block text-sm font-medium text-sky-950"
+            className="mb-2 block text-sm font-medium text-teal-950"
           >
             多维表格链接
           </label>
@@ -97,19 +97,19 @@ export function AdminFeishuSync({ adminSecret, titlePrefix }: Props) {
             onChange={(e) => setTableUrl(e.target.value)}
             disabled={syncing}
             placeholder="https://xxx.feishu.cn/base/xxxxxxxxxx?table=tblxxxx"
-            className="w-full rounded-xl border border-sky-200/60 bg-white/55 px-4 py-3 text-sm text-sky-950 placeholder:text-sky-400/90 outline-none ring-sky-300/40 backdrop-blur-sm transition focus:border-sky-400/80 focus:ring-2 disabled:opacity-60"
+            className="w-full rounded-xl border border-emerald-200/60 bg-white/55 px-4 py-3 text-sm text-teal-950 placeholder:text-teal-500/60 outline-none ring-emerald-300/40 backdrop-blur-sm transition focus:border-emerald-300/70 focus:ring-2 disabled:opacity-60"
             autoComplete="off"
           />
         </div>
 
         {syncing && (
           <div
-            className="rounded-2xl border border-sky-200/40 bg-white/40 px-4 py-4 backdrop-blur-sm"
+            className="rounded-2xl border border-emerald-200/40 bg-white/40 px-4 py-4 backdrop-blur-sm"
             role="status"
             aria-live="polite"
             aria-busy="true"
           >
-            <p className="mb-3 text-sm font-medium text-sky-950">
+            <p className="mb-3 text-sm font-medium text-teal-950">
               正在从飞书同步作品…
             </p>
             <div className="admin-sync-progress-track">
@@ -122,7 +122,7 @@ export function AdminFeishuSync({ adminSecret, titlePrefix }: Props) {
           type="button"
           onClick={() => void runSync()}
           disabled={syncing || !tableUrl.trim()}
-          className="w-full rounded-xl border border-sky-300/60 bg-gradient-to-r from-sky-400/90 via-cyan-400/85 to-sky-500/90 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto"
+          className="w-full rounded-xl border border-emerald-200/60 bg-gradient-to-r from-emerald-300/85 via-emerald-200/80 to-teal-300/80 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-45 sm:w-auto"
         >
           {syncing ? "同步中…" : "开始同步"}
         </button>
@@ -130,7 +130,7 @@ export function AdminFeishuSync({ adminSecret, titlePrefix }: Props) {
         {message && !syncing && (
           <p
             role="status"
-            className="rounded-xl border border-sky-200/50 bg-white/45 px-4 py-3 text-sm leading-relaxed text-sky-950"
+            className="rounded-xl border border-emerald-200/50 bg-white/45 px-4 py-3 text-sm leading-relaxed text-teal-950"
           >
             {message}
           </p>

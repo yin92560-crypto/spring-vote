@@ -35,8 +35,8 @@ function SpringFooter() {
       >
         <div className="absolute right-[10%] top-6 h-44 w-44 rounded-full bg-amber-100/55 blur-3xl" />
         <div className="absolute right-[26%] top-16 h-28 w-28 rounded-full bg-yellow-50/65 blur-2xl" />
-        <div className="absolute left-[6%] top-10 h-36 w-36 rounded-full bg-rose-100/45 blur-3xl" />
-        <div className="absolute left-[32%] top-24 h-24 w-24 rounded-full bg-pink-100/40 blur-2xl" />
+        <div className="absolute left-[6%] top-10 h-36 w-36 rounded-full bg-stone-100/45 blur-3xl" />
+        <div className="absolute left-[32%] top-24 h-24 w-24 rounded-full bg-amber-100/40 blur-2xl" />
         <div className="absolute left-1/2 top-0 h-16 w-72 -translate-x-1/2 rounded-full bg-white/50 blur-3xl" />
       </div>
 
@@ -49,9 +49,9 @@ function SpringFooter() {
       >
         <defs>
           <linearGradient id={`${uid}-wave`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#fce7ef" stopOpacity="0.2" />
-            <stop offset="45%" stopColor="#f5d0e3" stopOpacity="0.5" />
-            <stop offset="100%" stopColor="#f0c4db" stopOpacity="0.72" />
+            <stop offset="0%" stopColor="#e9f6ea" stopOpacity="0.28" />
+            <stop offset="45%" stopColor="#d9ecdf" stopOpacity="0.52" />
+            <stop offset="100%" stopColor="#cde3ec" stopOpacity="0.7" />
           </linearGradient>
         </defs>
         <path
@@ -60,8 +60,8 @@ function SpringFooter() {
         />
       </svg>
 
-      <div className="relative z-[2] border-t border-emerald-200/35 bg-gradient-to-b from-transparent via-[#e8f5e9]/55 to-[#fdf8fc]/92 px-6 pb-14 pt-8 text-center backdrop-blur-sm">
-        <p className="text-sm font-medium text-rose-900/80 drop-shadow-sm">
+      <div className="relative z-[2] border-t border-emerald-200/35 bg-gradient-to-b from-transparent via-[#e8f5e9]/55 to-[#eef7ee]/92 px-6 pb-14 pt-8 text-center backdrop-blur-sm">
+        <p className="text-sm font-medium text-stone-900/80 drop-shadow-sm">
           <span className="text-emerald-900/85">{t("footerTagline")}</span>
           <span className="mx-2 text-emerald-800/35" aria-hidden>
             |
@@ -94,17 +94,17 @@ function HomeSiteNav() {
   const { t } = useI18n();
   return (
     <header className="site-nav-fixed">
-      <div className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
-        <p className="min-w-0 font-display text-base font-medium text-rose-950 sm:text-lg">
+      <div className="mx-auto flex min-h-14 w-full max-w-6xl items-center justify-between gap-2 px-3 py-2 sm:gap-3 sm:px-6 sm:py-0">
+        <p className="min-w-0 pr-1 font-display text-[0.95rem] font-medium text-stone-950 sm:text-lg">
           <span className="text-gradient-spring-title">{t("title")}</span>
         </p>
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <Link
             href="/rank"
-            className="inline-flex items-center gap-1.5 rounded-full border border-white/55 bg-white/40 px-3 py-2 text-sm font-medium shadow-sm backdrop-blur-md transition-colors hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/50"
+            className="inline-flex min-h-9 items-center gap-1 rounded-full border border-white/55 bg-white/40 px-2.5 py-2 text-xs font-medium shadow-sm backdrop-blur-md transition-colors hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300/50 sm:gap-1.5 sm:px-3 sm:text-sm"
           >
             <Trophy
-              className="size-4 shrink-0 text-rose-950/90"
+              className="size-4 shrink-0 text-stone-950/90"
               strokeWidth={2}
               aria-hidden
             />
@@ -112,10 +112,10 @@ function HomeSiteNav() {
           </Link>
           <Link
             href="/admin"
-            className="inline-flex items-center gap-1.5 rounded-full border border-white/55 bg-white/40 px-3 py-2 text-sm font-medium shadow-sm backdrop-blur-md transition-colors hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300/50"
+            className="inline-flex min-h-9 items-center gap-1 rounded-full border border-white/55 bg-white/40 px-2.5 py-2 text-xs font-medium shadow-sm backdrop-blur-md transition-colors hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300/50 sm:gap-1.5 sm:px-3 sm:text-sm"
           >
             <Settings
-              className="size-4 shrink-0 text-rose-950/90"
+              className="size-4 shrink-0 text-stone-950/90"
               strokeWidth={2}
               aria-hidden
             />
@@ -252,25 +252,25 @@ function HomePageContent() {
     <div className="flex w-full flex-1 flex-col">
       <HomeSiteNav />
 
-      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-8 pt-[calc(var(--nav-safe)+1rem)] sm:px-6">
+      <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-10 pt-[calc(var(--nav-safe)+1.15rem)] sm:px-6 sm:pt-[calc(var(--nav-safe)+1.25rem)]">
         <section className="text-center">
-          <h1 className="font-display text-4xl font-normal leading-tight sm:text-5xl">
+          <h1 className="font-display text-[1.95rem] font-normal leading-[1.2] tracking-[0.01em] sm:text-5xl sm:leading-[1.18]">
             <span className="text-gradient-spring-title">{t("subtitle")}</span>
           </h1>
-          <p className="mx-auto mt-5 max-w-xl text-pretty text-base leading-relaxed text-rose-900/75">
+          <p className="mx-auto mt-5 max-w-2xl text-pretty text-base leading-relaxed text-stone-900/75">
             {t("heroDesc")}
           </p>
-          <p className="mt-6 text-sm font-medium text-rose-900/85">
+          <p className="mt-6 text-sm font-medium text-stone-900/85">
             {t("remainingVotes")}{" "}
-            <span className="tabular-nums text-lg text-rose-950">{remaining}</span>
-            <span className="text-rose-800/55"> / 3</span>
+            <span className="tabular-nums text-lg text-stone-950">{remaining}</span>
+            <span className="text-stone-800/55"> / 3</span>
           </p>
         </section>
 
         {toast && (
           <div
             role="status"
-            className="glass-panel fixed bottom-8 left-1/2 z-[110] -translate-x-1/2 rounded-full px-6 py-2.5 text-sm text-rose-900 shadow-lg transition-all duration-300 ease-out"
+            className="glass-panel fixed bottom-8 left-1/2 z-[110] -translate-x-1/2 rounded-full px-6 py-2.5 text-sm text-stone-900 shadow-lg transition-all duration-300 ease-out"
           >
             {toast}
           </div>
@@ -295,11 +295,11 @@ function HomePageContent() {
           }}
         />
 
-        <section className="mt-14">
+        <section className="mt-16">
           {works.length === 0 ? (
             <div className="glass-panel rounded-3xl px-8 py-16 text-center">
-              <p className="text-lg text-rose-900/80">{t("noWorks")}</p>
-              <p className="mt-2 text-sm text-rose-800/65">{t("noWorksHint")}</p>
+              <p className="text-lg text-stone-900/80">{t("noWorks")}</p>
+              <p className="mt-2 text-sm text-stone-800/65">{t("noWorksHint")}</p>
               <Link
                 href="/admin"
                 className="btn-sakura mt-8 inline-flex rounded-full px-8 py-3 text-sm font-medium text-white shadow-md"
@@ -313,9 +313,9 @@ function HomePageContent() {
                 <label htmlFor="work-search" className="sr-only">
                   {t("searchAria")}
                 </label>
-                <div className="search-glow glass-panel flex items-center gap-3 rounded-2xl border border-emerald-100/45 bg-gradient-to-r from-white/55 via-emerald-50/25 to-rose-50/40 px-4 py-3 backdrop-blur-md">
+                <div className="search-glow glass-panel flex items-center gap-3 rounded-2xl border border-emerald-100/45 bg-gradient-to-r from-white/55 via-emerald-50/25 to-stone-50/40 px-4 py-3 backdrop-blur-md">
                   <span
-                    className="shrink-0 text-lg text-rose-400/90"
+                    className="shrink-0 text-lg text-stone-400/90"
                     aria-hidden
                   >
                     🔍
@@ -326,11 +326,11 @@ function HomePageContent() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={t("searchPlaceholder")}
-                    className="min-w-0 flex-1 bg-transparent text-sm text-rose-950 placeholder:text-rose-400/85 outline-none transition-all duration-300 ease-out"
+                    className="min-w-0 flex-1 bg-transparent text-sm text-stone-950 placeholder:text-stone-400/85 outline-none transition-all duration-300 ease-out"
                     autoComplete="off"
                   />
                 </div>
-                <p className="mt-2 text-center text-xs text-rose-800/55">
+                <p className="mt-2 text-center text-xs text-stone-800/55">
                   {t("worksTotal", { count: works.length })}
                   {searchQuery.trim()
                     ? t("worksFiltered", { count: filteredWorks.length })
@@ -340,20 +340,20 @@ function HomePageContent() {
 
               {filteredWorks.length === 0 ? (
                 <div className="glass-panel mt-8 rounded-3xl px-8 py-14 text-center">
-                  <p className="text-rose-900/85">{t("noMatch")}</p>
-                  <p className="mt-2 text-sm text-rose-800/65">{t("noMatchHint")}</p>
+                  <p className="text-stone-900/85">{t("noMatch")}</p>
+                  <p className="mt-2 text-sm text-stone-800/65">{t("noMatchHint")}</p>
                 </div>
               ) : (
-                <ul className="mt-8 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                <ul className="mt-7 grid gap-5 sm:mt-8 sm:gap-7 sm:grid-cols-2 lg:grid-cols-3">
                   {filteredWorks.map((w) => (
                     <li key={w.id}>
-                      <article className="glass-panel group flex flex-col overflow-hidden rounded-3xl shadow-md transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-xl">
+                      <article className="glass-panel group flex flex-col overflow-hidden rounded-[1.6rem] shadow-sm transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-md">
                         <button
                           type="button"
                           onClick={() => openDetail(w)}
-                          className="relative aspect-[4/3] w-full cursor-zoom-in overflow-hidden bg-rose-100/50 text-left outline-none ring-rose-300/40 transition-all duration-300 ease-out focus-visible:ring-2"
+                          className="relative aspect-[4/3] w-full cursor-zoom-in overflow-hidden bg-stone-100/50 text-left outline-none ring-stone-300/40 transition-all duration-300 ease-out focus-visible:ring-2"
                         >
-                          <div className="pointer-events-none absolute left-3 top-3 z-[1] rounded-lg bg-white/92 px-2.5 py-1 text-xs font-semibold tabular-nums tracking-wide text-rose-900 shadow-md backdrop-blur-sm">
+                          <div className="pointer-events-none absolute left-3 top-3 z-[1] rounded-lg bg-white/92 px-2.5 py-1 text-xs font-semibold tabular-nums tracking-wide text-stone-900 shadow-md backdrop-blur-sm">
                             No.{w.displayNo}
                           </div>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -364,7 +364,7 @@ function HomePageContent() {
                           />
                           <div className="card-caption-overlay pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-3 pt-12">
                             <p className="text-xs font-semibold drop-shadow-md">
-                              <span className="card-badge-no text-emerald-950/95">
+                              <span className="card-badge-no text-emerald-800/90">
                                 {t("displayNoLabel")} {w.displayNo}
                               </span>
                             </p>
@@ -377,9 +377,9 @@ function HomePageContent() {
                           </div>
                         </button>
                         <div className="flex items-center justify-between gap-3 px-4 py-4">
-                          <span className="text-sm text-rose-800/80">
+                          <span className="text-sm text-stone-800/80">
                             {t("votesLabel")}{" "}
-                            <strong className="text-rose-950">{w.votes}</strong>
+                            <strong className="text-stone-950">{w.votes}</strong>
                           </span>
                           <VotePillButton
                             disabled={remaining <= 0}

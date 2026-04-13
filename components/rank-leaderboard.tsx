@@ -14,7 +14,7 @@ const podiumStyles = {
     card:
       "relative overflow-hidden rounded-[1.35rem] shadow-2xl ring-1 ring-amber-200/60",
     badge:
-      "bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-500 text-amber-950 shadow-md",
+      "bg-gradient-to-r from-amber-200 via-amber-100 to-amber-300 text-amber-950 shadow-md",
     crown: "text-3xl drop-shadow sm:text-4xl",
   },
   2: {
@@ -28,9 +28,9 @@ const podiumStyles = {
   3: {
     emoji: "🥉",
     card:
-      "rank-podium-bronze rank-podium-bronze-breathe relative overflow-hidden rounded-3xl shadow-xl ring-2 ring-amber-800/50",
+      "rank-podium-bronze rank-podium-bronze-breathe relative overflow-hidden rounded-3xl shadow-xl ring-2 ring-amber-500/35",
     badge:
-      "bg-gradient-to-r from-amber-800 via-amber-600 to-orange-800 text-amber-50 shadow-md",
+      "bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 text-stone-50 shadow-md",
     crown: "text-2xl drop-shadow sm:text-3xl",
   },
 } as const;
@@ -74,7 +74,7 @@ function PodiumCard({
           </span>
         </>
       )}
-      <div className="relative z-[1] aspect-[4/3] w-full overflow-hidden bg-rose-100/40">
+      <div className="relative z-[1] aspect-[4/3] w-full overflow-hidden bg-stone-100/40">
           <div
             className={`rank-badge-emerald-sheen absolute left-3 top-3 z-[2] flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold tabular-nums ${s.badge}`}
           >
@@ -86,7 +86,7 @@ function PodiumCard({
           </div>
           <Link
             href={`/?id=${work.displayNo}`}
-            className="relative block h-full w-full outline-none ring-rose-300/30 focus-visible:ring-2"
+            className="relative block h-full w-full outline-none ring-stone-300/30 focus-visible:ring-2"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -97,21 +97,21 @@ function PodiumCard({
           </Link>
         </div>
         <div className="relative z-[1] flex flex-1 flex-col gap-2 px-4 pb-5 pt-4">
-          <p className="font-display text-lg font-semibold leading-snug text-rose-950 sm:text-xl">
+          <p className="font-display text-lg font-semibold leading-snug text-stone-950 sm:text-xl">
             <Link
               href={`/?id=${work.displayNo}`}
-              className="hover:text-rose-800 hover:underline"
+              className="hover:text-stone-800 hover:underline"
             >
               {work.title}
             </Link>
           </p>
-          <p className="text-sm text-rose-800/75">
+          <p className="text-sm text-stone-800/75">
             {t("displayNoLabel")}{" "}
             <span className="font-mono font-semibold">{work.displayNo}</span>
           </p>
-          <p className="mt-auto text-2xl font-bold tabular-nums text-rose-950">
+          <p className="mt-auto text-2xl font-bold tabular-nums text-stone-950">
             {work.votes}{" "}
-            <span className="text-base font-medium text-rose-800/70">
+            <span className="text-base font-medium text-stone-800/70">
               {t("votesUnit")}
             </span>
           </p>
@@ -141,12 +141,12 @@ function RestRow({ work, rank }: { work: Work; rank: number }) {
         className="glass-panel group flex items-center gap-4 rounded-2xl px-4 py-3 shadow-sm transition hover:shadow-md sm:gap-5 sm:px-5 sm:py-4"
       >
         <span
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-rose-200/90 to-sky-100/80 font-mono text-lg font-bold tabular-nums text-rose-950 shadow-inner ring-1 ring-white/60 sm:h-12 sm:w-12 sm:text-xl"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-stone-200/90 to-teal-100/80 font-mono text-lg font-bold tabular-nums text-stone-950 shadow-inner ring-1 ring-white/60 sm:h-12 sm:w-12 sm:text-xl"
           aria-label={t("placeRank", { n: rank })}
         >
           {rank}
         </span>
-        <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-xl bg-rose-100/50 sm:h-[4.5rem] sm:w-28">
+        <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-xl bg-stone-100/50 sm:h-[4.5rem] sm:w-28">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={work.imageUrl}
@@ -155,18 +155,18 @@ function RestRow({ work, rank }: { work: Work; rank: number }) {
           />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="truncate font-medium text-rose-950 sm:text-lg">
+          <p className="truncate font-medium text-stone-950 sm:text-lg">
             {work.title}
           </p>
-          <p className="mt-0.5 text-xs text-rose-800/65 sm:text-sm">
+          <p className="mt-0.5 text-xs text-stone-800/65 sm:text-sm">
             {t("displayNoLabel")} {work.displayNo}
           </p>
         </div>
         <div className="shrink-0 text-right">
-          <p className="text-xl font-bold tabular-nums text-rose-950 sm:text-2xl">
+          <p className="text-xl font-bold tabular-nums text-stone-950 sm:text-2xl">
             {work.votes}
           </p>
-          <p className="text-[11px] text-rose-800/60">{t("votesUnit")}</p>
+          <p className="text-[11px] text-stone-800/60">{t("votesUnit")}</p>
         </div>
       </Link>
     </li>
@@ -178,8 +178,8 @@ export function RankLeaderboard({ works }: Props) {
   if (works.length === 0) {
     return (
       <div className="glass-panel rounded-3xl px-8 py-16 text-center">
-        <p className="text-lg text-rose-900/85">{t("rankEmpty")}</p>
-        <p className="mt-2 text-sm text-rose-800/65">{t("rankEmptyDesc")}</p>
+        <p className="text-lg text-stone-900/85">{t("rankEmpty")}</p>
+        <p className="mt-2 text-sm text-stone-800/65">{t("rankEmptyDesc")}</p>
         <Link
           href="/"
           className="btn-sakura mt-8 inline-flex rounded-xl px-8 py-3 text-sm font-medium text-white shadow-md"
@@ -225,7 +225,7 @@ export function RankLeaderboard({ works }: Props) {
         <section aria-labelledby="rank-rest-heading">
           <h2
             id="rank-rest-heading"
-            className="mb-6 font-display text-2xl font-medium text-rose-950 sm:text-3xl"
+            className="mb-6 font-display text-2xl font-medium text-stone-950 sm:text-3xl"
           >
             {t("otherRanks")}
           </h2>

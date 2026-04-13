@@ -178,7 +178,7 @@ export function WorkDetailModal({
         <button
           type="button"
           aria-label={t("detailCloseBackdrop")}
-          className="work-detail-backdrop absolute inset-0 bg-rose-950/35 backdrop-blur-xl"
+          className="work-detail-backdrop absolute inset-0 bg-stone-950/35 backdrop-blur-xl"
           onClick={onClose}
         />
 
@@ -188,13 +188,13 @@ export function WorkDetailModal({
           aria-modal="true"
           aria-labelledby="work-detail-title"
         >
-          <div className="relative max-h-[min(58vh,560px)] w-full shrink-0 overflow-hidden bg-rose-100/40 sm:max-h-[min(62vh,620px)]">
+          <div className="relative max-h-[min(58vh,560px)] w-full shrink-0 overflow-hidden bg-stone-100/40 sm:max-h-[min(62vh,620px)]">
             {canNavigate && (
               <>
                 <button
                   type="button"
                   aria-label={t("detailPrevAria")}
-                  className="work-detail-nav-btn absolute left-2 top-1/2 z-[2] flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-lg font-bold text-rose-900/90 sm:left-3 sm:h-12 sm:w-12 sm:text-xl"
+                  className="work-detail-nav-btn absolute left-2 top-1/2 z-[2] flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-lg font-bold text-stone-900/90 sm:left-3 sm:h-12 sm:w-12 sm:text-xl"
                   onClick={(e) => {
                     e.stopPropagation();
                     goPrev();
@@ -205,7 +205,7 @@ export function WorkDetailModal({
                 <button
                   type="button"
                   aria-label={t("detailNextAria")}
-                  className="work-detail-nav-btn absolute right-2 top-1/2 z-[2] flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-lg font-bold text-rose-900/90 sm:right-3 sm:h-12 sm:w-12 sm:text-xl"
+                  className="work-detail-nav-btn absolute right-2 top-1/2 z-[2] flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-lg font-bold text-stone-900/90 sm:right-3 sm:h-12 sm:w-12 sm:text-xl"
                   onClick={(e) => {
                     e.stopPropagation();
                     goNext();
@@ -217,7 +217,7 @@ export function WorkDetailModal({
             )}
             <button
               type="button"
-              className="group relative z-[1] mx-auto block h-full w-full cursor-zoom-in overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400/80"
+              className="group relative z-[1] mx-auto block h-full w-full cursor-zoom-in overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/80"
               aria-label={t("detailViewHdAria")}
               onClick={(e) => {
                 e.stopPropagation();
@@ -247,16 +247,16 @@ export function WorkDetailModal({
               </span>
               <h2
                 id="work-detail-title"
-                className="min-w-0 flex-1 font-display text-xl font-medium leading-snug text-rose-950 sm:text-2xl"
+                className="min-w-0 flex-1 font-display text-xl font-medium leading-snug text-stone-950 sm:text-2xl"
               >
                 {work.title}
               </h2>
             </div>
-            <p className="mb-6 text-base text-rose-900/85">
+            <p className="mb-6 text-base text-stone-900/85">
               {t("detailVotesLine")}
-              <strong className="tabular-nums text-rose-950">{work.votes}</strong>{" "}
+              <strong className="tabular-nums text-stone-950">{work.votes}</strong>{" "}
               {t("votesUnit")}
-              <span className="ml-2 text-sm text-rose-800/65">
+              <span className="ml-2 text-sm text-stone-800/65">
                 {t("detailRemainingToday", { n: remaining })}
               </span>
             </p>
@@ -265,14 +265,14 @@ export function WorkDetailModal({
               <button
                 type="button"
                 onClick={() => void handleShare()}
-                className="order-1 rounded-xl border border-pink-300/70 bg-gradient-to-r from-white/60 via-rose-50/50 to-sky-50/45 px-6 py-3 text-sm font-semibold text-rose-900 shadow-sm backdrop-blur-sm transition hover:from-white/80 hover:border-pink-400/80 sm:order-1"
+                className="order-1 rounded-xl border border-amber-300/70 bg-gradient-to-r from-white/60 via-stone-50/50 to-teal-50/45 px-6 py-3 text-sm font-semibold text-stone-900 shadow-sm backdrop-blur-sm transition hover:from-white/80 hover:border-amber-400/80 sm:order-1"
               >
                 {t("share")}
               </button>
               <button
                 type="button"
                 onClick={onClose}
-                className="order-3 rounded-xl border border-rose-200/90 bg-white/50 px-6 py-3 text-sm font-medium text-rose-900 backdrop-blur-sm transition hover:bg-white/80 sm:order-2 sm:w-auto"
+                className="order-3 rounded-xl border border-stone-200/90 bg-white/50 px-6 py-3 text-sm font-medium text-stone-900 backdrop-blur-sm transition hover:bg-white/80 sm:order-2 sm:w-auto"
               >
                 {t("close")}
               </button>
@@ -337,7 +337,7 @@ export function WorkDetailModal({
                     className="full-preview-spinner-ring h-12 w-12 sm:h-14 sm:w-14"
                     role="status"
                   />
-                  <span className="text-sm text-pink-100/90">{t("loadingHd")}</span>
+                  <span className="text-sm text-amber-100/90">{t("loadingHd")}</span>
                 </div>
               )}
               {/* eslint-disable-next-line @next/next/no-img-element */}

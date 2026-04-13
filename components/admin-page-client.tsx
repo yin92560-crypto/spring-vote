@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { AdminDriveSync } from "@/components/admin-drive-sync";
@@ -172,31 +172,31 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+    <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
+      <div className="mb-7 flex flex-wrap items-center justify-between gap-3 sm:mb-8 sm:gap-4">
         <div>
-          <h1 className="font-display text-3xl text-rose-950">作品管理</h1>
+          <h1 className="font-display text-2xl text-stone-950 sm:text-3xl">作品管理</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {onLogout && (
             <button
               type="button"
               onClick={onLogout}
-              className="rounded-xl border border-rose-200/90 bg-white/35 px-4 py-2 text-sm font-medium text-rose-900 backdrop-blur-md transition hover:bg-rose-50/80"
+              className="rounded-xl border border-stone-200/90 bg-white/35 px-4 py-2 text-sm font-medium text-stone-900 backdrop-blur-md transition hover:bg-stone-50/80"
             >
               退出登录
             </button>
           )}
           <Link
             href="/"
-            className="rounded-xl border border-white/60 bg-white/30 px-4 py-2 text-sm font-medium text-rose-900 backdrop-blur-md transition hover:bg-white/50"
+            className="rounded-xl border border-white/60 bg-white/30 px-3.5 py-2 text-sm font-medium text-stone-900 backdrop-blur-md transition hover:bg-white/50 sm:px-4"
           >
             返回首页
           </Link>
         </div>
       </div>
 
-      <div className="glass-panel mb-6 rounded-xl px-4 py-3 text-sm text-rose-900/85">
+      <div className="glass-panel mb-6 rounded-xl px-4 py-3 text-sm text-stone-900/85">
         <label htmlFor="admin-secret" className="mb-1 block font-medium">
           管理密钥（可选）
         </label>
@@ -207,14 +207,14 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
           value={adminSecret}
           onChange={(e) => setAdminSecret(e.target.value)}
           placeholder="请输入管理员口令"
-          className="w-full rounded-lg border border-white/50 bg-white/40 px-3 py-2 text-sm outline-none ring-rose-300/40 focus:ring-2"
+          className="w-full rounded-lg border border-white/50 bg-white/40 px-3 py-2 text-sm outline-none ring-stone-300/40 focus:ring-2"
         />
       </div>
 
       {message && (
         <p
           role="status"
-          className="glass-panel mb-6 rounded-xl px-4 py-3 text-sm text-rose-900"
+          className="glass-panel mb-6 rounded-xl px-4 py-3 text-sm text-stone-900"
         >
           {message}
         </p>
@@ -222,12 +222,12 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
 
       <form
         onSubmit={(e) => void submit(e)}
-        className="glass-panel mb-10 space-y-6 rounded-3xl p-6 sm:p-8"
+        className="glass-panel mb-10 space-y-6 rounded-[1.6rem] p-6 sm:p-8"
       >
         <div>
           <label
             htmlFor="title-prefix"
-            className="mb-2 block text-sm font-medium text-rose-900"
+            className="mb-2 block text-sm font-medium text-stone-900"
           >
             作品名称前缀（可选）
           </label>
@@ -236,7 +236,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
             value={titlePrefix}
             onChange={(e) => setTitlePrefix(e.target.value)}
             placeholder="选填"
-            className="w-full rounded-xl border border-white/60 bg-white/50 px-4 py-3 text-rose-950 placeholder:text-rose-400/80 outline-none ring-rose-300/50 backdrop-blur-sm focus:ring-2"
+            className="w-full rounded-xl border border-white/60 bg-white/50 px-4 py-3 text-stone-950 placeholder:text-stone-400/80 outline-none ring-stone-300/50 backdrop-blur-sm focus:ring-2"
           />
         </div>
 
@@ -247,7 +247,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
         <div>
           <label
             htmlFor="admin-files"
-            className="mb-2 block text-sm font-medium text-rose-900"
+            className="mb-2 block text-sm font-medium text-stone-900"
           >
             上传图片（支持多选）
           </label>
@@ -258,29 +258,29 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
             multiple
             onChange={onFiles}
             disabled={uploading}
-            className="block w-full text-sm text-rose-800 file:mr-4 file:rounded-lg file:border-0 file:bg-pink-200/80 file:px-4 file:py-2 file:text-sm file:font-medium file:text-rose-900 hover:file:bg-pink-200 disabled:opacity-50"
+            className="block w-full text-sm text-stone-800 file:mr-4 file:rounded-lg file:border-0 file:bg-amber-200/80 file:px-4 file:py-2 file:text-sm file:font-medium file:text-stone-900 hover:file:bg-amber-200 disabled:opacity-50"
           />
           {files.length > 0 && (
             <div className="mt-4 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-rose-800/85">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-stone-800/85">
                 <span>
-                  已选 <strong className="text-rose-950">{files.length}</strong>{" "}
+                  已选 <strong className="text-stone-950">{files.length}</strong>{" "}
                   张
                 </span>
                 <button
                   type="button"
                   onClick={clearSelection}
                   disabled={uploading}
-                  className="text-rose-700/90 underline decoration-rose-300 underline-offset-2 hover:text-rose-950 disabled:opacity-50"
+                  className="text-stone-700/90 underline decoration-stone-300 underline-offset-2 hover:text-stone-950 disabled:opacity-50"
                 >
                   清空选择
                 </button>
               </div>
-              <ul className="max-h-40 space-y-1.5 overflow-y-auto rounded-xl border border-white/40 bg-white/25 px-3 py-2 text-xs text-rose-900/90">
+              <ul className="max-h-40 space-y-1.5 overflow-y-auto rounded-xl border border-white/40 bg-white/25 px-3 py-2 text-xs text-stone-900/90">
                 {files.map((f, i) => (
                   <li key={`${f.name}-${i}`} className="flex justify-between gap-2">
                     <span className="truncate font-medium">{f.name}</span>
-                    <span className="shrink-0 text-rose-700/75">
+                    <span className="shrink-0 text-stone-700/75">
                       → {buildWorkTitleFromFile(f, titlePrefix)}
                     </span>
                   </li>
@@ -291,7 +291,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
                   {previews.slice(0, 12).map((src, i) => (
                     <div
                       key={`thumb-${i}`}
-                      className="h-16 w-16 overflow-hidden rounded-lg border border-white/50 bg-rose-50/50"
+                      className="h-16 w-16 overflow-hidden rounded-lg border border-white/50 bg-stone-50/50"
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
@@ -302,7 +302,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
                     </div>
                   ))}
                   {previews.length > 12 && (
-                    <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-rose-300/60 bg-white/30 text-xs text-rose-800/80">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-dashed border-stone-300/60 bg-white/30 text-xs text-stone-800/80">
                       +{previews.length - 12}
                     </div>
                   )}
@@ -314,30 +314,30 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
 
         {uploading && uploadTotal > 0 && (
           <div
-            className="rounded-2xl border border-white/55 bg-gradient-to-r from-rose-50/50 via-white/40 to-sky-50/40 px-4 py-4"
+            className="rounded-[1.15rem] border border-white/55 bg-gradient-to-r from-stone-50/50 via-white/40 to-teal-50/40 px-4 py-4"
             role="status"
             aria-live="polite"
           >
-            <div className="mb-2 flex justify-between text-sm text-rose-900">
+            <div className="mb-2 flex justify-between text-sm text-stone-900">
               <span>正在上传…</span>
               <span className="tabular-nums font-medium">
                 {uploadDone} / {uploadTotal}
               </span>
             </div>
-            <div className="h-2.5 overflow-hidden rounded-full bg-rose-100/80 shadow-inner">
+            <div className="h-2.5 overflow-hidden rounded-full bg-stone-100/80 shadow-inner">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-pink-400 via-rose-300 to-sky-300 transition-[width] duration-300 ease-out"
+                className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-stone-200 to-teal-200 transition-[width] duration-300 ease-out"
                 style={{ width: `${progressPct}%` }}
               />
             </div>
-            <p className="mt-2 text-xs text-rose-800/70">请勿关闭页面</p>
+            <p className="mt-2 text-xs text-stone-800/70">请勿关闭页面</p>
           </div>
         )}
 
         <button
           type="submit"
           disabled={uploading || files.length === 0}
-          className="btn-sakura w-full rounded-xl py-3 text-sm font-medium text-white shadow-md disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:px-10"
+          className="btn-sakura w-full rounded-xl py-3 text-sm font-medium text-white shadow-sm disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:px-10"
         >
           {uploading
             ? `上传中 ${uploadDone}/${uploadTotal}…`
@@ -351,28 +351,28 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
 
       <section>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-medium text-rose-950">已发布作品</h2>
+          <h2 className="text-lg font-medium text-stone-950">已发布作品</h2>
           {works.length > 0 && (
             <button
               type="button"
               onClick={() => void resetVotes()}
-              className="text-sm text-rose-800/80 underline decoration-rose-300 underline-offset-2 hover:text-rose-950"
+              className="text-sm text-stone-800/80 underline decoration-stone-300 underline-offset-2 hover:text-stone-950"
             >
               清零全部票数
             </button>
           )}
         </div>
         {works.length === 0 ? (
-          <p className="text-sm text-rose-800/65">暂无作品</p>
+          <p className="text-sm text-stone-800/65">暂无作品</p>
         ) : (
           <ul className="space-y-4">
             {works.map((w) => (
               <li
                 key={w.id}
-                className="glass-panel flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center"
+                className="glass-panel flex flex-col gap-4 rounded-[1.15rem] p-4 sm:flex-row sm:items-center"
               >
                 <div className="flex min-w-0 flex-1 items-center gap-4">
-                  <div className="h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-rose-100">
+                  <div className="h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-stone-100">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={w.imageUrl}
@@ -382,14 +382,14 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="shrink-0 rounded-md bg-gradient-to-r from-pink-200/90 to-rose-100/90 px-2 py-0.5 font-mono text-xs font-semibold tabular-nums text-rose-950">
+                      <span className="shrink-0 rounded-md bg-gradient-to-r from-emerald-200/90 to-stone-100/90 px-2 py-0.5 font-mono text-xs font-semibold tabular-nums text-stone-950">
                         {w.displayNo}
                       </span>
-                      <p className="truncate font-medium text-rose-950">
+                      <p className="truncate font-medium text-stone-950">
                         {w.title}
                       </p>
                     </div>
-                    <p className="mt-1 text-sm text-rose-800/70">
+                    <p className="mt-1 text-sm text-stone-800/70">
                       得票 {w.votes}
                     </p>
                   </div>
@@ -397,7 +397,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
                 <button
                   type="button"
                   onClick={() => void del(w.id)}
-                  className="shrink-0 rounded-lg border border-rose-200/80 bg-white/40 px-3 py-1.5 text-sm text-rose-900 transition hover:bg-rose-50"
+                  className="shrink-0 rounded-lg border border-stone-200/80 bg-white/40 px-3 py-1.5 text-sm text-stone-900 transition hover:bg-stone-50"
                 >
                   删除
                 </button>

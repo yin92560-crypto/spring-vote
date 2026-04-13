@@ -1,32 +1,52 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fff9fb;
-  --foreground: #4a1520;
-  --sakura-mist: #ffeef2;
-  --sakura-petal: #ffd6e0;
+  --background: #eef7ee;
+  --foreground: #4d443d;
+  --title-color: #5b1f3f;
+  --accent-green: #b7d9b4;
+  --accent-blue: #c8e5ee;
   --nav-safe: 5.25rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-noto-sans);
-  --font-display: var(--font-noto-serif);
+  --font-sans: var(--font-source-serif);
+  --font-display: var(--font-noto-sans);
 }
 
 body {
   min-height: 100vh;
   color: var(--foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
-  /* 春意盎然：蓝天 · 绿地 · 落花 */
+  font-family: var(--font-sans), "Source Serif Pro", "STSong", "SimSun", serif;
+  font-weight: 400;
   background: linear-gradient(
-    120deg,
-    #e0f7fa 0%,
-    #f1f8e9 50%,
-    #fce4ec 100%
+    145deg,
+    #edf7ed 0%,
+    #e4f2e7 42%,
+    #d6eaf2 100%
   );
   background-attachment: fixed;
+}
+
+/* 轻微纸感颗粒，贴近插画海报质感 */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.06;
+  background-image:
+    radial-gradient(rgba(70, 90, 78, 0.22) 0.45px, transparent 0.55px),
+    radial-gradient(rgba(136, 154, 143, 0.14) 0.45px, transparent 0.55px);
+  background-size:
+    3px 3px,
+    5px 5px;
+  background-position:
+    0 0,
+    1.2px 1px;
 }
 
 button,
@@ -37,118 +57,58 @@ select {
   transition: all 0.3s ease;
 }
 
-@keyframes sakura-fall {
-  0% {
-    transform: translate3d(0, -12vh, 0) rotate(0deg);
-    opacity: 0;
-  }
-  8% {
-    opacity: 0.95;
-  }
-  35% {
-    transform: translate3d(calc(var(--sakura-sway, 0px) * -0.45), 38vh, 0)
-      rotate(calc(var(--sakura-spin, 720deg) * 0.35));
-  }
-  65% {
-    transform: translate3d(calc(var(--sakura-sway, 0px) * 0.35), 68vh, 0)
-      rotate(calc(var(--sakura-spin, 720deg) * 0.7));
-  }
-  100% {
-    transform: translate3d(var(--sakura-sway, 0px), 108vh, 0)
-      rotate(var(--sakura-spin, 720deg));
-    opacity: 0.08;
-  }
-}
-
-.sakura-petal {
-  border-radius: 55% 45% 60% 40% / 60% 40% 55% 45%;
-  background: linear-gradient(
-    145deg,
-    rgba(255, 183, 197, 0.95) 0%,
-    rgba(255, 228, 235, 0.82) 45%,
-    rgba(255, 245, 248, 0.65) 100%
-  );
-  box-shadow:
-    0 1px 8px rgba(236, 72, 153, 0.22),
-    0 0 12px rgba(255, 182, 193, 0.35);
-  animation-name: sakura-fall;
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
-  will-change: transform, opacity;
-}
-
 .font-display {
-  font-family: var(--font-display), var(--font-sans), serif;
+  font-family: var(--font-display), "Noto Sans SC", "PingFang SC", sans-serif;
+  font-weight: 200;
+  letter-spacing: 0.02em;
+  color: var(--title-color);
 }
 
 .glass-panel {
-  background: rgba(255, 255, 255, 0.38);
-  border: 1px solid rgba(167, 243, 208, 0.42);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
+  background: rgba(255, 255, 255, 0.62);
+  border: 1px solid rgba(179, 208, 177, 0.42);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   box-shadow:
-    0 10px 40px rgba(233, 30, 99, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.45);
+    0 4px 16px rgba(78, 97, 85, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
 }
 
-/* 顶栏：深度毛玻璃，固定在顶部由页面结构配合 */
 .site-nav-fixed {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   z-index: 50;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 252, 254, 0.52) 0%,
-    rgba(255, 250, 252, 0.38) 100%
-  );
-  border-bottom: 1px solid rgba(167, 243, 208, 0.45);
-  backdrop-filter: blur(32px) saturate(1.45);
-  -webkit-backdrop-filter: blur(32px) saturate(1.45);
-  box-shadow:
-    0 4px 24px rgba(167, 139, 250, 0.07),
-    0 12px 48px rgba(236, 72, 153, 0.06);
+  background: rgba(241, 249, 242, 0.72);
+  border-bottom: 1px solid rgba(179, 208, 177, 0.45);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: 0 4px 20px rgba(78, 97, 85, 0.08);
 }
 
-/* 主标题：深粉 → 紫罗兰 */
 .text-gradient-spring-title {
-  background: linear-gradient(
-    115deg,
-    #9d174d 0%,
-    #c026d3 38%,
-    #7c3aed 72%,
-    #6366f1 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  color: var(--title-color);
 }
 
-/* 搜索框：默认柔和粉绿；聚焦嫩绿 Lime */
 .search-glow {
-  box-shadow:
-    0 0 0 1px rgba(251, 207, 232, 0.55),
-    0 0 20px rgba(167, 243, 208, 0.2),
-    0 8px 28px rgba(236, 72, 153, 0.06);
+  box-shadow: 0 0 0 1px rgba(179, 208, 177, 0.45);
   transition: all 0.3s ease;
 }
 
 .search-glow:focus-within {
   box-shadow:
-    0 0 0 2px rgba(163, 230, 53, 0.65),
-    0 0 36px rgba(190, 242, 100, 0.55),
-    0 0 52px rgba(132, 204, 22, 0.28),
-    0 10px 32px rgba(74, 222, 128, 0.18);
-  border-color: rgba(190, 242, 100, 0.55) !important;
+    0 0 0 2px rgba(166, 198, 170, 0.75),
+    0 8px 24px rgba(120, 156, 133, 0.12);
+  border-color: rgba(166, 198, 170, 0.62) !important;
 }
 
 /* 作品卡底部：半透明渐变，压字更易读 */
 .card-caption-overlay {
   background: linear-gradient(
     to top,
-    rgba(61, 10, 32, 0.78) 0%,
-    rgba(88, 28, 52, 0.38) 45%,
+    rgba(56, 44, 37, 0.66) 0%,
+    rgba(56, 44, 37, 0.24) 45%,
     transparent 100%
   );
 }
@@ -156,17 +116,18 @@ select {
 .btn-sakura {
   background: linear-gradient(
     120deg,
-    #f48fb1 0%,
-    #f8bbd0 40%,
-    #b3e5fc 100%
+    #adcfa9 0%,
+    #bcdcc0 45%,
+    #bfdce8 100%
   );
-  box-shadow: 0 4px 14px rgba(236, 64, 122, 0.25);
+  color: #3f352f;
+  box-shadow: 0 4px 14px rgba(73, 92, 81, 0.2);
   transition: all 0.3s ease;
 }
 
 .btn-sakura:hover:not(:disabled) {
   filter: brightness(1.04);
-  box-shadow: 0 6px 22px rgba(236, 64, 122, 0.32);
+  box-shadow: 0 6px 22px rgba(73, 92, 81, 0.28);
   transform: translateY(-1px);
 }
 
@@ -176,17 +137,17 @@ select {
   padding: 0.5rem 1.35rem;
   background: linear-gradient(
     125deg,
-    #ec4899 0%,
-    #f472b6 35%,
-    #a5b4fc 100%
+    #9fc89e 0%,
+    #b8d8bc 40%,
+    #b6d7e8 100%
   );
-  color: #fff;
+  color: #3f352f;
   font-weight: 600;
   font-size: 0.875rem;
   line-height: 1.25rem;
   box-shadow:
-    0 4px 16px rgba(236, 72, 153, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    0 4px 16px rgba(73, 92, 81, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.35);
   transition: all 0.3s ease;
 }
@@ -194,7 +155,7 @@ select {
 .vote-pill-btn:hover:not(:disabled) {
   filter: brightness(1.06);
   box-shadow:
-    0 6px 24px rgba(236, 72, 153, 0.42),
+    0 6px 24px rgba(73, 92, 81, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
   transform: translateY(-1px) scale(1.02);
 }
@@ -232,7 +193,7 @@ select {
   font-size: 13px;
   transform: translate(-50%, -50%);
   animation: vote-heart-burst 0.65s ease-out forwards;
-  text-shadow: 0 0 6px rgba(251, 113, 133, 0.9);
+  text-shadow: 0 0 6px rgba(120, 157, 132, 0.7);
 }
 
 @keyframes vote-heart-burst {
@@ -294,7 +255,7 @@ select {
   border: 1px solid rgba(167, 243, 208, 0.4);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  box-shadow: 0 4px 20px rgba(236, 72, 153, 0.12);
+  box-shadow: 0 4px 18px rgba(84, 112, 95, 0.12);
   transition:
     background 0.2s ease,
     border-color 0.2s ease,
@@ -303,11 +264,11 @@ select {
 }
 
 .work-detail-nav-btn:hover {
-  background: rgba(255, 240, 245, 0.72);
-  border-color: rgba(244, 143, 177, 0.65);
+  background: rgba(244, 250, 245, 0.8);
+  border-color: rgba(172, 203, 178, 0.65);
   box-shadow:
-    0 0 24px rgba(244, 143, 177, 0.45),
-    0 4px 20px rgba(236, 72, 153, 0.2);
+    0 0 20px rgba(184, 215, 191, 0.4),
+    0 4px 18px rgba(84, 112, 95, 0.18);
   transform: scale(1.06);
 }
 
@@ -324,8 +285,8 @@ select {
 
 .full-preview-spinner-ring {
   animation: full-preview-spin 0.85s linear infinite;
-  border: 3px solid rgba(167, 243, 208, 0.35);
-  border-top-color: rgba(34, 197, 94, 0.9);
+  border: 3px solid rgba(172, 212, 184, 0.4);
+  border-top-color: rgba(107, 156, 121, 0.92);
   border-radius: 50%;
 }
 
@@ -610,8 +571,8 @@ select {
   height: 0.625rem;
   overflow: hidden;
   border-radius: 9999px;
-  background: rgba(224, 242, 254, 0.85);
-  box-shadow: inset 0 1px 2px rgba(14, 116, 144, 0.12);
+  background: rgba(226, 238, 230, 0.85);
+  box-shadow: inset 0 1px 2px rgba(84, 112, 95, 0.12);
 }
 
 .admin-sync-progress-bar {
@@ -620,10 +581,10 @@ select {
   border-radius: 9999px;
   background: linear-gradient(
     90deg,
-    rgba(125, 211, 252, 0.35) 0%,
-    rgba(34, 211, 238, 0.95) 45%,
-    rgba(56, 189, 248, 0.85) 55%,
-    rgba(125, 211, 252, 0.35) 100%
+    rgba(176, 213, 186, 0.35) 0%,
+    rgba(140, 189, 156, 0.95) 45%,
+    rgba(154, 198, 178, 0.85) 55%,
+    rgba(176, 213, 186, 0.35) 100%
   );
   background-size: 200% 100%;
   animation: admin-sync-shimmer 1.35s ease-in-out infinite;
