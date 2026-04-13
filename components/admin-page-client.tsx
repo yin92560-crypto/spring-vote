@@ -265,7 +265,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
               priority
             />
           </div>
-          <h1 className="font-display text-2xl text-stone-950 sm:text-3xl">作品管理</h1>
+          <h1 className="font-display text-2xl font-semibold text-[#4a2f22] sm:text-3xl">作品管理</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {onLogout && (
@@ -287,7 +287,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
       </div>
 
       <div className="glass-panel mb-6 rounded-xl px-4 py-3 text-sm text-stone-900/85">
-        <label htmlFor="admin-secret" className="mb-1 block font-medium">
+        <label htmlFor="admin-secret" className="mb-1 block font-semibold text-[#4a2f22]">
           管理密钥（可选）
         </label>
         <input
@@ -297,7 +297,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
           value={adminSecret}
           onChange={(e) => setAdminSecret(e.target.value)}
           placeholder="请输入管理员口令"
-          className="w-full rounded-lg border border-white/50 bg-white/40 px-3 py-2 text-sm outline-none ring-stone-300/40 focus:ring-2"
+          className="w-full rounded-lg border border-green-200 bg-white/50 px-3 py-2 text-sm text-[#4a2f22] placeholder:text-stone-500/70 outline-none ring-green-200/50 focus:ring-2"
         />
       </div>
 
@@ -317,7 +317,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
         <div>
           <label
             htmlFor="title-prefix"
-            className="mb-2 block text-sm font-medium text-stone-900"
+            className="mb-2 block text-sm font-semibold text-[#4a2f22]"
           >
             作品名称前缀（可选）
           </label>
@@ -326,7 +326,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
             value={titlePrefix}
             onChange={(e) => setTitlePrefix(e.target.value)}
             placeholder="选填"
-            className="w-full rounded-xl border border-white/60 bg-white/50 px-4 py-3 text-stone-950 placeholder:text-stone-400/80 outline-none ring-stone-300/50 backdrop-blur-sm focus:ring-2"
+            className="w-full rounded-xl border border-green-200 bg-white/50 px-4 py-3 text-[#4a2f22] placeholder:text-stone-500/75 outline-none ring-green-200/50 backdrop-blur-sm focus:ring-2"
           />
         </div>
 
@@ -334,7 +334,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
           <div>
             <label
               htmlFor="author-name"
-              className="mb-2 block text-sm font-medium text-stone-900"
+              className="mb-2 block text-sm font-semibold text-[#4a2f22]"
             >
               参赛人姓名
             </label>
@@ -343,13 +343,13 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
               value={authorName}
               onChange={(e) => setAuthorName(e.target.value)}
               placeholder="请输入参赛人姓名"
-              className="w-full rounded-xl border border-emerald-200/60 bg-white/55 px-4 py-3 text-sm text-stone-950 placeholder:text-stone-400/70 outline-none ring-emerald-200/40 backdrop-blur-sm focus:border-emerald-300/70 focus:ring-2"
+              className="w-full rounded-xl border border-green-200 bg-white/50 px-4 py-3 text-sm font-semibold text-[#4a2f22] placeholder:text-stone-500/75 outline-none ring-green-200/50 backdrop-blur-sm focus:border-green-300 focus:ring-2"
             />
           </div>
           <div>
             <label
               htmlFor="work-title"
-              className="mb-2 block text-sm font-medium text-stone-900"
+              className="mb-2 block text-sm font-semibold text-[#4a2f22]"
             >
               作品名称
             </label>
@@ -358,7 +358,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
               value={workTitle}
               onChange={(e) => setWorkTitle(e.target.value)}
               placeholder="请输入作品名称（可选）"
-              className="w-full rounded-xl border border-emerald-200/60 bg-white/55 px-4 py-3 text-sm text-stone-950 placeholder:text-stone-400/70 outline-none ring-emerald-200/40 backdrop-blur-sm focus:border-emerald-300/70 focus:ring-2"
+              className="w-full rounded-xl border border-green-200 bg-white/50 px-4 py-3 text-sm font-semibold text-[#4a2f22] placeholder:text-stone-500/75 outline-none ring-green-200/50 backdrop-blur-sm focus:border-green-300 focus:ring-2"
             />
           </div>
         </div>
@@ -375,7 +375,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
         <div>
           <label
             htmlFor="admin-files"
-            className="mb-2 block text-sm font-medium text-stone-900"
+            className="mb-2 block text-sm font-semibold text-[#4a2f22]"
           >
             上传图片（支持多选）
           </label>
@@ -479,7 +479,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
 
       <section>
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-lg font-medium text-stone-950">已发布作品</h2>
+          <h2 className="text-lg font-semibold text-[#4a2f22]">已发布作品</h2>
           <div className="flex flex-wrap items-center gap-3">
             {works.length > 0 && (
               <button
@@ -526,11 +526,11 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
                       <span className="shrink-0 rounded-md bg-gradient-to-r from-emerald-200/90 to-stone-100/90 px-2 py-0.5 font-mono text-xs font-semibold tabular-nums text-stone-950">
                         {w.displayNo}
                       </span>
-                      <p className="truncate font-medium text-stone-950">
+                      <p className="truncate font-semibold text-[#4a2f22]">
                         {w.title}
                       </p>
                     </div>
-                    <p className="mt-1 text-sm text-stone-800/70">
+                    <p className="mt-1 text-sm font-semibold text-[#4a2f22]/85">
                       得票 {w.votes}
                     </p>
                   </div>

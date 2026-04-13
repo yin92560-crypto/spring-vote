@@ -51,6 +51,12 @@ export default function RootLayout({
           <span className="petal" />
           <span className="petal" />
           <span className="petal" />
+          <span className="petal" />
+          <span className="petal" />
+          <span className="petal" />
+          <span className="petal" />
+          <span className="petal" />
+          <span className="petal" />
         </div>
         <Providers>
           <div className="relative z-[3] flex min-h-full flex-col">{children}</div>

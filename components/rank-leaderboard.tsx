@@ -138,7 +138,7 @@ function RestRow({ work, rank }: { work: Work; rank: number }) {
     <li>
       <Link
         href={`/?id=${work.displayNo}`}
-        className="glass-panel group flex items-center gap-4 rounded-2xl px-4 py-3 shadow-sm transition hover:shadow-md sm:gap-5 sm:px-5 sm:py-4"
+        className="glass-panel group flex items-center gap-4 rounded-2xl px-4 py-3 shadow-sm transition hover:-translate-y-1 hover:bg-white/95 hover:backdrop-blur-xl hover:shadow-2xl sm:gap-5 sm:px-5 sm:py-4"
       >
         <span
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-stone-200/90 to-teal-100/80 font-mono text-lg font-bold tabular-nums text-stone-950 shadow-inner ring-1 ring-white/60 sm:h-12 sm:w-12 sm:text-xl"

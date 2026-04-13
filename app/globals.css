@@ -4,6 +4,7 @@
   --background: #eef7ee;
   --foreground: #4d443d;
   --title-color: #6a3550;
+  --ink-wood: #4a2f22;
   --accent-green: #b7d9b4;
   --accent-blue: #c8e5ee;
   --nav-safe: 5.25rem;
@@ -86,6 +87,7 @@ body::after {
     inset 0 1px 2px rgba(255, 249, 239, 0.66),
     0 2px 8px rgba(171, 138, 102, 0.2);
   animation: petal-fall 13s linear infinite;
+  will-change: transform;
 }
 
 .petal-fall-layer .petal::before {
@@ -111,108 +113,150 @@ body::after {
 
 @keyframes petal-fall {
   0% {
-    transform: translate3d(-3vw, -10vh, 0) rotate(-8deg);
+    transform: translate3d(-14vw, -14vh, 0) rotate(-14deg);
     opacity: 0;
   }
-  8% {
-    opacity: 0.54;
+  12% {
+    opacity: 0.56;
   }
-  30% {
-    transform: translate3d(5vw, 22vh, 0) rotate(58deg);
+  28% {
+    transform: translate3d(8vw, 24vh, 0) rotate(64deg);
   }
-  55% {
-    transform: translate3d(-4vw, 50vh, 0) rotate(128deg);
+  52% {
+    transform: translate3d(2vw, 52vh, 0) rotate(130deg);
   }
-  80% {
-    transform: translate3d(7vw, 82vh, 0) rotate(212deg);
-    opacity: 0.42;
+  76% {
+    transform: translate3d(12vw, 80vh, 0) rotate(206deg);
+    opacity: 0.44;
   }
   100% {
-    transform: translate3d(-2vw, 112vh, 0) rotate(264deg);
+    transform: translate3d(20vw, 114vh, 0) rotate(278deg);
     opacity: 0;
   }
 }
 
 .petal-fall-layer .petal:nth-child(1) {
-  left: 3%;
-  animation-duration: 14.2s;
+  left: -6%;
+  animation-duration: 14.4s;
   animation-delay: -2.8s;
-  transform-origin: 45% -10%;
+  transform-origin: 46% -8%;
 }
 .petal-fall-layer .petal:nth-child(2) {
-  left: 11%;
+  left: 1%;
   width: 10px;
   height: 16px;
-  animation-duration: 12.4s;
+  animation-duration: 12.6s;
   animation-delay: -6.1s;
 }
 .petal-fall-layer .petal:nth-child(3) {
-  left: 19%;
+  left: 8%;
   width: 14px;
   height: 22px;
-  animation-duration: 15.1s;
+  animation-duration: 15.3s;
   animation-delay: -9.3s;
 }
 .petal-fall-layer .petal:nth-child(4) {
-  left: 28%;
+  left: 14%;
   width: 11px;
   height: 17px;
-  animation-duration: 11.7s;
-  animation-delay: -4.4s;
+  animation-duration: 11.9s;
+  animation-delay: -4.6s;
 }
 .petal-fall-layer .petal:nth-child(5) {
-  left: 37%;
-  animation-duration: 13.6s;
+  left: 21%;
+  animation-duration: 13.8s;
   animation-delay: -8.6s;
 }
 .petal-fall-layer .petal:nth-child(6) {
-  left: 46%;
+  left: 27%;
   width: 15px;
   height: 23px;
   animation-duration: 16.1s;
   animation-delay: -1.9s;
 }
 .petal-fall-layer .petal:nth-child(7) {
-  left: 56%;
+  left: 33%;
   width: 9px;
   height: 14px;
-  animation-duration: 12.8s;
-  animation-delay: -10.8s;
+  animation-duration: 12.9s;
+  animation-delay: -10.6s;
 }
 .petal-fall-layer .petal:nth-child(8) {
-  left: 64%;
+  left: 40%;
   width: 13px;
   height: 20px;
-  animation-duration: 14.9s;
+  animation-duration: 15s;
   animation-delay: -5.7s;
 }
 .petal-fall-layer .petal:nth-child(9) {
-  left: 72%;
+  left: 46%;
   width: 11px;
   height: 18px;
-  animation-duration: 11.9s;
-  animation-delay: -7.5s;
+  animation-duration: 12.1s;
+  animation-delay: -7.4s;
 }
 .petal-fall-layer .petal:nth-child(10) {
-  left: 80%;
+  left: 52%;
   width: 16px;
   height: 24px;
-  animation-duration: 15.8s;
-  animation-delay: -3.2s;
+  animation-duration: 15.9s;
+  animation-delay: -3.4s;
 }
 .petal-fall-layer .petal:nth-child(11) {
-  left: 88%;
+  left: 59%;
   width: 10px;
   height: 15px;
-  animation-duration: 13.1s;
-  animation-delay: -11.4s;
+  animation-duration: 13.2s;
+  animation-delay: -11.2s;
 }
 .petal-fall-layer .petal:nth-child(12) {
-  left: 95%;
+  left: 65%;
   width: 14px;
   height: 21px;
-  animation-duration: 16.7s;
-  animation-delay: -6.9s;
+  animation-duration: 16.5s;
+  animation-delay: -6.7s;
+}
+.petal-fall-layer .petal:nth-child(13) {
+  left: 71%;
+  width: 12px;
+  height: 19px;
+  animation-duration: 12.7s;
+  animation-delay: -2.4s;
+}
+.petal-fall-layer .petal:nth-child(14) {
+  left: 76%;
+  width: 9px;
+  height: 15px;
+  animation-duration: 14.8s;
+  animation-delay: -8.2s;
+}
+.petal-fall-layer .petal:nth-child(15) {
+  left: 81%;
+  width: 15px;
+  height: 22px;
+  animation-duration: 16.9s;
+  animation-delay: -4.1s;
+}
+.petal-fall-layer .petal:nth-child(16) {
+  left: 86%;
+  width: 11px;
+  height: 17px;
+  animation-duration: 13.4s;
+  animation-delay: -10.2s;
+}
+.petal-fall-layer .petal:nth-child(17) {
+  left: 91%;
+  width: 10px;
+  height: 16px;
+  animation-duration: 15.6s;
+  animation-delay: -1.5s;
+}
+.petal-fall-layer .petal:nth-child(18) {
+  left: 96%;
+  width: 14px;
+  height: 22px;
+  animation-duration: 17.2s;
+  animation-delay: -6.3s;
 }
 
 @media (max-width: 768px) {
@@ -247,12 +291,13 @@ select {
 }
 
 .glass-panel {
-  background: rgba(255, 251, 241, 0.7);
+  background: rgba(255, 255, 255, 0.85);
   border: 1px solid rgba(170, 208, 162, 0.5);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow:
-    0 4px 16px rgba(78, 97, 85, 0.07),
+    0 24px 48px rgba(50, 38, 28, 0.22),
+    0 10px 28px rgba(50, 38, 28, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.42);
 }
 
@@ -309,8 +354,14 @@ select {
 
 .btn-sakura:hover:not(:disabled) {
   filter: brightness(1.03);
-  box-shadow: 0 6px 22px rgba(130, 108, 84, 0.3);
+  box-shadow:
+    0 6px 22px rgba(130, 108, 84, 0.3),
+    0 0 15px rgba(251, 191, 36, 0.4);
   transform: translateY(-1px);
+}
+
+.btn-sakura:active:not(:disabled) {
+  transform: scale(0.95);
 }
 
 /* 胶囊投票按钮 */
@@ -338,12 +389,13 @@ select {
   filter: brightness(1.03);
   box-shadow:
     0 6px 24px rgba(147, 113, 75, 0.3),
+    0 0 15px rgba(251, 191, 36, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
   transform: translateY(-1px) scale(1.02);
 }
 
 .vote-pill-btn:active:not(:disabled) {
-  transform: scale(0.98);
+  transform: scale(0.95);
 }
 
 .vote-pill-btn:disabled {

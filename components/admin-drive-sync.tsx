@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -76,12 +76,12 @@ export function AdminDriveSync({ adminSecret, titlePrefix }: Props) {
 
   return (
     <section className="glass-panel mb-10 rounded-3xl border border-emerald-200/50 bg-gradient-to-br from-emerald-50/45 via-white/50 to-cyan-50/35 p-6 shadow-sm backdrop-blur-md sm:p-8">
-      <h2 className="font-display text-xl font-medium text-teal-950">
+      <h2 className="font-display text-xl font-semibold text-[#4a2f22]">
         云文档同步
       </h2>
-      <p className="mt-2 text-sm leading-relaxed text-teal-900/80">
+      <p className="mt-2 text-sm font-semibold leading-relaxed text-[#4a2f22]/80">
         支持{" "}
-        <strong className="font-semibold text-teal-950">Google Drive</strong>
+        <strong className="font-semibold text-[#4a2f22]">Google Drive</strong>
         。请将文件夹共享给服务账号邮箱（查看者即可），再粘贴链接同步。
       </p>
 
@@ -89,7 +89,7 @@ export function AdminDriveSync({ adminSecret, titlePrefix }: Props) {
         <div>
           <label
             htmlFor="drive-folder-url"
-            className="mb-2 block text-sm font-medium text-teal-950"
+            className="mb-2 block text-sm font-semibold text-[#4a2f22]"
           >
             文件夹链接或 ID
           </label>
@@ -100,7 +100,7 @@ export function AdminDriveSync({ adminSecret, titlePrefix }: Props) {
             onChange={(e) => setFolderUrl(e.target.value)}
             disabled={syncing}
             placeholder="https://drive.google.com/drive/folders/xxxxxxxxxxxxx"
-            className="w-full rounded-xl border border-emerald-200/60 bg-white/55 px-4 py-3 text-sm text-teal-950 placeholder:text-teal-500/60 outline-none ring-emerald-300/40 backdrop-blur-sm transition focus:border-emerald-300/70 focus:ring-2 disabled:opacity-60"
+            className="w-full rounded-xl border border-green-200 bg-white/50 px-4 py-3 text-sm font-semibold text-[#4a2f22] placeholder:text-stone-500/70 outline-none ring-green-200/50 backdrop-blur-sm transition focus:border-green-300 focus:ring-2 disabled:opacity-60"
             autoComplete="off"
           />
         </div>

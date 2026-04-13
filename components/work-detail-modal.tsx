@@ -333,10 +333,10 @@ export function WorkDetailModal({
                   aria-live="polite"
                   aria-busy="true"
                 >
-                  <div
-                    className="full-preview-spinner-ring h-12 w-12 sm:h-14 sm:w-14"
-                    role="status"
-                  />
+                  <div className="spring-loading-mark" role="status" aria-hidden>
+                    <span className="spring-loading-leaf">🍃</span>
+                    <span className="spring-loading-sprout" />
+                  </div>
                   <span className="text-sm text-amber-100/90">{t("loadingHd")}</span>
                 </div>
               )}

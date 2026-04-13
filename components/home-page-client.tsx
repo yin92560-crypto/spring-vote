@@ -363,7 +363,7 @@ function HomePageContent() {
                 <ul className="mt-7 grid gap-5 sm:mt-8 sm:gap-7 sm:grid-cols-2 lg:grid-cols-3">
                   {filteredWorks.map((w) => (
                     <li key={w.id}>
-                      <article className="glass-panel group flex flex-col overflow-hidden rounded-[1.6rem] shadow-sm transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-md">
+                      <article className="glass-panel group flex flex-col overflow-hidden rounded-[1.6rem] shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:bg-white/95 hover:backdrop-blur-xl hover:shadow-2xl">
                         <button
                           type="button"
                           onClick={() => openDetail(w)}
@@ -394,10 +394,10 @@ function HomePageContent() {
                         </button>
                         <div className="flex items-center justify-between gap-3 px-4 py-4">
                           <div className="min-w-0">
-                            <p className="truncate font-semibold text-stone-800">
+                            <p className="truncate font-semibold text-[#4a2f22]">
                               {w.workTitle || w.title}
                             </p>
-                            <p className="mt-0.5 truncate text-xs text-stone-700/80">
+                            <p className="mt-0.5 truncate text-xs font-semibold text-[#4a2f22]/80">
                               {t("authorLabel")}：{w.authorName || "-"}
                             </p>
                             <p className="mt-1 text-sm text-stone-700/85">

@@ -84,10 +84,10 @@ export function AdminFeishuSync({
 
   return (
     <section className="glass-panel mb-10 rounded-3xl border border-emerald-200/50 bg-gradient-to-br from-emerald-50/45 via-white/50 to-cyan-50/35 p-6 shadow-sm backdrop-blur-md sm:p-8">
-      <h2 className="font-display text-xl font-medium text-teal-950">
+      <h2 className="font-display text-xl font-semibold text-[#4a2f22]">
         飞书一键导入
       </h2>
-      <p className="mt-2 text-sm leading-relaxed text-teal-900/80">
+      <p className="mt-2 text-sm font-semibold leading-relaxed text-[#4a2f22]/80">
         从飞书多维表格读取「附件」列中的图片，写入作品库。请确保应用已开通多维表格与云文档相关权限。
       </p>
 
@@ -95,7 +95,7 @@ export function AdminFeishuSync({
         <div>
           <label
             htmlFor="feishu-table-url"
-            className="mb-2 block text-sm font-medium text-teal-950"
+            className="mb-2 block text-sm font-semibold text-[#4a2f22]"
           >
             多维表格链接
           </label>
@@ -106,7 +106,7 @@ export function AdminFeishuSync({
             onChange={(e) => setTableUrl(e.target.value)}
             disabled={syncing}
             placeholder="https://xxx.feishu.cn/base/xxxxxxxxxx?table=tblxxxx"
-            className="w-full rounded-xl border border-emerald-200/60 bg-white/55 px-4 py-3 text-sm text-teal-950 placeholder:text-teal-500/60 outline-none ring-emerald-300/40 backdrop-blur-sm transition focus:border-emerald-300/70 focus:ring-2 disabled:opacity-60"
+            className="w-full rounded-xl border border-green-200 bg-white/50 px-4 py-3 text-sm font-semibold text-[#4a2f22] placeholder:text-stone-500/70 outline-none ring-green-200/50 backdrop-blur-sm transition focus:border-green-300 focus:ring-2 disabled:opacity-60"
             autoComplete="off"
           />
         </div>
