@@ -62,35 +62,46 @@ function SpringFooter() {
       </svg>
 
       <div className="relative z-[2] border-t border-emerald-200/35 bg-gradient-to-b from-transparent via-[#e8f5e9]/55 to-[#eef7ee]/92 px-6 pb-14 pt-8 text-center backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl flex-row flex-wrap items-center justify-center gap-x-3 gap-y-2 bg-transparent sm:gap-x-5">
-          <Image
-            src="/footer-mascot-1.png"
-            alt="春日小人装饰"
-            width={90}
-            height={120}
-            className="h-[84px] w-auto bg-transparent mix-blend-multiply sm:h-[112px]"
-          />
-          <Image
-            src="/footer-mascot-2.png"
-            alt="春日小人装饰"
-            width={90}
-            height={120}
-            className="h-[92px] w-auto bg-transparent mix-blend-multiply sm:h-[122px]"
-          />
-          <Image
-            src="/footer-mascot-3.png"
-            alt="春日小人装饰"
-            width={90}
-            height={120}
-            className="h-[84px] w-auto bg-transparent mix-blend-multiply sm:h-[112px]"
-          />
-          <p className="bg-transparent text-sm font-medium text-stone-700/85">
+        <div className="mx-auto flex max-w-6xl flex-row flex-wrap items-center justify-center gap-x-3 gap-y-2 bg-transparent sm:gap-x-4">
+          <div className="flex items-end gap-2 bg-transparent sm:gap-3">
+            <Image
+              src="/footer-mascot-1.png"
+              alt="春日小人装饰"
+              width={90}
+              height={120}
+              className="h-[78px] w-auto bg-transparent opacity-90 mix-blend-color-burn sm:h-[104px]"
+            />
+            <Image
+              src="/footer-mascot-2.png"
+              alt="春日小人装饰"
+              width={90}
+              height={120}
+              className="h-[86px] w-auto bg-transparent opacity-90 mix-blend-color-burn sm:h-[114px]"
+            />
+          </div>
+          <p className="bg-transparent px-1 text-sm font-medium text-stone-700/85">
             <span className="text-emerald-900/85">{t("footerTagline")}</span>
             <span className="mx-2 text-emerald-800/35" aria-hidden>
               |
             </span>
             {t("footerCopyright")}
           </p>
+          <div className="flex items-end gap-2 bg-transparent sm:gap-3">
+            <Image
+              src="/footer-mascot-3.png"
+              alt="春日小人装饰"
+              width={90}
+              height={120}
+              className="h-[78px] w-auto bg-transparent opacity-90 mix-blend-color-burn sm:h-[104px]"
+            />
+            <Image
+              src="/footer-mascot-4.png"
+              alt="春日小人装饰"
+              width={90}
+              height={120}
+              className="h-[90px] w-auto bg-transparent opacity-90 mix-blend-color-burn sm:h-[120px]"
+            />
+          </div>
         </div>
       </div>
     </footer>

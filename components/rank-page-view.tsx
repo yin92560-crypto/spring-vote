@@ -87,35 +87,46 @@ export function RankPageView({ rankResult }: { rankResult: RankResult }) {
         )}
 
         <footer className="mt-20 border-t border-emerald-200/35 bg-gradient-to-b from-transparent via-emerald-50/20 to-white/30 py-8 text-center text-sm backdrop-blur-[2px]">
-          <div className="mx-auto flex max-w-5xl flex-row flex-wrap items-center justify-center gap-x-3 gap-y-2 bg-transparent sm:gap-x-5">
-            <Image
-              src="/footer-mascot-1.png"
-              alt="春日小人装饰"
-              width={90}
-              height={120}
-              className="h-[84px] w-auto bg-transparent mix-blend-multiply sm:h-[112px]"
-            />
-            <Image
-              src="/footer-mascot-2.png"
-              alt="春日小人装饰"
-              width={90}
-              height={120}
-              className="h-[92px] w-auto bg-transparent mix-blend-multiply sm:h-[122px]"
-            />
-            <Image
-              src="/footer-mascot-3.png"
-              alt="春日小人装饰"
-              width={90}
-              height={120}
-              className="h-[84px] w-auto bg-transparent mix-blend-multiply sm:h-[112px]"
-            />
-            <p className="bg-transparent text-stone-800/75">
+          <div className="mx-auto flex max-w-6xl flex-row flex-wrap items-center justify-center gap-x-3 gap-y-2 bg-transparent sm:gap-x-4">
+            <div className="flex items-end gap-2 bg-transparent sm:gap-3">
+              <Image
+                src="/footer-mascot-1.png"
+                alt="春日小人装饰"
+                width={90}
+                height={120}
+                className="h-[78px] w-auto bg-transparent opacity-90 mix-blend-color-burn sm:h-[104px]"
+              />
+              <Image
+                src="/footer-mascot-2.png"
+                alt="春日小人装饰"
+                width={90}
+                height={120}
+                className="h-[86px] w-auto bg-transparent opacity-90 mix-blend-color-burn sm:h-[114px]"
+              />
+            </div>
+            <p className="bg-transparent px-1 text-stone-800/75">
               <span className="font-medium text-emerald-900/85">{t("footerTagline")}</span>
               <span className="mx-2 text-emerald-800/35" aria-hidden>
                 |
               </span>
               {t("footerCopyright")}
             </p>
+            <div className="flex items-end gap-2 bg-transparent sm:gap-3">
+              <Image
+                src="/footer-mascot-3.png"
+                alt="春日小人装饰"
+                width={90}
+                height={120}
+                className="h-[78px] w-auto bg-transparent opacity-90 mix-blend-color-burn sm:h-[104px]"
+              />
+              <Image
+                src="/footer-mascot-4.png"
+                alt="春日小人装饰"
+                width={90}
+                height={120}
+                className="h-[90px] w-auto bg-transparent opacity-90 mix-blend-color-burn sm:h-[120px]"
+              />
+            </div>
           </div>
         </footer>
       </div>

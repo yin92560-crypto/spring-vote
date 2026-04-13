@@ -86,7 +86,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
   zh: {
     title: "捕捉春日计划",
     subtitle: "2026华勤全球员工春日摄影大赛",
-    heroDesc: "用镜头定格全球华勤人的春日瞬间。",
+    heroDesc: "用镜头定格春日，谁藏了最美的春天？。",
     remainingVotes: "今日剩余票数",
     rank: "排行榜",
     admin: "管理后台",

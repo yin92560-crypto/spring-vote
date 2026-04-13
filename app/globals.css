@@ -23,7 +23,7 @@ body {
   font-weight: 400;
   background-image: url("/spring-bg.png");
   background-position: right 5% bottom 10%;
-  background-size: 60% auto;
+  background-size: 40% auto;
   background-repeat: no-repeat;
   background-attachment: fixed;
 }
@@ -31,7 +31,7 @@ body {
 @media (max-width: 768px) {
   body {
     background-position: right 8% bottom 8%;
-    background-size: 95% auto;
+    background-size: 40% auto;
     background-attachment: scroll;
   }
 }
