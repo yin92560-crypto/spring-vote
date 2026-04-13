@@ -88,6 +88,20 @@ export function RankPageView({ rankResult }: { rankResult: RankResult }) {
 
         <footer className="mt-20 border-t border-emerald-200/35 bg-gradient-to-b from-transparent via-emerald-50/20 to-white/30 py-8 text-center text-sm backdrop-blur-[2px]">
           <div className="mx-auto flex max-w-6xl flex-row flex-wrap items-center justify-center gap-x-3 gap-y-2 bg-transparent sm:gap-x-4">
+            <Image
+              src="/footer-mascot-a.png"
+              alt="页脚装饰"
+              width={82}
+              height={110}
+              className="h-[88px] w-auto bg-transparent opacity-95 mix-blend-screen"
+            />
+            <Image
+              src="/footer-mascot-b.png"
+              alt="页脚装饰"
+              width={82}
+              height={110}
+              className="h-[88px] w-auto bg-transparent opacity-95 mix-blend-screen"
+            />
             <p className="bg-transparent px-1 text-stone-800/75">
               <span className="font-medium text-emerald-900/85">{t("footerTagline")}</span>
               <span className="mx-2 text-emerald-800/35" aria-hidden>

@@ -63,6 +63,20 @@ function SpringFooter() {
 
       <div className="relative z-[2] border-t border-emerald-200/35 bg-gradient-to-b from-transparent via-[#e8f5e9]/55 to-[#eef7ee]/92 px-6 pb-14 pt-8 text-center backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl flex-row flex-wrap items-center justify-center gap-x-3 gap-y-2 bg-transparent sm:gap-x-4">
+          <Image
+            src="/footer-mascot-a.png"
+            alt="页脚装饰"
+            width={82}
+            height={110}
+            className="h-[88px] w-auto bg-transparent opacity-95 mix-blend-screen"
+          />
+          <Image
+            src="/footer-mascot-b.png"
+            alt="页脚装饰"
+            width={82}
+            height={110}
+            className="h-[88px] w-auto bg-transparent opacity-95 mix-blend-screen"
+          />
           <p className="bg-transparent px-1 text-sm font-medium text-stone-700/85">
             <span className="text-emerald-900/85">{t("footerTagline")}</span>
             <span className="mx-2 text-emerald-800/35" aria-hidden>
@@ -267,20 +281,22 @@ function HomePageContent() {
 
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-10 pt-[calc(var(--nav-safe)+1.15rem)] sm:px-6 sm:pt-[calc(var(--nav-safe)+1.25rem)]">
         <section className="text-center">
-          <h1 className="font-display text-[1.95rem] font-normal leading-[1.2] tracking-[0.01em] sm:text-5xl sm:leading-[1.18]">
-            <span className="text-gradient-spring-title">{t("subtitle")}</span>
-          </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-pretty text-base leading-relaxed text-stone-800/75">
-            {t("heroDesc")}
-          </p>
-          <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-stone-700/85">
-            投票规则：每人每日可投3票，快来为心仪作品助力吧
-          </p>
-          <p className="mt-6 text-sm font-medium text-stone-800/85">
-            {t("remainingVotes")}{" "}
-            <span className="tabular-nums text-lg text-stone-800">{remaining}</span>
-            <span className="text-stone-800/55"> / 3</span>
-          </p>
+          <div className="mx-auto max-w-3xl rounded-3xl bg-white/20 px-4 py-4 shadow-[0_12px_28px_rgba(0,0,0,0.16)] backdrop-blur-sm sm:px-8 sm:py-6">
+            <h1 className="font-display text-[1.95rem] font-semibold leading-[1.2] tracking-[0.01em] text-white [text-shadow:0_2px_10px_rgba(255,250,235,0.85),0_1px_2px_rgba(0,0,0,0.35)] sm:text-5xl sm:leading-[1.18]">
+              <span className="text-rose-50">{t("subtitle")}</span>
+            </h1>
+            <p className="mx-auto mt-5 max-w-2xl text-pretty text-base font-semibold leading-relaxed text-white drop-shadow-md">
+              {t("heroDesc")}
+            </p>
+            <p className="mx-auto mt-2 max-w-2xl text-sm font-semibold leading-relaxed text-white drop-shadow-md">
+              投票规则：每人每日可投3票，快来为心仪作品助力吧
+            </p>
+            <p className="mt-6 text-sm font-semibold text-white drop-shadow-md">
+              {t("remainingVotes")}{" "}
+              <span className="tabular-nums text-lg text-white">{remaining}</span>
+              <span className="text-white/90"> / 3</span>
+            </p>
+          </div>
         </section>
 
         {toast && (
@@ -329,7 +345,7 @@ function HomePageContent() {
                 <label htmlFor="work-search" className="sr-only">
                   {t("searchAria")}
                 </label>
-                <div className="search-glow glass-panel flex items-center gap-3 rounded-2xl border border-emerald-100/45 bg-gradient-to-r from-white/55 via-emerald-50/25 to-stone-50/40 px-4 py-3 backdrop-blur-md">
+                <div className="search-glow glass-panel flex items-center gap-3 rounded-2xl border border-[#4a2f22]/35 bg-gradient-to-r from-white/75 via-emerald-50/45 to-stone-50/55 px-4 py-3 shadow-[0_6px_18px_rgba(74,47,34,0.26)] backdrop-blur-md">
                   <span
                     className="shrink-0 text-lg text-stone-400/90"
                     aria-hidden
