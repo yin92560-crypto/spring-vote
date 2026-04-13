@@ -41,7 +41,7 @@ export function RankPageView({ rankResult }: { rankResult: RankResult }) {
             />
             <Link
               href="/"
-              className="inline-flex min-h-9 items-center justify-center rounded-full border border-white/55 bg-white/45 px-3 py-2 text-xs font-medium text-stone-900 shadow-sm backdrop-blur-sm transition-all duration-300 ease-out hover:bg-white/70 sm:px-4 sm:text-sm"
+              className="inline-flex min-h-9 items-center justify-center rounded-full border border-emerald-200/70 bg-amber-50/75 px-3 py-2 text-xs font-medium text-stone-800 shadow-sm backdrop-blur-sm transition-all duration-300 ease-out hover:bg-amber-50/95 sm:px-4 sm:text-sm"
             >
               ← {t("backHome")}
             </Link>
@@ -52,7 +52,7 @@ export function RankPageView({ rankResult }: { rankResult: RankResult }) {
               🏆
             </span>
             <div>
-              <p className="text-sm font-medium text-stone-900/80">{t("title")}</p>
+              <p className="text-sm font-medium text-stone-700/85">{t("title")}</p>
               <p className="text-xs text-stone-800/60">{t("rankSyncHint")}</p>
             </div>
           </div>
@@ -60,7 +60,7 @@ export function RankPageView({ rankResult }: { rankResult: RankResult }) {
             <LanguageSwitcher />
             <Link
               href="/admin"
-              className="btn-sakura inline-flex min-h-9 items-center justify-center rounded-full px-4 py-2 text-xs font-medium text-white shadow-sm sm:px-5 sm:py-2.5 sm:text-sm"
+              className="inline-flex min-h-9 items-center justify-center rounded-full border border-emerald-200/70 bg-amber-50/72 px-4 py-2 text-xs font-medium text-stone-700 shadow-sm backdrop-blur-sm transition-colors hover:bg-amber-50/95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200/55 sm:px-5 sm:py-2.5 sm:text-sm"
             >
               {t("admin")}
             </Link>
@@ -73,14 +73,14 @@ export function RankPageView({ rankResult }: { rankResult: RankResult }) {
           <h1 className="font-display text-4xl font-normal leading-[1.18] tracking-[0.01em] sm:text-5xl">
             <span className="text-gradient-spring-title">{t("rankPageTitle")}</span>
           </h1>
-          <p className="mx-auto mt-3 max-w-2xl text-pretty text-base leading-relaxed text-stone-900/80 sm:text-lg">
+          <p className="mx-auto mt-3 max-w-2xl text-pretty text-base leading-relaxed text-stone-700/85 sm:text-lg">
             {t("rankPageDesc")}
           </p>
         </section>
 
         {!rankResult.ok ? (
           <div className="glass-panel mt-12 rounded-3xl px-8 py-14 text-center">
-            <p className="text-lg text-stone-900/90">{t("rankLoadError")}</p>
+            <p className="text-lg text-stone-800/90">{t("rankLoadError")}</p>
             <p className="mt-2 text-sm text-stone-800/70">{rankResult.error}</p>
             <Link
               href="/"
@@ -96,6 +96,29 @@ export function RankPageView({ rankResult }: { rankResult: RankResult }) {
         )}
 
         <footer className="mt-20 border-t border-emerald-200/35 bg-gradient-to-b from-transparent via-emerald-50/20 to-white/30 py-8 text-center text-sm backdrop-blur-[2px]">
+          <div className="mx-auto mb-4 flex max-w-xl items-end justify-center gap-2 sm:gap-4">
+            <Image
+              src="/footer-mascot-1.png"
+              alt="春日小人装饰"
+              width={90}
+              height={120}
+              className="h-[84px] w-auto drop-shadow-[0_8px_16px_rgba(78,95,83,0.2)] sm:h-[112px]"
+            />
+            <Image
+              src="/footer-mascot-2.png"
+              alt="春日小人装饰"
+              width={90}
+              height={120}
+              className="h-[92px] w-auto -translate-y-1 drop-shadow-[0_10px_18px_rgba(78,95,83,0.2)] sm:h-[122px]"
+            />
+            <Image
+              src="/footer-mascot-3.png"
+              alt="春日小人装饰"
+              width={90}
+              height={120}
+              className="h-[84px] w-auto drop-shadow-[0_8px_16px_rgba(78,95,83,0.2)] sm:h-[112px]"
+            />
+          </div>
           <p className="text-stone-800/75">
             <span className="font-medium text-emerald-900/85">{t("footerTagline")}</span>
             <span className="mx-2 text-emerald-800/35" aria-hidden>

@@ -17,7 +17,7 @@ export function LanguageSwitcher({ className = "" }: { className?: string }) {
         id={id}
         value={locale}
         onChange={(e) => setLocale(e.target.value as Locale)}
-        className="appearance-none rounded-full border border-emerald-200/55 bg-white/50 py-2 pl-2.5 pr-7 text-xs font-medium text-stone-900 shadow-sm backdrop-blur-md transition-all duration-300 ease-out outline-none hover:bg-white/75 focus:border-emerald-300/65 focus:ring-2 focus:ring-emerald-200/45 sm:pl-3 sm:pr-8 sm:text-sm"
+        className="appearance-none rounded-full border border-emerald-200/70 bg-amber-50/70 py-2 pl-2.5 pr-7 text-xs font-medium text-stone-800 shadow-sm backdrop-blur-md transition-all duration-300 ease-out outline-none hover:bg-amber-50/90 focus:border-emerald-300/65 focus:ring-2 focus:ring-emerald-200/45 sm:pl-3 sm:pr-8 sm:text-sm"
         aria-label={t("language")}
       >
         <option value="zh">{t("langZh")}</option>

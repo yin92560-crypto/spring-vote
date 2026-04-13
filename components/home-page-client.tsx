@@ -62,7 +62,30 @@ function SpringFooter() {
       </svg>
 
       <div className="relative z-[2] border-t border-emerald-200/35 bg-gradient-to-b from-transparent via-[#e8f5e9]/55 to-[#eef7ee]/92 px-6 pb-14 pt-8 text-center backdrop-blur-sm">
-        <p className="text-sm font-medium text-stone-900/80 drop-shadow-sm">
+        <div className="mx-auto mb-4 flex max-w-xl items-end justify-center gap-2 sm:gap-4">
+          <Image
+            src="/footer-mascot-1.png"
+            alt="春日小人装饰"
+            width={90}
+            height={120}
+            className="h-[84px] w-auto drop-shadow-[0_8px_16px_rgba(78,95,83,0.2)] sm:h-[112px]"
+          />
+          <Image
+            src="/footer-mascot-2.png"
+            alt="春日小人装饰"
+            width={90}
+            height={120}
+            className="h-[92px] w-auto -translate-y-1 drop-shadow-[0_10px_18px_rgba(78,95,83,0.2)] sm:h-[122px]"
+          />
+          <Image
+            src="/footer-mascot-3.png"
+            alt="春日小人装饰"
+            width={90}
+            height={120}
+            className="h-[84px] w-auto drop-shadow-[0_8px_16px_rgba(78,95,83,0.2)] sm:h-[112px]"
+          />
+        </div>
+        <p className="text-sm font-medium text-stone-700/85 drop-shadow-sm">
           <span className="text-emerald-900/85">{t("footerTagline")}</span>
           <span className="mx-2 text-emerald-800/35" aria-hidden>
             |
@@ -105,32 +128,32 @@ function HomeSiteNav() {
             className="h-7 w-auto shrink-0 rounded-md"
             priority
           />
-          <p className="min-w-0 font-display text-[0.95rem] font-medium text-stone-950 sm:text-lg">
+          <p className="min-w-0 font-display text-[0.95rem] font-medium text-stone-800 sm:text-lg">
             <span className="text-gradient-spring-title">{t("title")}</span>
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">
           <Link
             href="/rank"
-            className="inline-flex min-h-9 items-center gap-1 rounded-full border border-white/55 bg-white/40 px-2.5 py-2 text-xs font-medium shadow-sm backdrop-blur-md transition-colors hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300/50 sm:gap-1.5 sm:px-3 sm:text-sm"
+            className="inline-flex min-h-9 items-center gap-1 rounded-full border border-emerald-200/70 bg-amber-50/70 px-2.5 py-2 text-xs font-medium shadow-sm backdrop-blur-md transition-colors hover:bg-amber-50/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300/50 sm:gap-1.5 sm:px-3 sm:text-sm"
           >
             <Trophy
-              className="size-4 shrink-0 text-stone-950/90"
+              className="size-4 shrink-0 text-stone-800/90"
               strokeWidth={2}
               aria-hidden
             />
-            <span className="text-gradient-spring-title">{t("rank")}</span>
+            <span className="text-stone-700">{t("rank")}</span>
           </Link>
           <Link
             href="/admin"
-            className="inline-flex min-h-9 items-center gap-1 rounded-full border border-white/55 bg-white/40 px-2.5 py-2 text-xs font-medium shadow-sm backdrop-blur-md transition-colors hover:bg-white/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300/50 sm:gap-1.5 sm:px-3 sm:text-sm"
+            className="inline-flex min-h-9 items-center gap-1 rounded-full border border-emerald-200/70 bg-amber-50/70 px-2.5 py-2 text-xs font-medium shadow-sm backdrop-blur-md transition-colors hover:bg-amber-50/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-stone-300/50 sm:gap-1.5 sm:px-3 sm:text-sm"
           >
             <Settings
-              className="size-4 shrink-0 text-stone-950/90"
+              className="size-4 shrink-0 text-stone-800/90"
               strokeWidth={2}
               aria-hidden
             />
-            <span className="text-gradient-spring-title">{t("admin")}</span>
+            <span className="text-stone-700">{t("admin")}</span>
           </Link>
           <LanguageSwitcher />
         </div>
@@ -268,15 +291,15 @@ function HomePageContent() {
           <h1 className="font-display text-[1.95rem] font-normal leading-[1.2] tracking-[0.01em] sm:text-5xl sm:leading-[1.18]">
             <span className="text-gradient-spring-title">{t("subtitle")}</span>
           </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-pretty text-base leading-relaxed text-stone-900/75">
+          <p className="mx-auto mt-5 max-w-2xl text-pretty text-base leading-relaxed text-stone-800/75">
             {t("heroDesc")}
           </p>
-          <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-stone-800/80">
+          <p className="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-stone-700/85">
             投票规则：每人每日可投3票，快来为心仪作品助力吧
           </p>
-          <p className="mt-6 text-sm font-medium text-stone-900/85">
+          <p className="mt-6 text-sm font-medium text-stone-800/85">
             {t("remainingVotes")}{" "}
-            <span className="tabular-nums text-lg text-stone-950">{remaining}</span>
+            <span className="tabular-nums text-lg text-stone-800">{remaining}</span>
             <span className="text-stone-800/55"> / 3</span>
           </p>
         </section>
@@ -284,7 +307,7 @@ function HomePageContent() {
         {toast && (
           <div
             role="status"
-            className="glass-panel fixed bottom-8 left-1/2 z-[110] -translate-x-1/2 rounded-full px-6 py-2.5 text-sm text-stone-900 shadow-lg transition-all duration-300 ease-out"
+            className="glass-panel fixed bottom-8 left-1/2 z-[110] -translate-x-1/2 rounded-full px-6 py-2.5 text-sm text-stone-800 shadow-lg transition-all duration-300 ease-out"
           >
             {toast}
           </div>
@@ -312,7 +335,7 @@ function HomePageContent() {
         <section className="mt-16">
           {works.length === 0 ? (
             <div className="glass-panel rounded-3xl px-8 py-16 text-center">
-              <p className="text-lg text-stone-900/80">{t("noWorks")}</p>
+              <p className="text-lg text-stone-700/85">{t("noWorks")}</p>
               <p className="mt-2 text-sm text-stone-800/65">{t("noWorksHint")}</p>
               <Link
                 href="/admin"
@@ -340,7 +363,7 @@ function HomePageContent() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder={t("searchPlaceholder")}
-                    className="min-w-0 flex-1 bg-transparent text-sm text-stone-950 placeholder:text-stone-400/85 outline-none transition-all duration-300 ease-out"
+                    className="min-w-0 flex-1 bg-transparent text-sm text-stone-800 placeholder:text-stone-400/85 outline-none transition-all duration-300 ease-out"
                     autoComplete="off"
                   />
                 </div>
@@ -354,7 +377,7 @@ function HomePageContent() {
 
               {filteredWorks.length === 0 ? (
                 <div className="glass-panel mt-8 rounded-3xl px-8 py-14 text-center">
-                  <p className="text-stone-900/85">{t("noMatch")}</p>
+                  <p className="text-stone-800/85">{t("noMatch")}</p>
                   <p className="mt-2 text-sm text-stone-800/65">{t("noMatchHint")}</p>
                 </div>
               ) : (
@@ -367,7 +390,7 @@ function HomePageContent() {
                           onClick={() => openDetail(w)}
                           className="relative aspect-[4/3] w-full cursor-zoom-in overflow-hidden bg-stone-100/50 text-left outline-none ring-stone-300/40 transition-all duration-300 ease-out focus-visible:ring-2"
                         >
-                          <div className="pointer-events-none absolute left-3 top-3 z-[1] rounded-lg bg-white/92 px-2.5 py-1 text-xs font-semibold tabular-nums tracking-wide text-stone-900 shadow-md backdrop-blur-sm">
+                          <div className="pointer-events-none absolute left-3 top-3 z-[1] rounded-lg bg-amber-50/86 px-2.5 py-1 text-xs font-semibold tabular-nums tracking-wide text-stone-700 shadow-sm backdrop-blur-sm">
                             No.{w.displayNo}
                           </div>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -378,7 +401,7 @@ function HomePageContent() {
                           />
                           <div className="card-caption-overlay pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-3 pt-12">
                             <p className="text-xs font-semibold drop-shadow-md">
-                              <span className="card-badge-no text-emerald-800/90">
+                              <span className="card-badge-no text-stone-700/90">
                                 {t("displayNoLabel")} {w.displayNo}
                               </span>
                             </p>
@@ -392,15 +415,15 @@ function HomePageContent() {
                         </button>
                         <div className="flex items-center justify-between gap-3 px-4 py-4">
                           <div className="min-w-0">
-                            <p className="truncate font-semibold text-[#5b1f3f]">
+                            <p className="truncate font-semibold text-stone-800">
                               {w.workTitle || w.title}
                             </p>
-                            <p className="mt-0.5 truncate text-xs text-stone-700/75">
+                            <p className="mt-0.5 truncate text-xs text-stone-700/80">
                               {t("authorLabel")}：{w.authorName || "-"}
                             </p>
-                            <p className="mt-1 text-sm text-stone-800/80">
+                            <p className="mt-1 text-sm text-stone-700/85">
                               {t("votesLabel")}{" "}
-                              <strong className="text-stone-950">{w.votes}</strong>
+                              <strong className="text-stone-800">{w.votes}</strong>
                             </p>
                           </div>
                           <VotePillButton

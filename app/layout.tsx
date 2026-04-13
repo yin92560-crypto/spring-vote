@@ -38,6 +38,20 @@ export default function RootLayout({
       className={`${notoSans.variable} ${sourceSerif.variable} ${maShanZheng.variable} h-full antialiased`}
     >
       <body className="relative min-h-full overflow-x-hidden font-sans">
+        <div className="petal-fall-layer" aria-hidden>
+          <span className="petal" />
+          <span className="petal" />
+          <span className="petal" />
+          <span className="petal" />
+          <span className="petal" />
+          <span className="petal" />
+          <span className="petal" />
+          <span className="petal" />
+          <span className="petal" />
+          <span className="petal" />
+          <span className="petal" />
+          <span className="petal" />
+        </div>
         <Providers>
           <div className="relative z-[3] flex min-h-full flex-col">{children}</div>
         </Providers>

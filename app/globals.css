@@ -3,7 +3,7 @@
 :root {
   --background: #eef7ee;
   --foreground: #4d443d;
-  --title-color: #5b1f3f;
+  --title-color: #6a3550;
   --accent-green: #b7d9b4;
   --accent-blue: #c8e5ee;
   --nav-safe: 5.25rem;
@@ -29,10 +29,26 @@ body {
       rgba(214, 234, 242, 0.65) 100%
     ),
     url("/spring-bg.png");
-  background-position: center top;
-  background-size: cover;
+  background-position:
+    center top,
+    bottom 20% right -10%;
+  background-size:
+    auto,
+    80% auto;
   background-repeat: no-repeat;
   background-attachment: fixed;
+}
+
+@media (max-width: 768px) {
+  body {
+    background-position:
+      center top,
+      bottom 12% right -22%;
+    background-size:
+      auto,
+      120% auto;
+    background-attachment: scroll;
+  }
 }
 
 /* 柔光遮罩，保证前景可读 */
@@ -70,6 +86,172 @@ body::after {
     1.2px 1px;
 }
 
+/* 全局花瓣飘落层：不阻挡交互 */
+.petal-fall-layer {
+  position: fixed;
+  inset: -14vh -8vw 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.petal-fall-layer .petal {
+  position: absolute;
+  top: -12vh;
+  left: 0;
+  width: 13px;
+  height: 20px;
+  opacity: 0.56;
+  border-radius: 68% 32% 65% 35% / 64% 38% 62% 36%;
+  transform: translate3d(0, 0, 0) rotate(0deg);
+  filter: blur(0.2px);
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.7) 0 22%, transparent 52%),
+    linear-gradient(145deg, rgba(247, 211, 165, 0.92), rgba(241, 178, 113, 0.8));
+  box-shadow:
+    inset 0 1px 2px rgba(255, 249, 239, 0.66),
+    0 2px 8px rgba(171, 138, 102, 0.2);
+  animation: petal-fall 13s linear infinite;
+}
+
+.petal-fall-layer .petal::before {
+  content: "";
+  position: absolute;
+  left: -20%;
+  top: 8%;
+  width: 72%;
+  height: 70%;
+  border-radius: 70% 30% 65% 35% / 60% 35% 65% 40%;
+  background: linear-gradient(155deg, rgba(198, 226, 177, 0.82), rgba(164, 205, 152, 0.72));
+  opacity: 0.82;
+}
+
+.petal-fall-layer .petal:nth-child(even) {
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.65) 0 22%, transparent 52%),
+    linear-gradient(145deg, rgba(199, 225, 176, 0.9), rgba(166, 206, 152, 0.72));
+  box-shadow:
+    inset 0 1px 2px rgba(241, 252, 234, 0.56),
+    0 2px 8px rgba(112, 140, 106, 0.16);
+}
+
+@keyframes petal-fall {
+  0% {
+    transform: translate3d(-3vw, -10vh, 0) rotate(-8deg);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.54;
+  }
+  30% {
+    transform: translate3d(5vw, 22vh, 0) rotate(58deg);
+  }
+  55% {
+    transform: translate3d(-4vw, 50vh, 0) rotate(128deg);
+  }
+  80% {
+    transform: translate3d(7vw, 82vh, 0) rotate(212deg);
+    opacity: 0.42;
+  }
+  100% {
+    transform: translate3d(-2vw, 112vh, 0) rotate(264deg);
+    opacity: 0;
+  }
+}
+
+.petal-fall-layer .petal:nth-child(1) {
+  left: 3%;
+  animation-duration: 14.2s;
+  animation-delay: -2.8s;
+  transform-origin: 45% -10%;
+}
+.petal-fall-layer .petal:nth-child(2) {
+  left: 11%;
+  width: 10px;
+  height: 16px;
+  animation-duration: 12.4s;
+  animation-delay: -6.1s;
+}
+.petal-fall-layer .petal:nth-child(3) {
+  left: 19%;
+  width: 14px;
+  height: 22px;
+  animation-duration: 15.1s;
+  animation-delay: -9.3s;
+}
+.petal-fall-layer .petal:nth-child(4) {
+  left: 28%;
+  width: 11px;
+  height: 17px;
+  animation-duration: 11.7s;
+  animation-delay: -4.4s;
+}
+.petal-fall-layer .petal:nth-child(5) {
+  left: 37%;
+  animation-duration: 13.6s;
+  animation-delay: -8.6s;
+}
+.petal-fall-layer .petal:nth-child(6) {
+  left: 46%;
+  width: 15px;
+  height: 23px;
+  animation-duration: 16.1s;
+  animation-delay: -1.9s;
+}
+.petal-fall-layer .petal:nth-child(7) {
+  left: 56%;
+  width: 9px;
+  height: 14px;
+  animation-duration: 12.8s;
+  animation-delay: -10.8s;
+}
+.petal-fall-layer .petal:nth-child(8) {
+  left: 64%;
+  width: 13px;
+  height: 20px;
+  animation-duration: 14.9s;
+  animation-delay: -5.7s;
+}
+.petal-fall-layer .petal:nth-child(9) {
+  left: 72%;
+  width: 11px;
+  height: 18px;
+  animation-duration: 11.9s;
+  animation-delay: -7.5s;
+}
+.petal-fall-layer .petal:nth-child(10) {
+  left: 80%;
+  width: 16px;
+  height: 24px;
+  animation-duration: 15.8s;
+  animation-delay: -3.2s;
+}
+.petal-fall-layer .petal:nth-child(11) {
+  left: 88%;
+  width: 10px;
+  height: 15px;
+  animation-duration: 13.1s;
+  animation-delay: -11.4s;
+}
+.petal-fall-layer .petal:nth-child(12) {
+  left: 95%;
+  width: 14px;
+  height: 21px;
+  animation-duration: 16.7s;
+  animation-delay: -6.9s;
+}
+
+@media (max-width: 768px) {
+  .petal-fall-layer {
+    inset: -16vh -14vw 0;
+  }
+
+  .petal-fall-layer .petal {
+    opacity: 0.4;
+    animation-duration: 15.5s;
+  }
+}
+
 button,
 [role="button"],
 input,
@@ -91,8 +273,8 @@ select {
 }
 
 .glass-panel {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(179, 208, 177, 0.42);
+  background: rgba(255, 251, 241, 0.7);
+  border: 1px solid rgba(170, 208, 162, 0.5);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow:
@@ -142,18 +324,18 @@ select {
 .btn-sakura {
   background: linear-gradient(
     120deg,
-    #adcfa9 0%,
-    #bcdcc0 45%,
-    #bfdce8 100%
+    #f6d9ad 0%,
+    #f6cf97 45%,
+    #f3bc7f 100%
   );
-  color: #3f352f;
-  box-shadow: 0 4px 14px rgba(73, 92, 81, 0.2);
+  color: #4c4038;
+  box-shadow: 0 4px 14px rgba(130, 108, 84, 0.24);
   transition: all 0.3s ease;
 }
 
 .btn-sakura:hover:not(:disabled) {
-  filter: brightness(1.04);
-  box-shadow: 0 6px 22px rgba(73, 92, 81, 0.28);
+  filter: brightness(1.03);
+  box-shadow: 0 6px 22px rgba(130, 108, 84, 0.3);
   transform: translateY(-1px);
 }
 
@@ -163,25 +345,25 @@ select {
   padding: 0.5rem 1.35rem;
   background: linear-gradient(
     125deg,
-    #9fc89e 0%,
-    #b8d8bc 40%,
-    #b6d7e8 100%
+    #f7d9ae 0%,
+    #f8ca8f 45%,
+    #f2b977 100%
   );
-  color: #3f352f;
+  color: #4b3f36;
   font-weight: 600;
   font-size: 0.875rem;
   line-height: 1.25rem;
   box-shadow:
-    0 4px 16px rgba(73, 92, 81, 0.24),
+    0 4px 16px rgba(147, 113, 75, 0.24),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(244, 223, 191, 0.75);
   transition: all 0.3s ease;
 }
 
 .vote-pill-btn:hover:not(:disabled) {
-  filter: brightness(1.06);
+  filter: brightness(1.03);
   box-shadow:
-    0 6px 24px rgba(73, 92, 81, 0.3),
+    0 6px 24px rgba(147, 113, 75, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
   transform: translateY(-1px) scale(1.02);
 }
