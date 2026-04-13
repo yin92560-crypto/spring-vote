@@ -22,16 +22,16 @@ body {
   font-family: var(--font-sans), "Source Serif Pro", "STSong", "SimSun", serif;
   font-weight: 400;
   background-image: url("/spring-painting-bg.png");
-  background-position: right 5% bottom 10%;
-  background-size: 40% auto;
+  background-position: center;
+  background-size: cover;
   background-repeat: no-repeat;
   background-attachment: fixed;
 }
 
 @media (max-width: 768px) {
   body {
-    background-position: right 8% bottom 8%;
-    background-size: 40% auto;
+    background-position: center;
+    background-size: cover;
     background-attachment: scroll;
   }
 }
