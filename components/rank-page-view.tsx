@@ -18,15 +18,6 @@ export function RankPageView({ rankResult }: { rankResult: RankResult }) {
   return (
     <main className="relative flex min-h-screen flex-1 flex-col">
       <RankPageVoteSync />
-      <div
-        className="pointer-events-none absolute inset-0 opacity-[0.24]"
-        aria-hidden
-        style={{
-          backgroundImage: `radial-gradient(circle at 18% 28%, rgba(200, 228, 205, 0.26) 0%, transparent 46%),
-            radial-gradient(circle at 82% 18%, rgba(189, 230, 237, 0.22) 0%, transparent 42%),
-            radial-gradient(circle at 52% 88%, rgba(216, 232, 220, 0.2) 0%, transparent 52%)`,
-        }}
-      />
 
       <header className="site-nav-fixed">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-6 sm:py-3.5">
@@ -96,36 +87,36 @@ export function RankPageView({ rankResult }: { rankResult: RankResult }) {
         )}
 
         <footer className="mt-20 border-t border-emerald-200/35 bg-gradient-to-b from-transparent via-emerald-50/20 to-white/30 py-8 text-center text-sm backdrop-blur-[2px]">
-          <div className="mx-auto mb-4 flex max-w-xl items-end justify-center gap-2 sm:gap-4">
+          <div className="mx-auto flex max-w-5xl flex-row flex-wrap items-center justify-center gap-x-3 gap-y-2 bg-transparent sm:gap-x-5">
             <Image
               src="/footer-mascot-1.png"
               alt="春日小人装饰"
               width={90}
               height={120}
-              className="h-[84px] w-auto drop-shadow-[0_8px_16px_rgba(78,95,83,0.2)] sm:h-[112px]"
+              className="h-[84px] w-auto bg-transparent mix-blend-multiply sm:h-[112px]"
             />
             <Image
               src="/footer-mascot-2.png"
               alt="春日小人装饰"
               width={90}
               height={120}
-              className="h-[92px] w-auto -translate-y-1 drop-shadow-[0_10px_18px_rgba(78,95,83,0.2)] sm:h-[122px]"
+              className="h-[92px] w-auto bg-transparent mix-blend-multiply sm:h-[122px]"
             />
             <Image
               src="/footer-mascot-3.png"
               alt="春日小人装饰"
               width={90}
               height={120}
-              className="h-[84px] w-auto drop-shadow-[0_8px_16px_rgba(78,95,83,0.2)] sm:h-[112px]"
+              className="h-[84px] w-auto bg-transparent mix-blend-multiply sm:h-[112px]"
             />
+            <p className="bg-transparent text-stone-800/75">
+              <span className="font-medium text-emerald-900/85">{t("footerTagline")}</span>
+              <span className="mx-2 text-emerald-800/35" aria-hidden>
+                |
+              </span>
+              {t("footerCopyright")}
+            </p>
           </div>
-          <p className="text-stone-800/75">
-            <span className="font-medium text-emerald-900/85">{t("footerTagline")}</span>
-            <span className="mx-2 text-emerald-800/35" aria-hidden>
-              |
-            </span>
-            {t("footerCopyright")}
-          </p>
         </footer>
       </div>
     </main>

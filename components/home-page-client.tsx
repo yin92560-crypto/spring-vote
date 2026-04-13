@@ -62,36 +62,36 @@ function SpringFooter() {
       </svg>
 
       <div className="relative z-[2] border-t border-emerald-200/35 bg-gradient-to-b from-transparent via-[#e8f5e9]/55 to-[#eef7ee]/92 px-6 pb-14 pt-8 text-center backdrop-blur-sm">
-        <div className="mx-auto mb-4 flex max-w-xl items-end justify-center gap-2 sm:gap-4">
+        <div className="mx-auto flex max-w-5xl flex-row flex-wrap items-center justify-center gap-x-3 gap-y-2 bg-transparent sm:gap-x-5">
           <Image
             src="/footer-mascot-1.png"
             alt="春日小人装饰"
             width={90}
             height={120}
-            className="h-[84px] w-auto drop-shadow-[0_8px_16px_rgba(78,95,83,0.2)] sm:h-[112px]"
+            className="h-[84px] w-auto bg-transparent mix-blend-multiply sm:h-[112px]"
           />
           <Image
             src="/footer-mascot-2.png"
             alt="春日小人装饰"
             width={90}
             height={120}
-            className="h-[92px] w-auto -translate-y-1 drop-shadow-[0_10px_18px_rgba(78,95,83,0.2)] sm:h-[122px]"
+            className="h-[92px] w-auto bg-transparent mix-blend-multiply sm:h-[122px]"
           />
           <Image
             src="/footer-mascot-3.png"
             alt="春日小人装饰"
             width={90}
             height={120}
-            className="h-[84px] w-auto drop-shadow-[0_8px_16px_rgba(78,95,83,0.2)] sm:h-[112px]"
+            className="h-[84px] w-auto bg-transparent mix-blend-multiply sm:h-[112px]"
           />
+          <p className="bg-transparent text-sm font-medium text-stone-700/85">
+            <span className="text-emerald-900/85">{t("footerTagline")}</span>
+            <span className="mx-2 text-emerald-800/35" aria-hidden>
+              |
+            </span>
+            {t("footerCopyright")}
+          </p>
         </div>
-        <p className="text-sm font-medium text-stone-700/85 drop-shadow-sm">
-          <span className="text-emerald-900/85">{t("footerTagline")}</span>
-          <span className="mx-2 text-emerald-800/35" aria-hidden>
-            |
-          </span>
-          {t("footerCopyright")}
-        </p>
       </div>
     </footer>
   );

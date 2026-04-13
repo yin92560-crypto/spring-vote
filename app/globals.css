@@ -21,50 +21,24 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), "Source Serif Pro", "STSong", "SimSun", serif;
   font-weight: 400;
-  background:
-    linear-gradient(
-      145deg,
-      rgba(236, 247, 237, 0.82) 0%,
-      rgba(228, 242, 231, 0.68) 42%,
-      rgba(214, 234, 242, 0.65) 100%
-    ),
-    url("/spring-bg.png");
-  background-position:
-    center top,
-    bottom 20% right -10%;
-  background-size:
-    auto,
-    80% auto;
+  background-image: url("/spring-bg.png");
+  background-position: right 5% bottom 10%;
+  background-size: 60% auto;
   background-repeat: no-repeat;
   background-attachment: fixed;
 }
 
 @media (max-width: 768px) {
   body {
-    background-position:
-      center top,
-      bottom 12% right -22%;
-    background-size:
-      auto,
-      120% auto;
+    background-position: right 8% bottom 8%;
+    background-size: 95% auto;
     background-attachment: scroll;
   }
 }
 
-/* 柔光遮罩，保证前景可读 */
+/* 移除背景蒙版，保留原图色彩 */
 body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 1;
-  background: linear-gradient(
-    180deg,
-    rgba(248, 252, 248, 0.56) 0%,
-    rgba(241, 249, 242, 0.42) 38%,
-    rgba(240, 247, 243, 0.5) 100%
-  );
+  content: none;
 }
 
 /* 轻微纸感颗粒，贴近插画海报质感 */
