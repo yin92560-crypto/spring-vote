@@ -21,7 +21,7 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), "Source Serif Pro", "STSong", "SimSun", serif;
   font-weight: 400;
-  background-image: url("/spring-bg.png");
+  background-image: url("/spring-painting-bg.png");
   background-position: right 5% bottom 10%;
   background-size: 40% auto;
   background-repeat: no-repeat;
