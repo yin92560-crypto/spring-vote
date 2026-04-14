@@ -11,3 +11,4 @@ export function assertAdminAuthorized(request: Request): NextResponse | null {
   }
   return null;
 }
+
