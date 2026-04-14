@@ -325,30 +325,25 @@ function HomePageContent() {
             <div className="pointer-events-none absolute left-1/2 top-1/2 h-[220px] w-[min(94vw,860px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.62)_0%,rgba(255,255,255,0.34)_38%,rgba(255,255,255,0.08)_65%,rgba(255,255,255,0)_100%)] blur-[2px]" />
             {locale === "zh" ? (
               <div className="font-display text-balance">
+                <div className="pointer-events-none absolute left-1/2 top-[30%] h-[124px] w-[min(90vw,760px)] -translate-x-1/2 rounded-2xl bg-black/18 backdrop-blur-[1.5px]" />
                 <h1
-                  className="text-[clamp(2.35rem,8.4vw,5rem)] font-black leading-[1.1] tracking-[2px]"
+                  className="relative z-[1] text-[clamp(2.35rem,8.4vw,5rem)] font-black leading-[1.1] tracking-[2px]"
                   style={{
                     fontFamily: '"STKaiti", "KaiTi", "Noto Serif SC", serif',
-                    background:
-                      "linear-gradient(to bottom, #A0522D 0%, #8B0000 100%)",
-                    WebkitBackgroundClip: "text",
-                    color: "transparent",
+                    color: "#f7f5ef",
                     textShadow:
-                      "2px 2px 4px rgba(0, 0, 0, 0.3), 0 0 8px rgba(255, 248, 220, 0.7), 0 0 16px rgba(255, 241, 176, 0.45)",
+                      "0 2px 2px rgba(0,0,0,0.34), 2px 2px 4px rgba(0,0,0,0.32), 0 0 10px rgba(255,255,255,0.58)",
                   }}
                 >
                   {bannerTitleLines[0]}
                 </h1>
                 <h2
-                  className="mb-2 mt-3 text-[clamp(2.1rem,7.6vw,4.5rem)] font-black leading-[1.1] tracking-[2px]"
+                  className="relative z-[1] mb-2 mt-2 text-[clamp(2.1rem,7.6vw,4.5rem)] font-black leading-[1.1] tracking-[2px]"
                   style={{
                     fontFamily: '"STKaiti", "KaiTi", "Noto Serif SC", serif',
-                    background:
-                      "linear-gradient(to bottom, #A0522D 0%, #8B0000 100%)",
-                    WebkitBackgroundClip: "text",
-                    color: "transparent",
+                    color: "#f7f5ef",
                     textShadow:
-                      "2px 2px 4px rgba(0, 0, 0, 0.3), 0 0 8px rgba(255, 248, 220, 0.68), 0 0 16px rgba(255, 241, 176, 0.4)",
+                      "0 2px 2px rgba(0,0,0,0.34), 2px 2px 4px rgba(0,0,0,0.32), 0 0 10px rgba(255,255,255,0.58)",
                   }}
                 >
                   {bannerTitleLines[1]}
@@ -367,16 +362,16 @@ function HomePageContent() {
                 </span>
               </h1>
             )}
-            <p className={`mx-auto mt-5 max-w-3xl text-pretty font-semibold leading-[1.8] text-[#4a2f22] drop-shadow-md ${descTextClass}`}>
+            <p className={`mx-auto mt-4 max-w-2xl text-pretty font-medium leading-[1.8] text-[#2c2b27]/88 drop-shadow-[0_1px_2px_rgba(255,255,255,0.35)] ${descTextClass}`}>
               {t("heroDesc")}
             </p>
-            <p className={`mx-auto mt-2 max-w-3xl font-semibold leading-[1.8] text-[#4a2f22] drop-shadow-md ${ruleTextClass}`}>
+            <p className={`mx-auto mt-1.5 max-w-2xl font-medium leading-[1.8] text-[#2c2b27]/88 drop-shadow-[0_1px_2px_rgba(255,255,255,0.35)] ${ruleTextClass}`}>
               {t("voteRules")}
             </p>
-            <p className="mt-6 text-base font-semibold text-[#4a2f22] drop-shadow-md">
+            <p className="mt-5 text-base font-semibold text-[#3b372f] drop-shadow-[0_1px_2px_rgba(255,255,255,0.35)]">
               {t("remainingVotes")}{" "}
-              <span className="tabular-nums text-xl text-[#4a2f22]">{remaining}</span>
-              <span className="text-[#4a2f22]/85"> / 3</span>
+              <span className="tabular-nums text-xl text-[#3b372f]">{remaining}</span>
+              <span className="text-[#3b372f]/85"> / 3</span>
             </p>
           </div>
         </section>
