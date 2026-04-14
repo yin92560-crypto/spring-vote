@@ -308,6 +308,10 @@ function HomePageContent() {
     locale === "zh"
       ? "text-base sm:text-lg"
       : "text-sm sm:text-base";
+  const bannerTitleLines =
+    locale === "zh"
+      ? ["2026华勤全球员工", "春日摄影大赛"]
+      : [t("subtitle")];
 
   if (loading) {
     return <HomeLoadingFallback />;
@@ -321,18 +325,44 @@ function HomePageContent() {
         <section className="text-center">
           <div className={`relative mx-auto ${titleWidthClass} px-2 py-2 sm:px-4 sm:py-4`}>
             <div className="pointer-events-none absolute left-1/2 top-1/2 h-[220px] w-[min(94vw,860px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.62)_0%,rgba(255,255,255,0.34)_38%,rgba(255,255,255,0.08)_65%,rgba(255,255,255,0)_100%)] blur-[2px]" />
-            <h1
-              className={`font-display font-black ${titleToneClass} text-balance`}
-              style={{ fontFamily: '"STKaiti", "KaiTi", "Noto Serif SC", serif' }}
-            >
-              <span className="bg-gradient-to-r from-amber-800 via-emerald-900 to-amber-900 bg-clip-text text-transparent drop-shadow-[0_2px_10px_rgba(255,255,255,0.8)]">
-                {t("subtitle")}
-              </span>
-            </h1>
-            <p className={`mx-auto mt-5 max-w-3xl text-pretty font-semibold leading-relaxed text-[#4a2f22] drop-shadow-md ${descTextClass}`}>
+            {locale === "zh" ? (
+              <div className="font-display text-balance text-[#6a2f1e]">
+                <h1
+                  className="text-[2.65rem] font-black leading-[1.12] tracking-[0.01em] sm:text-[3rem]"
+                  style={{
+                    fontFamily: '"STKaiti", "KaiTi", "Noto Serif SC", serif',
+                    textShadow: "2px 2px 4px rgba(0, 0, 0, 0.3)",
+                  }}
+                >
+                  {bannerTitleLines[0]}
+                </h1>
+                <h2
+                  className="mt-2 text-[2.15rem] font-black leading-[1.12] tracking-[0.01em] sm:text-[2.5rem]"
+                  style={{
+                    fontFamily: '"STKaiti", "KaiTi", "Noto Serif SC", serif',
+                    textShadow: "2px 2px 4px rgba(0, 0, 0, 0.3)",
+                  }}
+                >
+                  {bannerTitleLines[1]}
+                </h2>
+              </div>
+            ) : (
+              <h1
+                className={`font-display font-black ${titleToneClass} text-balance`}
+                style={{ fontFamily: '"STKaiti", "KaiTi", "Noto Serif SC", serif' }}
+              >
+                <span
+                  className="bg-gradient-to-r from-amber-800 via-emerald-900 to-amber-900 bg-clip-text text-transparent"
+                  style={{ textShadow: "2px 2px 4px rgba(0, 0, 0, 0.3)" }}
+                >
+                  {bannerTitleLines[0]}
+                </span>
+              </h1>
+            )}
+            <p className={`mx-auto mt-5 max-w-3xl text-pretty font-semibold leading-[1.8] text-[#4a2f22] drop-shadow-md ${descTextClass}`}>
               {t("heroDesc")}
             </p>
-            <p className={`mx-auto mt-2 max-w-3xl font-semibold leading-relaxed text-[#4a2f22] drop-shadow-md ${ruleTextClass}`}>
+            <p className={`mx-auto mt-2 max-w-3xl font-semibold leading-[1.8] text-[#4a2f22] drop-shadow-md ${ruleTextClass}`}>
               {t("voteRules")}
             </p>
             <p className="mt-6 text-base font-semibold text-[#4a2f22] drop-shadow-md">
