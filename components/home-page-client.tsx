@@ -350,15 +350,15 @@ function HomePageContent() {
               </div>
             ) : (
               <h1
-                className={`font-display font-black ${titleToneClass} text-balance`}
-                style={{ fontFamily: '"STKaiti", "KaiTi", "Noto Serif SC", serif' }}
+                className={`relative z-[1] font-display font-black ${titleToneClass} text-balance`}
+                style={{
+                  fontFamily: '"STKaiti", "KaiTi", "Noto Serif SC", serif',
+                  color: "#f7f5ef",
+                  textShadow:
+                    "0 2px 2px rgba(0,0,0,0.34), 2px 2px 4px rgba(0,0,0,0.32), 0 0 10px rgba(255,255,255,0.58)",
+                }}
               >
-                <span
-                  className="bg-gradient-to-r from-amber-800 via-emerald-900 to-amber-900 bg-clip-text text-transparent"
-                  style={{ textShadow: "2px 2px 4px rgba(0, 0, 0, 0.3)" }}
-                >
-                  {bannerTitleLines[0]}
-                </span>
+                {bannerTitleLines[0]}
               </h1>
             )}
             <p className={`mx-auto mt-4 max-w-2xl text-pretty font-medium leading-[1.8] text-[#2c2b27]/88 drop-shadow-[0_1px_2px_rgba(255,255,255,0.35)] ${descTextClass}`}>
