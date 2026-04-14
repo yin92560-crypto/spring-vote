@@ -4,8 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Download } from "lucide-react";
 import * as XLSX from "xlsx";
-import { AdminDriveSync } from "@/components/admin-drive-sync";
-import { AdminFeishuSync } from "@/components/admin-feishu-sync";
 import { SpringLoadingIndicator } from "@/components/spring-loading";
 import { useI18n } from "@/lib/i18n-context";
 import { useRouter } from "next/navigation";
@@ -16,6 +14,12 @@ import { useWorksList } from "@/lib/use-vote-store";
 
 type AdminPageClientProps = {
   onLogout?: () => void;
+};
+
+type AdminStats = {
+  pv: number;
+  works: number;
+  votes: number;
 };
 
 export function AdminPageClient({ onLogout }: AdminPageClientProps) {
@@ -34,6 +38,12 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
   const [authorName, setAuthorName] = useState("");
   const [workTitle, setWorkTitle] = useState("");
   const [exporting, setExporting] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editWorkTitle, setEditWorkTitle] = useState("");
+  const [editAuthorName, setEditAuthorName] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [stats, setStats] = useState<AdminStats>({ pv: 0, works: 0, votes: 0 });
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     if (files.length === 0) {
@@ -68,6 +78,29 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
     if (adminSecret.trim()) h["x-admin-secret"] = adminSecret.trim();
     return h;
   };
+
+  const fetchStats = async () => {
+    setStatsLoading(true);
+    try {
+      const res = await fetch("/api/admin/stats", {
+        headers: adminHeaders(),
+        cache: "no-store",
+      });
+      if (!res.ok) return;
+      const j = (await res.json()) as Partial<AdminStats>;
+      setStats({
+        pv: Number(j.pv ?? 0),
+        works: Number(j.works ?? 0),
+        votes: Number(j.votes ?? 0),
+      });
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void fetchStats();
+  }, [adminSecret]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,6 +145,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
       if (ok > 0) {
         notifyVoteDataChanged();
         router.refresh();
+        void fetchStats();
       }
 
       if (failures.length === 0) {
@@ -147,8 +181,62 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
     }
     notifyVoteDataChanged();
     router.refresh();
+    void fetchStats();
     setMessage("已删除");
     setTimeout(() => setMessage(null), 2000);
+  };
+
+  const openEdit = (w: (typeof works)[number]) => {
+    setEditingId(w.id);
+    setEditWorkTitle((w.workTitle || w.title || "").trim());
+    setEditAuthorName((w.authorName || "").trim());
+  };
+
+  const closeEdit = () => {
+    setEditingId(null);
+    setEditWorkTitle("");
+    setEditAuthorName("");
+    setSavingEdit(false);
+  };
+
+  const saveEdit = async () => {
+    if (!editingId) return;
+    const safeTitle = editWorkTitle.trim();
+    if (!safeTitle) {
+      setMessage("作品名称不能为空");
+      setTimeout(() => setMessage(null), 2200);
+      return;
+    }
+
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`/api/works/${editingId}`, {
+        method: "PATCH",
+        headers: {
+          ...adminHeaders(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          workTitle: safeTitle,
+          authorName: editAuthorName.trim(),
+        }),
+      });
+      const j = (await res.json()) as { error?: string };
+      if (!res.ok) {
+        setMessage(j.error ?? "修改失败");
+        setTimeout(() => setMessage(null), 3000);
+        return;
+      }
+
+      notifyVoteDataChanged();
+      router.refresh();
+      void fetchStats();
+      closeEdit();
+      setMessage("修改成功");
+      setTimeout(() => setMessage(null), 2000);
+    } finally {
+      setSavingEdit(false);
+    }
   };
 
   const resetVotes = async () => {
@@ -164,6 +252,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
     }
     notifyVoteDataChanged();
     router.refresh();
+    void fetchStats();
     setMessage("已清空全部投票记录");
     setTimeout(() => setMessage(null), 2000);
   };
@@ -257,7 +346,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
         <div>
           <div className="mb-2 flex items-center gap-2">
             <Image
-              src="/huaqin-logo.svg"
+              src="/huaqin-logo-new.png"
               alt="华勤 Logo"
               width={92}
               height={30}
@@ -285,6 +374,33 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
           </Link>
         </div>
       </div>
+
+      <section className="mb-6 grid gap-3 sm:grid-cols-3">
+        <article className="rounded-2xl border border-emerald-200/70 bg-white/60 px-4 py-4 shadow-[0_0_18px_rgba(134,196,149,0.25)] backdrop-blur-sm">
+          <p className="text-xs font-semibold tracking-wide text-[#4a2f22]/70">
+            总浏览量 (PV)
+          </p>
+          <p className="mt-2 text-3xl font-black tabular-nums text-[#4a2f22]">
+            {statsLoading ? "…" : stats.pv}
+          </p>
+        </article>
+        <article className="rounded-2xl border border-emerald-200/70 bg-white/60 px-4 py-4 shadow-[0_0_18px_rgba(155,209,165,0.22)] backdrop-blur-sm">
+          <p className="text-xs font-semibold tracking-wide text-[#4a2f22]/70">
+            参赛作品总数
+          </p>
+          <p className="mt-2 text-3xl font-black tabular-nums text-[#4a2f22]">
+            {statsLoading ? "…" : stats.works}
+          </p>
+        </article>
+        <article className="rounded-2xl border border-amber-200/70 bg-white/60 px-4 py-4 shadow-[0_0_18px_rgba(251,191,36,0.2)] backdrop-blur-sm">
+          <p className="text-xs font-semibold tracking-wide text-[#4a2f22]/70">
+            累计投票数
+          </p>
+          <p className="mt-2 text-3xl font-black tabular-nums text-[#4a2f22]">
+            {statsLoading ? "…" : stats.votes}
+          </p>
+        </article>
+      </section>
 
       <div className="glass-panel mb-6 rounded-xl px-4 py-3 text-sm text-stone-900/85">
         <label htmlFor="admin-secret" className="mb-1 block font-semibold text-[#4a2f22]">
@@ -362,15 +478,6 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
             />
           </div>
         </div>
-
-        <AdminDriveSync adminSecret={adminSecret} titlePrefix={titlePrefix} />
-
-        <AdminFeishuSync
-          adminSecret={adminSecret}
-          titlePrefix={titlePrefix}
-          authorName={authorName}
-          workTitle={workTitle}
-        />
 
         <div>
           <label
@@ -527,26 +634,92 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
                         {w.displayNo}
                       </span>
                       <p className="truncate font-semibold text-[#4a2f22]">
-                        {w.title}
+                        {w.workTitle || w.title}
                       </p>
                     </div>
+                    <p className="mt-1 text-xs font-semibold text-[#4a2f22]/80">
+                      参赛人：{w.authorName || "-"}
+                    </p>
                     <p className="mt-1 text-sm font-semibold text-[#4a2f22]/85">
                       得票 {w.votes}
                     </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => void del(w.id)}
-                  className="shrink-0 rounded-lg border border-stone-200/80 bg-white/40 px-3 py-1.5 text-sm text-stone-900 transition hover:bg-stone-50"
-                >
-                  删除
-                </button>
+                <div className="flex shrink-0 items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => openEdit(w)}
+                    className="rounded-lg border border-emerald-200/80 bg-white/55 px-3 py-1.5 text-sm font-medium text-[#4a2f22] transition hover:bg-emerald-50/70"
+                  >
+                    编辑
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void del(w.id)}
+                    className="rounded-lg border border-stone-200/80 bg-white/40 px-3 py-1.5 text-sm text-stone-900 transition hover:bg-stone-50"
+                  >
+                    删除
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
         )}
       </section>
+      {editingId && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center px-4">
+          <button
+            type="button"
+            aria-label="关闭编辑弹窗"
+            className="absolute inset-0 bg-black/28 backdrop-blur-[2px]"
+            onClick={closeEdit}
+          />
+          <div className="glass-panel relative z-[1] w-full max-w-md rounded-2xl p-5 shadow-2xl sm:p-6">
+            <h3 className="text-lg font-semibold text-[#4a2f22]">编辑作品信息</h3>
+            <div className="mt-4 space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-[#4a2f22]">
+                  作品名称
+                </label>
+                <input
+                  value={editWorkTitle}
+                  onChange={(e) => setEditWorkTitle(e.target.value)}
+                  className="w-full rounded-xl border border-green-200 bg-white/50 px-4 py-2.5 text-sm font-semibold text-[#4a2f22] placeholder:text-stone-500/70 outline-none ring-green-200/50 focus:ring-2"
+                  placeholder="请输入作品名称"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-[#4a2f22]">
+                  参赛人姓名
+                </label>
+                <input
+                  value={editAuthorName}
+                  onChange={(e) => setEditAuthorName(e.target.value)}
+                  className="w-full rounded-xl border border-green-200 bg-white/50 px-4 py-2.5 text-sm font-semibold text-[#4a2f22] placeholder:text-stone-500/70 outline-none ring-green-200/50 focus:ring-2"
+                  placeholder="请输入参赛人姓名"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeEdit}
+                className="rounded-lg border border-stone-200/80 bg-white/55 px-4 py-2 text-sm font-medium text-stone-700"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                disabled={savingEdit}
+                onClick={() => void saveEdit()}
+                className="rounded-lg border border-emerald-200/75 bg-amber-100/80 px-4 py-2 text-sm font-semibold text-[#4a2f22] disabled:opacity-50"
+              >
+                {savingEdit ? "保存中…" : "保存"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

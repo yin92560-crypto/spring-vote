@@ -18,6 +18,7 @@ export type MessageKey =
   | "title"
   | "subtitle"
   | "heroDesc"
+  | "voteRules"
   | "remainingVotes"
   | "rank"
   | "admin"
@@ -87,6 +88,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     title: "捕捉春日计划",
     subtitle: "2026华勤全球员工春日摄影大赛",
     heroDesc: "用镜头定格春日，谁藏了最美的春天？",
+    voteRules: "投票规则：每人每日可投3票，快来为心仪作品助力吧！",
     remainingVotes: "今日剩余票数",
     rank: "排行榜",
     admin: "管理后台",
@@ -152,11 +154,14 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     loadingHd: "原图加载中…",
   },
   en: {
-    title: "Spring Capture Project",
-    subtitle: "2026 Huaqin Global Spring Photo Contest",
+    title: "2026 Huaqin Global Spring Photography Contest",
+    subtitle:
+      "Capture the spring with your lens. Who found the most beautiful spring?",
     heroDesc:
-      "Capture spring moments worldwide. Each employee may cast 3 votes per day.",
-    remainingVotes: "Votes left today",
+      "Capture the spring with your lens. Who found the most beautiful spring?",
+    voteRules:
+      "Voting Rules: Each person can cast 3 votes per day. Come and support your favorite works!",
+    remainingVotes: "Votes remaining today",
     rank: "Leaderboard",
     admin: "Admin",
     upload: "Upload",
@@ -222,11 +227,12 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     loadingHd: "Loading original…",
   },
   ja: {
-    title: "春の瞬間を捉える",
+    title: "2026 華勤グローバル社員・春の写真コンテスト",
     subtitle: "2026 華勤グローバル社員・春の写真コンテスト",
-    heroDesc:
-      "世界中の華勤の春を切り取ろう。お一人様 1 日 3 票まで投票できます。",
-    remainingVotes: "本日の残り票",
+    heroDesc: "レンズで春を切り取ろう。一番美しい春を見つけたのは誰？",
+    voteRules:
+      "投票ルール：お一人様1日3票まで投票できます。お気に入りの作品を応援しましょう！",
+    remainingVotes: "本日の残り票数",
     rank: "ランキング",
     admin: "管理",
     upload: "投稿する",

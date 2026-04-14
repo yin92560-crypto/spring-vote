@@ -63,20 +63,6 @@ function SpringFooter() {
 
       <div className="relative z-[2] border-t border-emerald-200/35 bg-gradient-to-b from-transparent via-[#e8f5e9]/55 to-[#eef7ee]/92 px-6 pb-14 pt-8 text-center backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl flex-row flex-wrap items-center justify-center gap-x-3 gap-y-2 bg-transparent sm:gap-x-4">
-          <Image
-            src="/footer-mascot-a.png"
-            alt="页脚装饰"
-            width={82}
-            height={110}
-            className="h-[88px] w-auto bg-transparent opacity-95 mix-blend-screen"
-          />
-          <Image
-            src="/footer-mascot-b.png"
-            alt="页脚装饰"
-            width={82}
-            height={110}
-            className="h-[88px] w-auto bg-transparent opacity-95 mix-blend-screen"
-          />
           <p className="bg-transparent px-1 text-sm font-medium text-stone-700/85">
             <span className="text-emerald-900/85">{t("footerTagline")}</span>
             <span className="mx-2 text-emerald-800/35" aria-hidden>
@@ -114,7 +100,7 @@ function HomeSiteNav() {
       <div className="mx-auto flex min-h-14 w-full max-w-6xl items-center justify-between gap-2 px-3 py-2 sm:gap-3 sm:px-6 sm:py-0">
         <div className="flex min-w-0 items-center gap-2 pr-1">
           <Image
-            src="/huaqin-logo.svg"
+            src="/huaqin-logo-new.png"
             alt="华勤 Logo"
             width={88}
             height={28}
@@ -166,7 +152,7 @@ function HomeLoadingFallback() {
 }
 
 function HomePageContent() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -174,6 +160,8 @@ function HomePageContent() {
   const { works, remaining, loading, refresh } = useVoteHomeState();
   const [toast, setToast] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [jumpPage, setJumpPage] = useState("");
   const [detailWork, setDetailWork] = useState<Work | null>(null);
   const [voteModalPending, setVoteModalPending] = useState(false);
   /** 避免「先 setState 再 replaceQuery」时 effect 因 id 尚未写入而误关弹窗 */
@@ -183,6 +171,17 @@ function HomePageContent() {
     () => filterWorksBySearch(works, searchQuery),
     [works, searchQuery]
   );
+  const pageSize = 18;
+  const totalPages = Math.max(1, Math.ceil(filteredWorks.length / pageSize));
+  const pagedWorks = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredWorks.slice(start, start + pageSize);
+  }, [filteredWorks, page]);
+  const pageNumbers = useMemo(() => {
+    const start = Math.max(1, page - 2);
+    const end = Math.min(totalPages, page + 2);
+    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
+  }, [page, totalPages]);
 
   const shareUrl = useMemo(() => {
     if (!detailWork) return "";
@@ -226,6 +225,24 @@ function HomePageContent() {
     const w = findWorkByDisplayQuery(works, idParam);
     setDetailWork(w ?? null);
   }, [searchParams, works]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    void fetch("/api/stats/pv", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ pageKey: "home" }),
+    });
+  }, []);
+
+  useEffect(() => {
+    setPage(1);
+    setJumpPage("");
+  }, [searchQuery]);
+
+  useEffect(() => {
+    setPage((prev) => Math.min(Math.max(prev, 1), totalPages));
+  }, [totalPages]);
 
   const performVote = async (workId: string) => {
     const res = await fetch("/api/votes", {
@@ -271,6 +288,27 @@ function HomePageContent() {
     }
   };
 
+  const goToPage = (target: number) => {
+    if (Number.isNaN(target)) return;
+    setPage(Math.min(totalPages, Math.max(1, target)));
+  };
+
+  const titleToneClass =
+    locale === "zh"
+      ? "text-[2.5rem] sm:text-6xl lg:text-7xl leading-[1.12] sm:leading-[1.08] tracking-[0.01em]"
+      : locale === "ja"
+        ? "text-[2.25rem] sm:text-5xl lg:text-6xl leading-[1.16] sm:leading-[1.12] tracking-[0.01em]"
+        : "text-[2.15rem] sm:text-5xl lg:text-6xl leading-[1.16] sm:leading-[1.12] tracking-[0.005em]";
+  const titleWidthClass = locale === "zh" ? "max-w-4xl" : "max-w-5xl";
+  const descTextClass =
+    locale === "zh"
+      ? "text-lg sm:text-xl"
+      : "text-base sm:text-lg";
+  const ruleTextClass =
+    locale === "zh"
+      ? "text-base sm:text-lg"
+      : "text-sm sm:text-base";
+
   if (loading) {
     return <HomeLoadingFallback />;
   }
@@ -281,21 +319,21 @@ function HomePageContent() {
 
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-10 pt-[calc(var(--nav-safe)+1.15rem)] sm:px-6 sm:pt-[calc(var(--nav-safe)+1.25rem)]">
         <section className="text-center">
-          <div className="relative mx-auto max-w-4xl px-2 py-2 sm:px-4 sm:py-4">
+          <div className={`relative mx-auto ${titleWidthClass} px-2 py-2 sm:px-4 sm:py-4`}>
             <div className="pointer-events-none absolute left-1/2 top-1/2 h-[220px] w-[min(94vw,860px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.62)_0%,rgba(255,255,255,0.34)_38%,rgba(255,255,255,0.08)_65%,rgba(255,255,255,0)_100%)] blur-[2px]" />
             <h1
-              className="font-display text-5xl font-black leading-[1.08] tracking-[0.02em] sm:text-6xl lg:text-7xl"
+              className={`font-display font-black ${titleToneClass} text-balance`}
               style={{ fontFamily: '"STKaiti", "KaiTi", "Noto Serif SC", serif' }}
             >
               <span className="bg-gradient-to-r from-amber-800 via-emerald-900 to-amber-900 bg-clip-text text-transparent drop-shadow-[0_2px_10px_rgba(255,255,255,0.8)]">
                 {t("subtitle")}
               </span>
             </h1>
-            <p className="mx-auto mt-5 max-w-2xl text-pretty text-lg font-semibold leading-relaxed text-[#4a2f22] drop-shadow-md">
+            <p className={`mx-auto mt-5 max-w-3xl text-pretty font-semibold leading-relaxed text-[#4a2f22] drop-shadow-md ${descTextClass}`}>
               {t("heroDesc")}
             </p>
-            <p className="mx-auto mt-2 max-w-2xl text-base font-semibold leading-relaxed text-[#4a2f22] drop-shadow-md">
-              投票规则：每人每日可投3票，快来为心仪作品助力吧
+            <p className={`mx-auto mt-2 max-w-3xl font-semibold leading-relaxed text-[#4a2f22] drop-shadow-md ${ruleTextClass}`}>
+              {t("voteRules")}
             </p>
             <p className="mt-6 text-base font-semibold text-[#4a2f22] drop-shadow-md">
               {t("remainingVotes")}{" "}
@@ -383,7 +421,7 @@ function HomePageContent() {
                 </div>
               ) : (
                 <ul className="mt-7 grid gap-5 sm:mt-8 sm:gap-7 sm:grid-cols-2 lg:grid-cols-3">
-                  {filteredWorks.map((w) => (
+                  {pagedWorks.map((w) => (
                     <li key={w.id}>
                       <article className="glass-panel group flex flex-col overflow-hidden rounded-[1.6rem] shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:bg-white/95 hover:backdrop-blur-xl hover:shadow-2xl">
                         <button
@@ -438,6 +476,62 @@ function HomePageContent() {
                     </li>
                   ))}
                 </ul>
+                <div className="glass-panel mt-8 flex flex-wrap items-center justify-center gap-2 rounded-2xl px-4 py-4 text-sm">
+                  <button
+                    type="button"
+                    onClick={() => goToPage(page - 1)}
+                    disabled={page <= 1}
+                    className="rounded-full border border-emerald-200/70 bg-white/70 px-3 py-1.5 font-medium text-[#4a2f22] disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    上一页
+                  </button>
+                  {pageNumbers.map((n) => (
+                    <button
+                      key={n}
+                      type="button"
+                      onClick={() => goToPage(n)}
+                      className={`rounded-full border px-3 py-1.5 font-semibold ${
+                        n === page
+                          ? "border-amber-200 bg-amber-100/80 text-[#4a2f22]"
+                          : "border-emerald-200/70 bg-white/70 text-[#4a2f22]"
+                      }`}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => goToPage(page + 1)}
+                    disabled={page >= totalPages}
+                    className="rounded-full border border-emerald-200/70 bg-white/70 px-3 py-1.5 font-medium text-[#4a2f22] disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    下一页
+                  </button>
+                  <div className="ml-1 inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-white/70 px-2 py-1">
+                    <span className="text-xs font-medium text-[#4a2f22]">
+                      跳转到第
+                    </span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={totalPages}
+                      value={jumpPage}
+                      onChange={(e) => setJumpPage(e.target.value)}
+                      className="w-14 rounded-md border border-emerald-200 bg-white/50 px-2 py-1 text-center text-xs font-semibold text-[#4a2f22] outline-none"
+                    />
+                    <span className="text-xs font-medium text-[#4a2f22]">页</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const n = Number.parseInt(jumpPage, 10);
+                        if (!Number.isNaN(n)) goToPage(n);
+                      }}
+                      className="rounded-full border border-emerald-200/80 bg-emerald-50/80 px-3 py-1 text-xs font-semibold text-[#4a2f22]"
+                    >
+                      确认
+                    </button>
+                  </div>
+                </div>
               )}
             </>
           )}

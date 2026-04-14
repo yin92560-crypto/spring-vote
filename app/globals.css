@@ -37,9 +37,21 @@ body {
   }
 }
 
-/* 移除背景蒙版，保留原图色彩 */
+/* 轻柔背景蒙版：保留插画细节并提升前景可读性 */
 body::before {
-  content: none;
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.2) 0%,
+    rgba(253, 249, 241, 0.16) 42%,
+    rgba(255, 255, 255, 0.18) 100%
+  );
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px);
 }
 
 /* 轻微纸感颗粒，贴近插画海报质感 */
