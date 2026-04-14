@@ -22,6 +22,64 @@ type AdminStats = {
   votes: number;
 };
 
+const MAX_UPLOAD_BYTES = 500 * 1024;
+
+async function compressImageToWebP(file: File): Promise<File> {
+  if (typeof window === "undefined") return file;
+  if (!file.type.startsWith("image/")) return file;
+
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new window.Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error("读取图片失败"));
+      el.src = url;
+    });
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+
+    let bestBlob: Blob | null = null;
+    let scale = 1;
+    const qualities = [0.9, 0.82, 0.74, 0.66, 0.58, 0.5];
+
+    for (let round = 0; round < 5; round++) {
+      const w = Math.max(1, Math.round(img.naturalWidth * scale));
+      const h = Math.max(1, Math.round(img.naturalHeight * scale));
+      canvas.width = w;
+      canvas.height = h;
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+
+      for (const q of qualities) {
+        const blob = await new Promise<Blob | null>((resolve) =>
+          canvas.toBlob(resolve, "image/webp", q)
+        );
+        if (!blob) continue;
+        bestBlob = blob;
+        if (blob.size <= MAX_UPLOAD_BYTES) {
+          return new File([blob], `${file.name.replace(/\.[^.]+$/, "")}.webp`, {
+            type: "image/webp",
+          });
+        }
+      }
+
+      scale *= 0.85;
+    }
+
+    if (bestBlob) {
+      return new File([bestBlob], `${file.name.replace(/\.[^.]+$/, "")}.webp`, {
+        type: "image/webp",
+      });
+    }
+    return file;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 export function AdminPageClient({ onLogout }: AdminPageClientProps) {
   const { t } = useI18n();
   const router = useRouter();
@@ -122,8 +180,9 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const title = buildWorkTitleFromFile(file, titlePrefix);
+        const uploadFile = await compressImageToWebP(file);
         const uploadFd = new FormData();
-        uploadFd.append("file", file);
+        uploadFd.append("file", uploadFile);
         uploadFd.append("folder", "works");
 
         try {

@@ -1,5 +1,12 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  getVoteRedis,
+  keyDirtyWorkDays,
+  keyFlushLock,
+  keyWorkDayVotes,
+  parseWorkDayMember,
+} from "@/lib/vote-redis";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +30,22 @@ export async function POST(request: Request) {
     if (error) {
       console.error(error);
       return NextResponse.json({ error: "清空失败" }, { status: 500 });
+    }
+
+    // 清理 Redis 投票缓存，避免清零后旧缓存再次回写。
+    try {
+      const redis = getVoteRedis();
+      const dirtyMembers = (await redis.smembers<string[]>(keyDirtyWorkDays())) ?? [];
+      for (const member of dirtyMembers) {
+        const parsed = parseWorkDayMember(member);
+        if (!parsed) continue;
+        await redis.del(keyWorkDayVotes(parsed.day, parsed.workId));
+      }
+      await redis.del(keyDirtyWorkDays());
+      await redis.del(keyFlushLock());
+      await redis.del("vote:sync:ops");
+    } catch (redisErr) {
+      console.error("clear redis vote cache failed:", redisErr);
     }
 
     return NextResponse.json({ ok: true });

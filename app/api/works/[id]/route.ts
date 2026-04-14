@@ -71,7 +71,7 @@ export async function DELETE(request: Request, context: Params) {
 
     const { data: row, error: fErr } = await supabase
       .from("works")
-      .select("image_path")
+      .select("id")
       .eq("id", id)
       .maybeSingle();
 
@@ -80,16 +80,8 @@ export async function DELETE(request: Request, context: Params) {
       return NextResponse.json({ error: "查询作品失败" }, { status: 500 });
     }
 
-    if (!row?.image_path) {
+    if (!row?.id) {
       return NextResponse.json({ error: "作品不存在" }, { status: 404 });
-    }
-
-    const { error: rmErr } = await supabase.storage
-      .from("photos")
-      .remove([row.image_path as string]);
-
-    if (rmErr) {
-      console.error(rmErr);
     }
 
     const { error: dErr } = await supabase.from("works").delete().eq("id", id);

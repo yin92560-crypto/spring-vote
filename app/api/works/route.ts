@@ -2,6 +2,14 @@ import { NextResponse } from "next/server";
 import { getClientIp } from "@/lib/get-client-ip";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { shanghaiDateString } from "@/lib/shanghai-date";
+import {
+  getVoteRedis,
+  keyDailyUserVotes,
+  keyDirtyWorkDays,
+  keyWorkDayVotes,
+  parseWorkDayMember,
+  voteUserKey,
+} from "@/lib/vote-redis";
 import { addDisplayNumbers } from "@/lib/work-display";
 
 export const dynamic = "force-dynamic";
@@ -37,6 +45,24 @@ export async function GET(request: Request) {
       counts.set(wid, (counts.get(wid) ?? 0) + 1);
     }
 
+    // 叠加 Redis 中尚未回写到 Supabase 的票数，保证前台实时展示。
+    try {
+      const redis = getVoteRedis();
+      const dirtyMembers = (await redis.smembers<string[]>(keyDirtyWorkDays())) ?? [];
+      for (const member of dirtyMembers) {
+        const parsed = parseWorkDayMember(member);
+        if (!parsed) continue;
+        const n = Number(
+          (await redis.get<number>(keyWorkDayVotes(parsed.day, parsed.workId))) ?? 0
+        );
+        if (n > 0) {
+          counts.set(parsed.workId, (counts.get(parsed.workId) ?? 0) + n);
+        }
+      }
+    } catch (redisErr) {
+      console.error("read redis vote cache failed:", redisErr);
+    }
+
     const list = addDisplayNumbers(
       (works ?? []).map((w) => ({
         id: w.id as string,
@@ -60,7 +86,19 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "读取剩余票数失败" }, { status: 500 });
     }
 
-    const used = usedToday ?? 0;
+    let used = usedToday ?? 0;
+    // 叠加 Redis 的用户当日票数，避免异步回写期间剩余票数显示不准。
+    try {
+      const redis = getVoteRedis();
+      const ua = request.headers.get("user-agent") ?? "";
+      const userKey = voteUserKey(ip, ua);
+      const redisUsed = Number(
+        (await redis.get<number>(keyDailyUserVotes(today, userKey))) ?? 0
+      );
+      used += redisUsed;
+    } catch (redisErr) {
+      console.error("read redis daily votes failed:", redisErr);
+    }
     const remaining = Math.max(0, 3 - used);
 
     return NextResponse.json({ works: list, remaining });
