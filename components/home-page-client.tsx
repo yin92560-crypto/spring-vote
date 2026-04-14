@@ -325,7 +325,6 @@ function HomePageContent() {
             <div className="pointer-events-none absolute left-1/2 top-1/2 h-[220px] w-[min(94vw,860px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.62)_0%,rgba(255,255,255,0.34)_38%,rgba(255,255,255,0.08)_65%,rgba(255,255,255,0)_100%)] blur-[2px]" />
             {locale === "zh" ? (
               <div className="font-display text-balance">
-                <div className="pointer-events-none absolute left-1/2 top-[30%] h-[124px] w-[min(90vw,760px)] -translate-x-1/2 rounded-2xl bg-black/18 backdrop-blur-[1.5px]" />
                 <h1
                   className="relative z-[1] text-[clamp(2.35rem,8.4vw,5rem)] font-black leading-[1.1] tracking-[2px]"
                   style={{
