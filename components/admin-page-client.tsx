@@ -122,17 +122,41 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const title = buildWorkTitleFromFile(file, titlePrefix);
-        const fd = new FormData();
-        fd.append("title", title);
-        fd.append("workTitle", workTitle.trim() || title);
-        fd.append("authorName", authorName.trim());
-        fd.append("file", file);
+        const uploadFd = new FormData();
+        uploadFd.append("file", file);
+        uploadFd.append("folder", "works");
 
         try {
-          const res = await fetch("/api/works", { method: "POST", body: fd });
+          const uploadRes = await fetch("/api/upload", {
+            method: "POST",
+            body: uploadFd,
+          });
+          const uploadJson = (await uploadRes.json()) as {
+            ok?: boolean;
+            error?: string;
+            url?: string;
+            key?: string;
+          };
+          if (!uploadRes.ok || !uploadJson.url || !uploadJson.key) {
+            failures.push(`${file.name}: ${uploadJson.error ?? "R2 上传失败"}`);
+            setUploadDone(i + 1);
+            continue;
+          }
+
+          const res = await fetch("/api/works", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title,
+              workTitle: workTitle.trim() || title,
+              authorName: authorName.trim(),
+              imageUrl: uploadJson.url,
+              imagePath: uploadJson.key,
+            }),
+          });
           const j = (await res.json()) as { ok?: boolean; error?: string };
           if (!res.ok) {
-            failures.push(`${file.name}: ${j.error ?? "失败"}`);
+            failures.push(`${file.name}: ${j.error ?? "保存失败"}`);
           } else {
             ok += 1;
           }

@@ -72,43 +72,28 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const formData = await request.formData();
-    const title = String(formData.get("title") ?? "");
-    const workTitle = String(formData.get("workTitle") ?? "");
-    const authorName = String(formData.get("authorName") ?? "");
-    const file = formData.get("file");
+    const body = (await request.json()) as {
+      title?: string;
+      workTitle?: string;
+      authorName?: string;
+      imageUrl?: string;
+      imagePath?: string;
+    };
+    const title = String(body.title ?? "");
+    const workTitle = String(body.workTitle ?? "");
+    const authorName = String(body.authorName ?? "");
+    const imageUrl = String(body.imageUrl ?? "").trim();
+    const imagePath = String(body.imagePath ?? "").trim();
 
-    if (!(file instanceof File) || file.size === 0) {
-      return NextResponse.json({ error: "请上传图片文件" }, { status: 400 });
-    }
-
-    if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "仅支持图片格式" }, { status: 400 });
+    if (!imageUrl || !imagePath) {
+      return NextResponse.json(
+        { error: "缺少 R2 图片地址或路径" },
+        { status: 400 }
+      );
     }
 
     const supabase = createAdminClient();
     const workId = crypto.randomUUID();
-    const ext = file.name.split(".").pop() ?? "jpg";
-    const safeExt = /^[a-zA-Z0-9]+$/.test(ext) ? ext : "jpg";
-    const path = `works/${workId}/${Date.now()}.${safeExt}`;
-
-    const buffer = Buffer.from(await file.arrayBuffer());
-
-    const { error: upErr } = await supabase.storage
-      .from("photos")
-      .upload(path, buffer, {
-        contentType: file.type || "image/jpeg",
-        upsert: false,
-      });
-
-    if (upErr) {
-      console.error(upErr);
-      return NextResponse.json({ error: "图片上传失败" }, { status: 500 });
-    }
-
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from("photos").getPublicUrl(path);
 
     const safeTitle = title.trim() || workTitle.trim() || "未命名作品";
     const safeWorkTitle = workTitle.trim() || safeTitle;
@@ -119,13 +104,12 @@ export async function POST(request: Request) {
       title: safeTitle,
       work_title: safeWorkTitle,
       author_name: safeAuthorName,
-      image_path: path,
-      image_url: publicUrl,
+      image_path: imagePath,
+      image_url: imageUrl,
     });
 
     if (insErr) {
       console.error(insErr);
-      await supabase.storage.from("photos").remove([path]);
       return NextResponse.json({ error: "保存作品失败" }, { status: 500 });
     }
 
