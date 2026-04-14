@@ -420,63 +420,64 @@ function HomePageContent() {
                   <p className="mt-2 text-sm text-stone-800/65">{t("noMatchHint")}</p>
                 </div>
               ) : (
-                <ul className="mt-7 grid gap-5 sm:mt-8 sm:gap-7 sm:grid-cols-2 lg:grid-cols-3">
-                  {pagedWorks.map((w) => (
-                    <li key={w.id}>
-                      <article className="glass-panel group flex flex-col overflow-hidden rounded-[1.6rem] shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:bg-white/95 hover:backdrop-blur-xl hover:shadow-2xl">
-                        <button
-                          type="button"
-                          onClick={() => openDetail(w)}
-                          className="relative aspect-[4/3] w-full cursor-zoom-in overflow-hidden bg-stone-100/50 text-left outline-none ring-stone-300/40 transition-all duration-300 ease-out focus-visible:ring-2"
-                        >
-                          <div className="pointer-events-none absolute left-3 top-3 z-[1] rounded-lg bg-amber-50/86 px-2.5 py-1 text-xs font-semibold tabular-nums tracking-wide text-stone-700 shadow-sm backdrop-blur-sm">
-                            No.{w.displayNo}
-                          </div>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={w.imageUrl}
-                            alt={`${w.workTitle || w.title} (${t("displayNoLabel")} ${w.displayNo})`}
-                            className="h-full w-full object-cover transition-transform duration-500 ease-out will-change-transform group-hover:scale-105"
-                          />
-                          <div className="card-caption-overlay pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-3 pt-12">
-                            <p className="text-xs font-semibold drop-shadow-md">
-                              <span className="card-badge-no text-stone-700/90">
-                                {t("displayNoLabel")} {w.displayNo}
-                              </span>
-                            </p>
-                            <p className="truncate text-lg font-medium text-white drop-shadow-md">
-                              {w.workTitle || w.title}
-                            </p>
-                            <p className="mt-1 text-[11px] text-white/90 drop-shadow">
-                              {t("viewDetailHint")}
-                            </p>
-                          </div>
-                        </button>
-                        <div className="flex items-center justify-between gap-3 px-4 py-4">
-                          <div className="min-w-0">
-                            <p className="truncate font-semibold text-[#4a2f22]">
-                              {w.workTitle || w.title}
-                            </p>
-                            <p className="mt-0.5 truncate text-xs font-semibold text-[#4a2f22]/80">
-                              {t("authorLabel")}：{w.authorName || "-"}
-                            </p>
-                            <p className="mt-1 text-sm text-stone-700/85">
-                              {t("votesLabel")}{" "}
-                              <strong className="text-stone-800">{w.votes}</strong>
-                            </p>
-                          </div>
-                          <VotePillButton
-                            disabled={remaining <= 0}
-                            onVote={() => voteFromCard(w.id)}
+                <>
+                  <ul className="mt-7 grid gap-5 sm:mt-8 sm:gap-7 sm:grid-cols-2 lg:grid-cols-3">
+                    {pagedWorks.map((w) => (
+                      <li key={w.id}>
+                        <article className="glass-panel group flex flex-col overflow-hidden rounded-[1.6rem] shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:bg-white/95 hover:backdrop-blur-xl hover:shadow-2xl">
+                          <button
+                            type="button"
+                            onClick={() => openDetail(w)}
+                            className="relative aspect-[4/3] w-full cursor-zoom-in overflow-hidden bg-stone-100/50 text-left outline-none ring-stone-300/40 transition-all duration-300 ease-out focus-visible:ring-2"
                           >
-                            {t("voteCard")}
-                          </VotePillButton>
-                        </div>
-                      </article>
-                    </li>
-                  ))}
-                </ul>
-                <div className="glass-panel mt-8 flex flex-wrap items-center justify-center gap-2 rounded-2xl px-4 py-4 text-sm">
+                            <div className="pointer-events-none absolute left-3 top-3 z-[1] rounded-lg bg-amber-50/86 px-2.5 py-1 text-xs font-semibold tabular-nums tracking-wide text-stone-700 shadow-sm backdrop-blur-sm">
+                              No.{w.displayNo}
+                            </div>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={w.imageUrl}
+                              alt={`${w.workTitle || w.title} (${t("displayNoLabel")} ${w.displayNo})`}
+                              className="h-full w-full object-cover transition-transform duration-500 ease-out will-change-transform group-hover:scale-105"
+                            />
+                            <div className="card-caption-overlay pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-3 pt-12">
+                              <p className="text-xs font-semibold drop-shadow-md">
+                                <span className="card-badge-no text-stone-700/90">
+                                  {t("displayNoLabel")} {w.displayNo}
+                                </span>
+                              </p>
+                              <p className="truncate text-lg font-medium text-white drop-shadow-md">
+                                {w.workTitle || w.title}
+                              </p>
+                              <p className="mt-1 text-[11px] text-white/90 drop-shadow">
+                                {t("viewDetailHint")}
+                              </p>
+                            </div>
+                          </button>
+                          <div className="flex items-center justify-between gap-3 px-4 py-4">
+                            <div className="min-w-0">
+                              <p className="truncate font-semibold text-[#4a2f22]">
+                                {w.workTitle || w.title}
+                              </p>
+                              <p className="mt-0.5 truncate text-xs font-semibold text-[#4a2f22]/80">
+                                {t("authorLabel")}：{w.authorName || "-"}
+                              </p>
+                              <p className="mt-1 text-sm text-stone-700/85">
+                                {t("votesLabel")}{" "}
+                                <strong className="text-stone-800">{w.votes}</strong>
+                              </p>
+                            </div>
+                            <VotePillButton
+                              disabled={remaining <= 0}
+                              onVote={() => voteFromCard(w.id)}
+                            >
+                              {t("voteCard")}
+                            </VotePillButton>
+                          </div>
+                        </article>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="glass-panel mt-8 flex flex-wrap items-center justify-center gap-2 rounded-2xl px-4 py-4 text-sm">
                   <button
                     type="button"
                     onClick={() => goToPage(page - 1)}
@@ -531,7 +532,8 @@ function HomePageContent() {
                       确认
                     </button>
                   </div>
-                </div>
+                  </div>
+                </>
               )}
             </>
           )}
