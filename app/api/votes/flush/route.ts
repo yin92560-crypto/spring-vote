@@ -9,6 +9,8 @@ import {
 } from "@/lib/vote-redis";
 
 export const dynamic = "force-dynamic";
+const WORKS_LIST_CACHE_KEY = "works:list:v1";
+const RANK_LIST_CACHE_KEY = "rank:list:v1";
 
 export async function POST(request: Request) {
   try {
@@ -61,6 +63,8 @@ export async function POST(request: Request) {
       await redis.srem(keyDirtyWorkDays(), member);
     }
 
+    await redis.del(WORKS_LIST_CACHE_KEY);
+    await redis.del(RANK_LIST_CACHE_KEY);
     await redis.del(keyFlushLock());
     return NextResponse.json({ ok: true, flushed });
   } catch (e) {

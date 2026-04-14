@@ -9,6 +9,8 @@ import {
 } from "@/lib/vote-redis";
 
 export const dynamic = "force-dynamic";
+const WORKS_LIST_CACHE_KEY = "works:list:v1";
+const RANK_LIST_CACHE_KEY = "rank:list:v1";
 
 /** 清空全部投票记录（管理用）。若设置了 ADMIN_SECRET，需在请求头 x-admin-secret 中携带。 */
 export async function POST(request: Request) {
@@ -44,6 +46,8 @@ export async function POST(request: Request) {
       await redis.del(keyDirtyWorkDays());
       await redis.del(keyFlushLock());
       await redis.del("vote:sync:ops");
+      await redis.del(WORKS_LIST_CACHE_KEY);
+      await redis.del(RANK_LIST_CACHE_KEY);
     } catch (redisErr) {
       console.error("clear redis vote cache failed:", redisErr);
     }

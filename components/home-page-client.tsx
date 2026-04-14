@@ -294,9 +294,7 @@ function HomePageContent() {
   };
 
   const titleToneClass =
-    locale === "zh"
-      ? "text-[2.5rem] sm:text-6xl lg:text-7xl leading-[1.12] sm:leading-[1.08] tracking-[0.01em]"
-      : locale === "ja"
+    locale === "ja"
         ? "text-[2.25rem] sm:text-5xl lg:text-6xl leading-[1.16] sm:leading-[1.12] tracking-[0.01em]"
         : "text-[2.15rem] sm:text-5xl lg:text-6xl leading-[1.16] sm:leading-[1.12] tracking-[0.005em]";
   const titleWidthClass = locale === "zh" ? "max-w-4xl" : "max-w-5xl";
@@ -326,21 +324,31 @@ function HomePageContent() {
           <div className={`relative mx-auto ${titleWidthClass} px-2 py-2 sm:px-4 sm:py-4`}>
             <div className="pointer-events-none absolute left-1/2 top-1/2 h-[220px] w-[min(94vw,860px)] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.62)_0%,rgba(255,255,255,0.34)_38%,rgba(255,255,255,0.08)_65%,rgba(255,255,255,0)_100%)] blur-[2px]" />
             {locale === "zh" ? (
-              <div className="font-display text-balance text-[#6a2f1e]">
+              <div className="font-display text-balance">
                 <h1
-                  className="text-[2.65rem] font-black leading-[1.12] tracking-[0.01em] sm:text-[3rem]"
+                  className="text-[clamp(2.35rem,8.4vw,5rem)] font-black leading-[1.1] tracking-[2px]"
                   style={{
                     fontFamily: '"STKaiti", "KaiTi", "Noto Serif SC", serif',
-                    textShadow: "2px 2px 4px rgba(0, 0, 0, 0.3)",
+                    background:
+                      "linear-gradient(to bottom, #A0522D 0%, #8B0000 100%)",
+                    WebkitBackgroundClip: "text",
+                    color: "transparent",
+                    textShadow:
+                      "2px 2px 4px rgba(0, 0, 0, 0.3), 0 0 8px rgba(255, 248, 220, 0.7), 0 0 16px rgba(255, 241, 176, 0.45)",
                   }}
                 >
                   {bannerTitleLines[0]}
                 </h1>
                 <h2
-                  className="mt-2 text-[2.15rem] font-black leading-[1.12] tracking-[0.01em] sm:text-[2.5rem]"
+                  className="mb-2 mt-3 text-[clamp(2.1rem,7.6vw,4.5rem)] font-black leading-[1.1] tracking-[2px]"
                   style={{
                     fontFamily: '"STKaiti", "KaiTi", "Noto Serif SC", serif',
-                    textShadow: "2px 2px 4px rgba(0, 0, 0, 0.3)",
+                    background:
+                      "linear-gradient(to bottom, #A0522D 0%, #8B0000 100%)",
+                    WebkitBackgroundClip: "text",
+                    color: "transparent",
+                    textShadow:
+                      "2px 2px 4px rgba(0, 0, 0, 0.3), 0 0 8px rgba(255, 248, 220, 0.68), 0 0 16px rgba(255, 241, 176, 0.4)",
                   }}
                 >
                   {bannerTitleLines[1]}
@@ -467,6 +475,8 @@ function HomePageContent() {
                             <img
                               src={w.imageUrl}
                               alt={`${w.workTitle || w.title} (${t("displayNoLabel")} ${w.displayNo})`}
+                            loading="lazy"
+                            decoding="async"
                               className="h-full w-full object-cover transition-transform duration-500 ease-out will-change-transform group-hover:scale-105"
                             />
                             <div className="card-caption-overlay pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-3 pt-12">

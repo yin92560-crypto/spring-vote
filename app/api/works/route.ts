@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { getClientIp } from "@/lib/get-client-ip";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { shanghaiDateString } from "@/lib/shanghai-date";
 import {
   getVoteRedis,
   keyDailyUserVotes,
@@ -11,43 +10,84 @@ import {
   voteUserKey,
 } from "@/lib/vote-redis";
 import { addDisplayNumbers } from "@/lib/work-display";
+import type { Work } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
+const WORKS_LIST_CACHE_KEY = "works:list:v1";
+const RANK_LIST_CACHE_KEY = "rank:list:v1";
+
+type WorksCacheItem = Pick<
+  Work,
+  "id" | "title" | "workTitle" | "authorName" | "imageUrl" | "votes" | "createdAt" | "displayNo"
+>;
 
 export async function GET(request: Request) {
   try {
-    const supabase = createAdminClient();
     const ip = getClientIp(request.headers);
-    const today = shanghaiDateString();
+    const ua = request.headers.get("user-agent") ?? "";
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Shanghai",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
 
-    const { data: works, error: wErr } = await supabase
-      .from("works")
-      .select("id, title, work_title, author_name, image_url, created_at")
-      .order("created_at", { ascending: false });
-
-    if (wErr) {
-      console.error(wErr);
-      return NextResponse.json({ error: "读取作品失败" }, { status: 500 });
+    const redis = getVoteRedis();
+    let list: WorksCacheItem[] | null = null;
+    try {
+      const cached = await redis.get<string>(WORKS_LIST_CACHE_KEY);
+      if (typeof cached === "string" && cached) {
+        list = JSON.parse(cached) as WorksCacheItem[];
+      }
+    } catch (cacheErr) {
+      console.error("read works cache failed:", cacheErr);
     }
 
-    const { data: voteRows, error: vErr } = await supabase
-      .from("votes")
-      .select("work_id");
+    if (!list) {
+      const supabase = createAdminClient();
+      const { data: works, error: wErr } = await supabase
+        .from("works")
+        .select("id, title, work_title, author_name, image_url, created_at")
+        .order("created_at", { ascending: false });
+      if (wErr) {
+        console.error(wErr);
+        return NextResponse.json({ error: "读取作品失败" }, { status: 500 });
+      }
 
-    if (vErr) {
-      console.error(vErr);
-      return NextResponse.json({ error: "读取票数失败" }, { status: 500 });
-    }
+      const { data: voteRows, error: vErr } = await supabase
+        .from("votes")
+        .select("work_id");
+      if (vErr) {
+        console.error(vErr);
+        return NextResponse.json({ error: "读取票数失败" }, { status: 500 });
+      }
 
-    const counts = new Map<string, number>();
-    for (const row of voteRows ?? []) {
-      const wid = row.work_id as string;
-      counts.set(wid, (counts.get(wid) ?? 0) + 1);
+      const counts = new Map<string, number>();
+      for (const row of voteRows ?? []) {
+        const wid = row.work_id as string;
+        counts.set(wid, (counts.get(wid) ?? 0) + 1);
+      }
+
+      list = addDisplayNumbers(
+        (works ?? []).map((w) => ({
+          id: w.id as string,
+          title: w.title as string,
+          workTitle: (w.work_title as string | null) ?? (w.title as string),
+          authorName: (w.author_name as string | null) ?? "",
+          imageUrl: w.image_url as string,
+          votes: counts.get(w.id as string) ?? 0,
+          createdAt: w.created_at as string,
+        }))
+      );
+      try {
+        await redis.set(WORKS_LIST_CACHE_KEY, JSON.stringify(list), { ex: 60 });
+      } catch (cacheErr) {
+        console.error("write works cache failed:", cacheErr);
+      }
     }
 
     // 叠加 Redis 中尚未回写到 Supabase 的票数，保证前台实时展示。
     try {
-      const redis = getVoteRedis();
       const dirtyMembers = (await redis.smembers<string[]>(keyDirtyWorkDays())) ?? [];
       for (const member of dirtyMembers) {
         const parsed = parseWorkDayMember(member);
@@ -56,49 +96,16 @@ export async function GET(request: Request) {
           (await redis.get<number>(keyWorkDayVotes(parsed.day, parsed.workId))) ?? 0
         );
         if (n > 0) {
-          counts.set(parsed.workId, (counts.get(parsed.workId) ?? 0) + n);
+          const target = list.find((w) => w.id === parsed.workId);
+          if (target) target.votes += n;
         }
       }
     } catch (redisErr) {
       console.error("read redis vote cache failed:", redisErr);
     }
 
-    const list = addDisplayNumbers(
-      (works ?? []).map((w) => ({
-        id: w.id as string,
-        title: w.title as string,
-        workTitle: (w.work_title as string | null) ?? (w.title as string),
-        authorName: (w.author_name as string | null) ?? "",
-        imageUrl: w.image_url as string,
-        votes: counts.get(w.id as string) ?? 0,
-        createdAt: w.created_at as string,
-      }))
-    );
-
-    const { count: usedToday, error: cErr } = await supabase
-      .from("votes")
-      .select("*", { count: "exact", head: true })
-      .eq("voter_ip", ip)
-      .eq("vote_date", today);
-
-    if (cErr) {
-      console.error(cErr);
-      return NextResponse.json({ error: "读取剩余票数失败" }, { status: 500 });
-    }
-
-    let used = usedToday ?? 0;
-    // 叠加 Redis 的用户当日票数，避免异步回写期间剩余票数显示不准。
-    try {
-      const redis = getVoteRedis();
-      const ua = request.headers.get("user-agent") ?? "";
-      const userKey = voteUserKey(ip, ua);
-      const redisUsed = Number(
-        (await redis.get<number>(keyDailyUserVotes(today, userKey))) ?? 0
-      );
-      used += redisUsed;
-    } catch (redisErr) {
-      console.error("read redis daily votes failed:", redisErr);
-    }
+    const userKey = voteUserKey(ip, ua);
+    const used = Number((await redis.get<number>(keyDailyUserVotes(today, userKey))) ?? 0);
     const remaining = Math.max(0, 3 - used);
 
     return NextResponse.json({ works: list, remaining });
@@ -149,6 +156,13 @@ export async function POST(request: Request) {
     if (insErr) {
       console.error(insErr);
       return NextResponse.json({ error: "保存作品失败" }, { status: 500 });
+    }
+    try {
+      const redis = getVoteRedis();
+      await redis.del(WORKS_LIST_CACHE_KEY);
+      await redis.del(RANK_LIST_CACHE_KEY);
+    } catch (cacheErr) {
+      console.error("invalidate works cache failed:", cacheErr);
     }
 
     return NextResponse.json({ ok: true, id: workId });

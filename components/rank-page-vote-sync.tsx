@@ -32,10 +32,14 @@ export function RankPageVoteSync() {
     };
     document.addEventListener("visibilitychange", onVisible);
 
+    // 兜底实时刷新：页面停留期间每 8 秒刷新一次排行榜
+    const timer = window.setInterval(refresh, 8000);
+
     return () => {
       window.removeEventListener(VOTE_DATA_CHANGED_EVENT, refresh);
       bc?.close();
       document.removeEventListener("visibilitychange", onVisible);
+      window.clearInterval(timer);
     };
   }, [router]);
 
