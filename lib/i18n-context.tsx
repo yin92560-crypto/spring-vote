@@ -128,7 +128,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     topThree: "前三名",
     otherRanks: "其他名次",
     rankPageTitle: "春日人气排行榜",
-    rankPageDesc: "所有作品都按实时得票数，快冲票帮你爱的作品挤去前排🥳",
+    rankPageDesc: "所有作品按实时票数排序，快冲票帮你爱的作品冲刺首页。",
     rankSyncHint: "投票或管理变更后会自动刷新；切换回此标签时也会更新",
     backHome: "返回首页",
     rankLoadError: "榜单暂时无法加载",

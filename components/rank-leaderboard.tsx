@@ -36,6 +36,12 @@ const podiumStyles = {
   },
 } as const;
 
+function formatWorkDisplayName(work: Work): string {
+  const title = work.workTitle?.trim() || "《无名春日》";
+  const author = work.authorName?.trim() || "春日使者";
+  return `${title} | 作者: ${author}`;
+}
+
 function PodiumCard({
   work,
   place,
@@ -47,6 +53,7 @@ function PodiumCard({
   const s = podiumStyles[place];
   const rankWord =
     place === 1 ? t("champion") : place === 2 ? t("runnerUp") : t("thirdPlace");
+  const workDisplayName = formatWorkDisplayName(work);
   const cardBody = (
     <div
       className={`${s.card} relative flex flex-1 flex-col backdrop-blur-md ${
@@ -104,7 +111,7 @@ function PodiumCard({
               href={`/?id=${work.displayNo}`}
               className="hover:text-stone-800 hover:underline"
             >
-              {work.title}
+              {workDisplayName}
             </Link>
           </p>
           <p className="text-sm text-stone-800/75">
@@ -136,6 +143,7 @@ function PodiumCard({
 
 function RestRow({ work, rank, index }: { work: Work; rank: number; index: number }) {
   const { t } = useI18n();
+  const workDisplayName = formatWorkDisplayName(work);
   return (
     <li>
       <Link
@@ -159,7 +167,7 @@ function RestRow({ work, rank, index }: { work: Work; rank: number; index: numbe
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium text-stone-950 sm:text-lg">
-            {work.title}
+            {workDisplayName}
           </p>
           <p className="mt-0.5 text-xs text-stone-800/65 sm:text-sm">
             {t("displayNoLabel")} {work.displayNo}

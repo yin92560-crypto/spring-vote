@@ -45,7 +45,6 @@ export function RankPageView({ rankResult }: { rankResult: RankResult }) {
             </span>
             <div>
               <p className="text-sm font-medium text-stone-700/85">{t("title")}</p>
-              <p className="text-xs text-stone-800/60">{t("rankSyncHint")}</p>
             </div>
           </div>
           <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
@@ -62,10 +61,18 @@ export function RankPageView({ rankResult }: { rankResult: RankResult }) {
 
       <div className="relative z-[1] mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-14 pt-[calc(var(--nav-safe)+1.25rem)] sm:px-6">
         <section className="text-center">
-          <h1 className="font-display text-4xl font-normal leading-[1.18] tracking-[0.01em] sm:text-5xl">
-            <span className="text-gradient-spring-title">{t("rankPageTitle")}</span>
+          <h1
+            className="font-display text-balance text-[clamp(2.35rem,8.4vw,5rem)] font-black leading-[1.1] tracking-[2px]"
+            style={{
+              fontFamily: '"STKaiti", "KaiTi", "Noto Serif SC", serif',
+              color: "#f7f5ef",
+              textShadow:
+                "0 2px 2px rgba(0,0,0,0.34), 2px 2px 4px rgba(0,0,0,0.32), 0 0 10px rgba(255,255,255,0.58)",
+            }}
+          >
+            {t("rankPageTitle")}
           </h1>
-          <p className="mx-auto mt-3 max-w-2xl text-pretty text-base leading-relaxed text-stone-700/85 sm:text-lg">
+          <p className="mx-auto mt-3 max-w-2xl text-pretty text-base leading-relaxed text-[#666] sm:text-lg">
             {t("rankPageDesc")}
           </p>
         </section>
