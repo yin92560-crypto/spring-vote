@@ -40,9 +40,13 @@ export function useVoteHomeState(): {
       void refresh();
     };
     window.addEventListener(VOTE_DATA_CHANGED_EVENT, on);
+    const timer = window.setInterval(() => {
+      void refresh();
+    }, 300000);
     return () => {
       cancelled = true;
       window.removeEventListener(VOTE_DATA_CHANGED_EVENT, on);
+      window.clearInterval(timer);
     };
   }, [refresh]);
 
