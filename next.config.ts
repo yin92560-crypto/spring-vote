@@ -5,6 +5,23 @@ const supabaseHost = supabaseUrl
   ? new URL(supabaseUrl).hostname
   : "localhost";
 
+function hostnameFromEnvUrl(key: string): string | null {
+  const raw = process.env[key]?.trim();
+  if (!raw) return null;
+  try {
+    const withProto = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    return new URL(withProto).hostname;
+  } catch {
+    return null;
+  }
+}
+
+const r2Hosts = new Set<string>();
+for (const key of ["R2_PUBLIC_BASE_URL", "NEXT_PUBLIC_R2_PUBLIC_BASE_URL"] as const) {
+  const h = hostnameFromEnvUrl(key);
+  if (h) r2Hosts.add(h);
+}
+
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
@@ -13,6 +30,11 @@ const nextConfig: NextConfig = {
         hostname: supabaseHost,
         pathname: "/storage/v1/object/public/**",
       },
+      ...[...r2Hosts].map((hostname) => ({
+        protocol: "https" as const,
+        hostname,
+        pathname: "/**",
+      })),
     ],
   },
 };

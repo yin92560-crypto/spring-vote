@@ -700,6 +700,20 @@ select {
   }
 }
 
+/* 作品远程图：占位层轻微扫光 */
+@keyframes work-remote-image-shimmer-move {
+  0% {
+    transform: translateX(-35%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+.work-remote-image-shimmer {
+  animation: work-remote-image-shimmer-move 2.1s ease-in-out infinite;
+}
+
 @keyframes rank-emerald-glow-pulse {
   0%,
   100% {

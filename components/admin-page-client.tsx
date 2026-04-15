@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Download } from "lucide-react";
 import * as XLSX from "xlsx";
 import { SpringLoadingIndicator } from "@/components/spring-loading";
+import { WorkRemoteImage } from "@/components/work-remote-image";
 import { useI18n } from "@/lib/i18n-context";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -704,11 +705,11 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
               >
                 <div className="flex min-w-0 flex-1 items-center gap-4">
                   <div className="h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-stone-100">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <WorkRemoteImage
                       src={w.imageUrl}
                       alt=""
-                      className="h-full w-full object-cover"
+                      className="h-full w-full"
+                      imgClassName="object-cover"
                     />
                   </div>
                   <div className="min-w-0">

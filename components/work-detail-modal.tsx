@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { WorkRemoteImage } from "@/components/work-remote-image";
 import { VotePillButton } from "@/components/vote-pill-button";
 import { useI18n } from "@/lib/i18n-context";
 import type { Work } from "@/lib/types";
@@ -224,12 +225,14 @@ export function WorkDetailModal({
                 openFullPreview();
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <WorkRemoteImage
                 key={work.id}
                 src={work.imageUrl}
                 alt=""
-                className="work-detail-img-fade mx-auto max-h-[min(58vh,560px)] w-full object-contain object-center transition-transform duration-500 ease-out will-change-transform group-hover:scale-105 sm:max-h-[min(62vh,620px)]"
+                layout="intrinsic"
+                loading="eager"
+                className="mx-auto min-h-[min(36vh,280px)] w-full max-w-full max-h-[min(58vh,560px)] sm:min-h-[min(40vh,320px)] sm:max-h-[min(62vh,620px)]"
+                imgClassName="work-detail-img-fade max-h-[min(58vh,560px)] w-full object-contain object-center transition-transform duration-500 ease-out will-change-transform group-hover:scale-105 sm:max-h-[min(62vh,620px)]"
               />
               <span
                 className="pointer-events-none absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/35 px-3 py-1 text-xs text-white/95 opacity-0 backdrop-blur-sm transition-opacity duration-200 group-hover:opacity-100"

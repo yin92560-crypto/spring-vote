@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { WorkRemoteImage } from "@/components/work-remote-image";
 import { useI18n } from "@/lib/i18n-context";
 import type { Work } from "@/lib/types";
 
@@ -88,11 +89,11 @@ function PodiumCard({
             href={`/?id=${work.displayNo}`}
             className="relative block h-full w-full outline-none ring-stone-300/30 focus-visible:ring-2"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <WorkRemoteImage
               src={work.imageUrl}
               alt=""
-              className="h-full w-full object-cover transition-transform duration-500 ease-out hover:scale-105"
+              className="h-full w-full"
+              imgClassName="object-cover transition-transform duration-500 ease-out hover:scale-105"
             />
           </Link>
         </div>
@@ -147,11 +148,11 @@ function RestRow({ work, rank }: { work: Work; rank: number }) {
           {rank}
         </span>
         <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-xl bg-stone-100/50 sm:h-[4.5rem] sm:w-28">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <WorkRemoteImage
             src={work.imageUrl}
             alt=""
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            className="h-full w-full"
+            imgClassName="object-cover transition duration-300 group-hover:scale-105"
           />
         </div>
         <div className="min-w-0 flex-1">

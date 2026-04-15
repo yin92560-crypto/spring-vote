@@ -13,6 +13,7 @@ import {
   useState,
 } from "react";
 import { WorkDetailModal } from "@/components/work-detail-modal";
+import { WorkRemoteImage } from "@/components/work-remote-image";
 import { filterWorksBySearch } from "@/lib/work-display";
 import { findWorkByDisplayQuery } from "@/lib/work-query-id";
 import type { Work } from "@/lib/types";
@@ -465,13 +466,11 @@ function HomePageContent() {
                             <div className="pointer-events-none absolute left-3 top-3 z-[1] rounded-lg bg-amber-50/86 px-2.5 py-1 text-xs font-semibold tabular-nums tracking-wide text-stone-700 shadow-sm backdrop-blur-sm">
                               No.{w.displayNo}
                             </div>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
+                            <WorkRemoteImage
                               src={w.imageUrl}
                               alt={`${w.workTitle || w.title} (${t("displayNoLabel")} ${w.displayNo})`}
-                            loading="lazy"
-                            decoding="async"
-                              className="h-full w-full object-cover transition-transform duration-500 ease-out will-change-transform group-hover:scale-105"
+                              className="absolute inset-0 h-full w-full"
+                              imgClassName="object-cover transition-transform duration-500 ease-out will-change-transform group-hover:scale-105"
                             />
                             <div className="card-caption-overlay pointer-events-none absolute inset-x-0 bottom-0 px-4 pb-3 pt-12">
                               <p className="text-xs font-semibold drop-shadow-md">
