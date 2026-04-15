@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import {
   buildR2PublicUrlForObjectKey,
-  createWorksFlatObjectKey,
+  createWorksNestedObjectKey,
 } from "@/lib/r2";
 
 export const dynamic = "force-dynamic";
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
       .toLowerCase()
       .replace(/[^a-z0-9]/g, "");
     const ext = /^(webp|jpeg|jpg|png|gif)$/.test(extPart) ? extPart : "webp";
-    const key = createWorksFlatObjectKey(ext);
+    const key = createWorksNestedObjectKey(ext);
     const body = Buffer.from(await file.arrayBuffer());
 
     const response = await client.send(

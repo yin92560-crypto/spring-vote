@@ -1,13 +1,13 @@
 /**
- * Cloudflare R2 公共访问与对象 Key 约定（与控制台路径一致）。
- * 扁平结构：`https://<pub>/works/<uuid>.webp`，避免多层目录拼接错误。
+ * Cloudflare R2 公共访问与对象 Key 约定。
+ * 对象路径：`works/<UUID 目录>/<文件名>.<ext>`，与控制台三级结构一致。
  */
 
 const DEFAULT_PUBLIC_ORIGIN = "https://pub-c32b84ede21d4770b966e9e4718d0a0d.r2.dev";
 
 /**
  * 公共访问根：仅 scheme + host。
- * 若 `R2_PUBLIC_BASE_URL` 误写成带 `/works` 等路径，这里会剥掉，防止与对象 Key 再拼出 `…/works/works/…`。
+ * 若 `R2_PUBLIC_BASE_URL` 误带路径，剥掉以免与 Key 拼出重复段。
  */
 export function getR2PublicOrigin(): string {
   const raw = process.env.R2_PUBLIC_BASE_URL?.trim();
@@ -20,7 +20,7 @@ export function getR2PublicOrigin(): string {
   }
 }
 
-/** `https://pub…r2.dev/<key>`，key 不含前导斜杠 */
+/** `https://pub…r2.dev/<key>` */
 export function buildR2PublicUrlForObjectKey(key: string): string {
   const origin = getR2PublicOrigin().replace(/\/+$/, "");
   const k = key.replace(/^\/+/, "");
@@ -28,12 +28,12 @@ export function buildR2PublicUrlForObjectKey(key: string): string {
 }
 
 /**
- * 新上传对象 Key：`works/<与文件名相同的 UUID>.webp`
- * 存库 `image_path` 与此字符串完全一致；`image_url` 由 {@link buildR2PublicUrlForObjectKey} 生成，UUID 与 R2 对象一致。
+ * 上传对象 Key：`works/<同一 UUID>/<时间戳>.<ext>`
+ * 目录名与文件名中的时间戳区分层级；`image_url` 与 `image_path` 与此 Key 一致。
  */
-export function createWorksFlatObjectKey(ext: string): string {
+export function createWorksNestedObjectKey(ext: string): string {
   const e = ext.toLowerCase().replace(/[^a-z0-9]/g, "");
   const safe = /^(webp|jpeg|jpg|png|gif)$/.test(e) ? e : "webp";
-  const id = crypto.randomUUID();
-  return `works/${id}.${safe}`;
+  const dirId = crypto.randomUUID();
+  return `works/${dirId}/${Date.now()}.${safe}`;
 }

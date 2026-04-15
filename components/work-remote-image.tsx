@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Image from "next/image";
+import { useCallback, useEffect, useState } from "react";
+import { withImageLoadRetryQuery } from "@/lib/work-image-client";
 
 function cx(...parts: (string | false | undefined | null)[]) {
   return parts.filter(Boolean).join(" ");
@@ -11,18 +13,23 @@ type Props = {
   alt: string;
   /** 外层容器，默认铺满父级（父级需为 `relative` 且给出高度） */
   className?: string;
-  /** 追加到 `<img>` 的类名，例如 `object-cover`、hover 动效等 */
+  /** 追加到 `<Image>` 的类名，例如 `object-cover`、hover 动效等 */
   imgClassName?: string;
   loading?: "lazy" | "eager";
   /**
-   * `fill`：缩略图铺满父容器（默认，`img` 绝对定位）。
-   * `intrinsic`：按图片比例占位（弹窗大图等），外层请带上 `min-h-*` / `max-h-*` 以免高度塌陷。
+   * `fill`：缩略图铺满父容器（默认）。
+   * `intrinsic`：弹窗大图等，使用固定 intrinsic 尺寸 + max 约束。
    */
   layout?: "fill" | "intrinsic";
+  /** 仅 `layout="fill"` 时传给 next/image 的 sizes */
+  sizes?: string;
 };
 
+const DEFAULT_FILL_SIZES =
+  "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw";
+
 /**
- * 远程作品图：直接使用接口下发的绝对 URL；加载占位；失败时仅显示占位（不加载备用 SVG，便于排查 R2）。
+ * 作品远程图：`next/image` + `unoptimized` 直链 R2；https + 失败时同 URL 带参重试一次。
  */
 export function WorkRemoteImage({
   src,
@@ -31,15 +38,35 @@ export function WorkRemoteImage({
   imgClassName,
   loading = "lazy",
   layout = "fill",
+  sizes = DEFAULT_FILL_SIZES,
 }: Props) {
   const primaryUrl = (src ?? "").trim();
   const [broken, setBroken] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  /** 0 首次；1 带参重试；≥2 两次失败后标记 broken */
+  const [errorCount, setErrorCount] = useState(0);
 
   useEffect(() => {
     setBroken(false);
     setLoaded(false);
+    setErrorCount(0);
   }, [primaryUrl]);
+
+  useEffect(() => {
+    if (errorCount >= 2) setBroken(true);
+  }, [errorCount]);
+
+  const displaySrc =
+    primaryUrl.length > 0
+      ? withImageLoadRetryQuery(
+          primaryUrl,
+          errorCount >= 1 && !broken ? 1 : 0,
+        )
+      : "";
+
+  const onImgError = useCallback(() => {
+    setErrorCount((n) => n + 1);
+  }, []);
 
   const showPlaceholder = Boolean(primaryUrl) && !loaded && !broken;
   const fill = layout === "fill";
@@ -91,25 +118,44 @@ export function WorkRemoteImage({
         >
           <span className="font-medium text-stone-700">图片加载失败</span>
           <span className="break-all text-[10px] leading-tight text-stone-500/90">
-            {primaryUrl}
+            {displaySrc}
           </span>
         </div>
-      ) : (
-        /* eslint-disable-next-line @next/next/no-img-element */
-        <img
-          src={primaryUrl}
+      ) : fill ? (
+        <Image
+          key={`${displaySrc}-${errorCount}`}
+          src={displaySrc}
           alt={alt}
+          fill
+          unoptimized
           loading={loading}
-          decoding="async"
+          sizes={sizes}
+          className={cx("z-[1] object-cover opacity-100", imgClassName)}
+          onLoad={() => {
+            setLoaded(true);
+            setErrorCount(0);
+          }}
+          onError={onImgError}
+        />
+      ) : (
+        <Image
+          key={`${displaySrc}-${errorCount}`}
+          src={displaySrc}
+          alt={alt}
+          width={2400}
+          height={1800}
+          unoptimized
+          loading={loading}
+          sizes="(max-width: 768px) 100vw, min(1400px, 100vw)"
           className={cx(
-            "z-[1] opacity-100",
-            fill
-              ? "absolute inset-0 h-full w-full"
-              : "relative mx-auto block h-auto w-full max-w-full",
+            "relative z-[1] h-auto w-full max-w-full object-contain opacity-100",
             imgClassName,
           )}
-          onLoad={() => setLoaded(true)}
-          onError={() => setBroken(true)}
+          onLoad={() => {
+            setLoaded(true);
+            setErrorCount(0);
+          }}
+          onError={onImgError}
         />
       )}
     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   useCallback,
   useEffect,
@@ -8,6 +9,7 @@ import {
   useState,
 } from "react";
 import { WorkRemoteImage } from "@/components/work-remote-image";
+import { withImageLoadRetryQuery } from "@/lib/work-image-client";
 import { VotePillButton } from "@/components/vote-pill-button";
 import { useI18n } from "@/lib/i18n-context";
 import type { Work } from "@/lib/types";
@@ -48,6 +50,7 @@ export function WorkDetailModal({
   const [fullPreview, setFullPreview] = useState(false);
   const [fullPreviewShown, setFullPreviewShown] = useState(false);
   const [fullImageLoaded, setFullImageLoaded] = useState(false);
+  const [hdLoadErrors, setHdLoadErrors] = useState(0);
   const closeFullTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { index, canNavigate } = useMemo(() => {
@@ -79,6 +82,7 @@ export function WorkDetailModal({
     closeFullTimerRef.current = setTimeout(() => {
       setFullPreview(false);
       setFullImageLoaded(false);
+      setHdLoadErrors(0);
       closeFullTimerRef.current = null;
     }, 320);
   }, []);
@@ -101,9 +105,19 @@ export function WorkDetailModal({
       setFullPreview(false);
       setFullPreviewShown(false);
       setFullImageLoaded(false);
+      setHdLoadErrors(0);
     }, 0);
     return () => window.clearTimeout(t);
   }, [work?.id]);
+
+  useEffect(() => {
+    setHdLoadErrors(0);
+    setFullImageLoaded(false);
+  }, [work?.imageUrl]);
+
+  useEffect(() => {
+    if (hdLoadErrors >= 2) setFullImageLoaded(true);
+  }, [hdLoadErrors]);
 
   useEffect(() => {
     if (!fullPreview) return;
@@ -172,6 +186,10 @@ export function WorkDetailModal({
   if (!work) return null;
 
   const hdUrl = originalImageUrl(work);
+  const hdDisplaySrc = withImageLoadRetryQuery(
+    hdUrl,
+    hdLoadErrors >= 1 && hdLoadErrors < 2 ? 1 : 0,
+  );
 
   return (
     <>
@@ -293,9 +311,7 @@ export function WorkDetailModal({
 
       {fullPreview && (
         <div
-          className={`fixed inset-0 z-[125] flex flex-col bg-black/88 backdrop-blur-md transition-[opacity] duration-300 ease-out ${
-            fullPreviewShown ? "opacity-100" : "opacity-0"
-          }`}
+          className="fixed inset-0 z-[125] flex flex-col bg-black/88 opacity-100 backdrop-blur-md transition-[opacity] duration-300 ease-out"
           role="dialog"
           aria-modal="true"
           aria-label={t("detailViewHdAria")}
@@ -324,10 +340,10 @@ export function WorkDetailModal({
             onClick={closeFullPreview}
           >
             <div
-              className={`relative flex max-h-[min(88dvh,920px)] w-full max-w-[min(100%,1400px)] cursor-zoom-out items-center justify-center transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+              className={`relative flex max-h-[min(88dvh,920px)] w-full max-w-[min(100%,1400px)] cursor-zoom-out items-center justify-center opacity-100 transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                 fullPreviewShown
-                  ? "translate-y-0 scale-100 opacity-100"
-                  : "translate-y-4 scale-[0.93] opacity-0"
+                  ? "translate-y-0 scale-100"
+                  : "translate-y-4 scale-[0.93]"
               }`}
             >
               {!fullImageLoaded && (
@@ -343,14 +359,20 @@ export function WorkDetailModal({
                   <span className="text-sm text-amber-100/90">{t("loadingHd")}</span>
                 </div>
               )}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                key={`full-${work.id}-${hdUrl}`}
-                src={hdUrl}
+              <Image
+                key={`full-${work.id}-${hdDisplaySrc}-${hdLoadErrors}`}
+                src={hdDisplaySrc}
                 alt=""
+                width={2400}
+                height={1800}
+                unoptimized
+                sizes="100vw"
                 className="max-h-[min(88dvh,920px)] w-auto max-w-full cursor-zoom-out rounded-lg object-contain opacity-100 shadow-2xl ring-1 ring-white/10"
-                onLoad={() => setFullImageLoaded(true)}
-                onError={() => setFullImageLoaded(true)}
+                onLoad={() => {
+                  setFullImageLoaded(true);
+                  setHdLoadErrors(0);
+                }}
+                onError={() => setHdLoadErrors((n) => n + 1)}
               />
             </div>
           </div>

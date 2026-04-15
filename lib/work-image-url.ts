@@ -21,6 +21,12 @@ function stripLeadingWorksDupes(relativePath: string): string {
   return p;
 }
 
+function ensureHttpsUrl(u: URL): void {
+  if (u.protocol === "http:") {
+    u.protocol = "https:";
+  }
+}
+
 /**
  * 将数据库中的 `image_url` 规范为可请求的绝对 https 地址。
  * - 已是 `http(s)://` 的经 `URL` 校验后返回 `href`
@@ -37,6 +43,7 @@ export function normalizeWorkImageUrl(raw: string | null | undefined): string {
       if (u.protocol !== "http:" && u.protocol !== "https:") return "";
       u.hash = "";
       u.pathname = collapseDuplicateWorksPath(u.pathname);
+      ensureHttpsUrl(u);
       return u.href;
     } catch {
       return "";
@@ -47,6 +54,7 @@ export function normalizeWorkImageUrl(raw: string | null | undefined): string {
     try {
       const u = new URL(`https:${t}`);
       u.pathname = collapseDuplicateWorksPath(u.pathname);
+      ensureHttpsUrl(u);
       return u.href;
     } catch {
       return "";
@@ -56,18 +64,21 @@ export function normalizeWorkImageUrl(raw: string | null | undefined): string {
   const base = `${getR2PublicOrigin().replace(/\/+$/, "")}/`;
   const path = stripLeadingWorksDupes(t);
   try {
-    return new URL(path, base).href;
+    const u = new URL(path, base);
+    ensureHttpsUrl(u);
+    return u.href;
   } catch {
     return "";
   }
 }
 
 /**
- * 与当前上传 Key 一致：`works/<uuid>.<ext>`；
- * 兼容历史：`{segment}/<uuid>/<timestamp>.<ext>`。
+ * 当前上传：`works/<uuid>/<timestamp>.<ext>`；
+ * 兼容扁平历史：`works/<uuid>.<ext>`。
  */
 export function isSafeR2ObjectKey(key: string): boolean {
   const k = key.trim();
+  if (/^works\/[0-9a-f-]{36}\/\d+\.[a-zA-Z0-9]+$/i.test(k)) return true;
   if (/^works\/[0-9a-f-]{36}\.[a-zA-Z0-9]+$/i.test(k)) return true;
   return /^[a-zA-Z0-9_-]+\/[0-9a-f-]{36}\/\d+\.[a-zA-Z0-9]+$/i.test(k);
 }
