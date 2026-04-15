@@ -24,6 +24,21 @@ import { useI18n } from "@/lib/i18n-context";
 import { notifyVoteDataChanged } from "@/lib/vote-sync";
 import { useVoteHomeState } from "@/lib/use-vote-store";
 
+const DAILY_VOTE_LIMIT = 3;
+
+function todayInShanghaiForClient(): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Shanghai",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+}
+
+function voteCacheKey(): string {
+  return `vote:client-used:${todayInShanghaiForClient()}`;
+}
+
 function SpringFooter() {
   const { t } = useI18n();
   const rawId = useId();
@@ -165,9 +180,11 @@ function HomePageContent() {
   const [page, setPage] = useState(1);
   const [jumpPage, setJumpPage] = useState("");
   const [detailWork, setDetailWork] = useState<Work | null>(null);
-  const [voteModalPending, setVoteModalPending] = useState(false);
+  const [votePendingWorkId, setVotePendingWorkId] = useState<string | null>(null);
+  const [localUsedVotes, setLocalUsedVotes] = useState(0);
   /** 避免「先 setState 再 replaceQuery」时 effect 因 id 尚未写入而误关弹窗 */
   const skipUrlSyncOnceRef = useRef(false);
+  const voteCooldownUntilRef = useRef<Map<string, number>>(new Map());
 
   const filteredWorks = useMemo(
     () => filterWorksBySearch(works, searchQuery),
@@ -230,12 +247,30 @@ function HomePageContent() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    try {
+      const cached = Number(window.localStorage.getItem(voteCacheKey()) ?? "0");
+      if (Number.isFinite(cached) && cached >= 0) {
+        setLocalUsedVotes(Math.min(DAILY_VOTE_LIMIT, cached));
+      }
+    } catch {
+      /* ignore */
+    }
     void fetch("/api/stats/pv", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ pageKey: "home" }),
     });
   }, []);
+
+  useEffect(() => {
+    const serverUsed = Math.max(0, DAILY_VOTE_LIMIT - remaining);
+    setLocalUsedVotes(serverUsed);
+    try {
+      window.localStorage.setItem(voteCacheKey(), String(serverUsed));
+    } catch {
+      /* ignore */
+    }
+  }, [remaining]);
 
   useEffect(() => {
     setPage(1);
@@ -246,23 +281,74 @@ function HomePageContent() {
     setPage((prev) => Math.min(Math.max(prev, 1), totalPages));
   }, [totalPages]);
 
-  const performVote = async (workId: string) => {
-    const res = await fetch("/api/votes", {
+  const requestVoteOnce = async (workId: string) => {
+    return fetch("/api/votes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ workId }),
     });
-    const j = (await res.json()) as {
-      ok?: boolean;
-      reason?: string;
-      error?: string;
-    };
+  };
+
+  const shouldRetryVote = (res: Response | null, errMsg?: string): boolean => {
+    if (res && (res.status === 500 || res.status === 502 || res.status === 503 || res.status === 504)) {
+      return true;
+    }
+    if (!errMsg) return false;
+    return /connection|too many|timeout|temporar/i.test(errMsg);
+  };
+
+  const performVote = async (workId: string) => {
+    let res: Response;
+    let j: { ok?: boolean; reason?: string; error?: string };
+    try {
+      res = await requestVoteOnce(workId);
+      j = (await res.json()) as { ok?: boolean; reason?: string; error?: string };
+    } catch {
+      await new Promise((r) => setTimeout(r, 2000));
+      try {
+        res = await requestVoteOnce(workId);
+        j = (await res.json()) as { ok?: boolean; reason?: string; error?: string };
+      } catch {
+        setToast(t("toastRequestFail"));
+        setTimeout(() => setToast(null), 2400);
+        return false;
+      }
+    }
+
+    if (!res.ok && shouldRetryVote(res, j.error)) {
+      await new Promise((r) => setTimeout(r, 2000));
+      try {
+        const retryRes = await requestVoteOnce(workId);
+        const retryJson = (await retryRes.json()) as {
+          ok?: boolean;
+          reason?: string;
+          error?: string;
+        };
+        res = retryRes;
+        j = retryJson;
+      } catch {
+        setToast(t("toastRequestFail"));
+        setTimeout(() => setToast(null), 2400);
+        return false;
+      }
+    }
+
     if (!res.ok) {
       setToast(j.error ?? t("toastRequestFail"));
       setTimeout(() => setToast(null), 2400);
       return false;
     }
     if (j.ok) {
+      let nextUsed = DAILY_VOTE_LIMIT;
+      setLocalUsedVotes((prev) => {
+        nextUsed = Math.min(DAILY_VOTE_LIMIT, prev + 1);
+        return nextUsed;
+      });
+      try {
+        window.localStorage.setItem(voteCacheKey(), String(nextUsed));
+      } catch {
+        /* ignore */
+      }
       setToast(t("toastVoteOk"));
       notifyVoteDataChanged();
       router.refresh();
@@ -274,20 +360,43 @@ function HomePageContent() {
     return false;
   };
 
+  const reserveVoteCooldown = (workId: string): boolean => {
+    const now = Date.now();
+    const until = voteCooldownUntilRef.current.get(workId) ?? 0;
+    if (until > now) return false;
+    voteCooldownUntilRef.current.set(workId, now + 5000);
+    return true;
+  };
+
+  const submitVote = async (workId: string) => {
+    if (votePendingWorkId) return;
+    if (localUsedVotes >= DAILY_VOTE_LIMIT) {
+      setToast("今日票数已用完");
+      setTimeout(() => setToast(null), 2000);
+      return;
+    }
+    if (!reserveVoteCooldown(workId)) {
+      setToast("请求过于频繁，请 5 秒后重试");
+      setTimeout(() => setToast(null), 2000);
+      return;
+    }
+
+    setVotePendingWorkId(workId);
+    try {
+      await performVote(workId);
+    } finally {
+      setVotePendingWorkId(null);
+      setTimeout(() => setToast(null), 2400);
+    }
+  };
+
   const voteFromCard = async (workId: string) => {
-    await performVote(workId);
-    setTimeout(() => setToast(null), 2400);
+    await submitVote(workId);
   };
 
   const voteFromModal = async () => {
     if (!detailWork) return;
-    setVoteModalPending(true);
-    try {
-      await performVote(detailWork.id);
-    } finally {
-      setVoteModalPending(false);
-      setTimeout(() => setToast(null), 2400);
-    }
+    await submitVote(detailWork.id);
   };
 
   const goToPage = (target: number) => {
@@ -393,7 +502,7 @@ function HomePageContent() {
           shareUrl={shareUrl}
           onClose={closeDetail}
           remaining={remaining}
-          voting={voteModalPending}
+          voting={Boolean(votePendingWorkId)}
           onVote={() => void voteFromModal()}
           onShareCopied={() => {
             setToast(t("shareCopied"));
@@ -502,10 +611,11 @@ function HomePageContent() {
                               </p>
                             </div>
                             <VotePillButton
-                              disabled={remaining <= 0}
+                              disabled={remaining <= 0 || Boolean(votePendingWorkId)}
+                              loading={Boolean(votePendingWorkId)}
                               onVote={() => voteFromCard(w.id)}
                             >
-                              {t("voteCard")}
+                              {votePendingWorkId ? t("voteSubmitting") : t("voteCard")}
                             </VotePillButton>
                           </div>
                         </article>

@@ -23,6 +23,21 @@ create table if not exists public.votes (
 
 create index if not exists idx_votes_ip_date on public.votes (voter_ip, vote_date);
 create index if not exists idx_votes_work_id on public.votes (work_id);
+create index if not exists idx_votes_voter_ip_created_at on public.votes (voter_ip, created_at desc);
+
+-- 若后续引入登录用户字段 user_id，则自动补齐 user_id + created_at 索引（避免 count/范围查询慢）
+do $$
+begin
+  if exists (
+    select 1
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'votes'
+      and column_name = 'user_id'
+  ) then
+    execute 'create index if not exists idx_votes_user_id_created_at on public.votes (user_id, created_at desc)';
+  end if;
+end $$;
 
 -- 原子投票：校验当日票数与作品存在性后插入（与 API 使用的时区一致：Asia/Shanghai）
 create or replace function public.cast_vote (p_work_id uuid, p_voter_ip text)

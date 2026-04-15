@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { RankPageView } from "@/components/rank-page-view";
-import { fetchWorksRankedByVotes } from "@/lib/rank-data";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -12,12 +11,5 @@ export const metadata: Metadata = {
 };
 
 export default async function RankPage() {
-  const rankResult = await fetchWorksRankedByVotes()
-    .then((works) => ({ ok: true as const, works }))
-    .catch((e: unknown) => ({
-      ok: false as const,
-      error: e instanceof Error ? e.message : "加载失败",
-    }));
-
-  return <RankPageView rankResult={rankResult} />;
+  return <RankPageView />;
 }

@@ -2,23 +2,33 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import useSWR from "swr";
 import { RankLeaderboard } from "@/components/rank-leaderboard";
-import { RankPageVoteSync } from "@/components/rank-page-vote-sync";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useI18n } from "@/lib/i18n-context";
 import type { Work } from "@/lib/types";
 
-type RankResult =
-  | { ok: true; works: Work[] }
-  | { ok: false; error: string };
+const fetcher = async (url: string): Promise<{ works: Work[] }> => {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) throw new Error("加载失败");
+  return (await res.json()) as { works: Work[] };
+};
 
-export function RankPageView({ rankResult }: { rankResult: RankResult }) {
+export function RankPageView() {
   const { t } = useI18n();
+  const { data, error, isLoading } = useSWR("/api/works", fetcher, {
+    revalidateOnFocus: false,
+    dedupingInterval: 60_000,
+    revalidateOnReconnect: false,
+    revalidateIfStale: false,
+  });
+  const rankedWorks = (data?.works ?? []).slice().sort((a, b) => {
+    if (b.votes !== a.votes) return b.votes - a.votes;
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  });
 
   return (
     <main className="relative flex min-h-screen flex-1 flex-col">
-      <RankPageVoteSync />
-
       <header className="site-nav-fixed">
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-3 py-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:px-6 sm:py-3.5">
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
@@ -77,10 +87,12 @@ export function RankPageView({ rankResult }: { rankResult: RankResult }) {
           </p>
         </section>
 
-        {!rankResult.ok ? (
+        {error ? (
           <div className="glass-panel mt-12 rounded-3xl px-8 py-14 text-center">
             <p className="text-lg text-stone-800/90">{t("rankLoadError")}</p>
-            <p className="mt-2 text-sm text-stone-800/70">{rankResult.error}</p>
+            <p className="mt-2 text-sm text-stone-800/70">
+              {error instanceof Error ? error.message : t("toastRequestFail")}
+            </p>
             <Link
               href="/"
               className="btn-sakura mt-8 inline-flex rounded-xl px-8 py-3 text-sm font-medium text-white shadow-md"
@@ -88,9 +100,13 @@ export function RankPageView({ rankResult }: { rankResult: RankResult }) {
               {t("backHome")}
             </Link>
           </div>
+        ) : isLoading ? (
+          <div className="glass-panel mt-12 rounded-3xl px-8 py-14 text-center">
+            <p className="text-base text-stone-800/85">{t("loadingWorks")}</p>
+          </div>
         ) : (
           <div className="mt-12">
-            <RankLeaderboard works={rankResult.works} />
+            <RankLeaderboard works={rankedWorks} />
           </div>
         )}
 

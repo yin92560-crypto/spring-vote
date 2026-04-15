@@ -4,6 +4,7 @@ import { useCallback, useRef, useState } from "react";
 
 type Props = {
   disabled?: boolean;
+  loading?: boolean;
   onVote: () => void | Promise<void>;
   className?: string;
   children: React.ReactNode;
@@ -14,6 +15,7 @@ type Props = {
  */
 export function VotePillButton({
   disabled,
+  loading = false,
   onVote,
   className = "",
   children,
@@ -22,7 +24,7 @@ export function VotePillButton({
   const busy = useRef(false);
 
   const handleClick = useCallback(async () => {
-    if (disabled || busy.current) return;
+    if (disabled || loading || busy.current) return;
     busy.current = true;
     setBurstId((n) => n + 1);
     try {
@@ -30,12 +32,12 @@ export function VotePillButton({
     } finally {
       busy.current = false;
     }
-  }, [disabled, onVote]);
+  }, [disabled, loading, onVote]);
 
   return (
     <button
       type="button"
-      disabled={disabled}
+      disabled={disabled || loading}
       onClick={() => void handleClick()}
       className={`vote-pill-btn group relative overflow-visible ${className}`}
     >
