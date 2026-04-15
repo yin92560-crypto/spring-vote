@@ -3,14 +3,17 @@
  * 对象路径：`works/<UUID 目录>/<文件名>.<ext>`，与控制台三级结构一致。
  */
 
-const DEFAULT_PUBLIC_ORIGIN = "https://pub-c32b84ede21d4770b966e9e4718d0a0d.r2.dev";
+const DEFAULT_PUBLIC_ORIGIN = "https://assets.huaqintp.top";
 
 /**
  * 公共访问根：仅 scheme + host。
  * 若 `R2_PUBLIC_BASE_URL` 误带路径，剥掉以免与 Key 拼出重复段。
  */
 export function getR2PublicOrigin(): string {
-  const raw = process.env.R2_PUBLIC_BASE_URL?.trim();
+  const raw =
+    process.env.R2_PUBLIC_BASE_URL?.trim() ||
+    process.env.NEXT_PUBLIC_R2_PUBLIC_URL?.trim() ||
+    process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL?.trim();
   if (!raw) return DEFAULT_PUBLIC_ORIGIN;
   try {
     const u = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);

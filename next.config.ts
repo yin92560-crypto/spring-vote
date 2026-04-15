@@ -17,10 +17,15 @@ function hostnameFromEnvUrl(key: string): string | null {
 }
 
 const r2Hosts = new Set<string>();
-for (const key of ["R2_PUBLIC_BASE_URL", "NEXT_PUBLIC_R2_PUBLIC_BASE_URL"] as const) {
+for (const key of [
+  "R2_PUBLIC_BASE_URL",
+  "NEXT_PUBLIC_R2_PUBLIC_URL",
+  "NEXT_PUBLIC_R2_PUBLIC_BASE_URL",
+] as const) {
   const h = hostnameFromEnvUrl(key);
   if (h) r2Hosts.add(h);
 }
+r2Hosts.add("assets.huaqintp.top");
 
 const nextConfig: NextConfig = {
   images: {
