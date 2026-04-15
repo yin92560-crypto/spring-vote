@@ -7,6 +7,27 @@ function cx(...parts: (string | false | undefined | null)[]) {
   return parts.filter(Boolean).join(" ");
 }
 
+const ASSETS_PUBLIC_ORIGIN = "https://assets.huaqintp.top";
+
+function toAssetsPublicUrl(raw: string | null | undefined): string {
+  const t = (raw ?? "").trim();
+  if (!t) return "";
+  try {
+    if (/^https?:\/\//i.test(t)) {
+      const u = new URL(t);
+      return `${ASSETS_PUBLIC_ORIGIN}${u.pathname}${u.search}`;
+    }
+    if (t.startsWith("//")) {
+      const u = new URL(`https:${t}`);
+      return `${ASSETS_PUBLIC_ORIGIN}${u.pathname}${u.search}`;
+    }
+    const path = t.replace(/^\/+/, "");
+    return `${ASSETS_PUBLIC_ORIGIN}/${path}`;
+  } catch {
+    return "";
+  }
+}
+
 type Props = {
   src: string | null | undefined;
   alt: string;
@@ -42,24 +63,32 @@ export function WorkRemoteImage({
   layout = "fill",
   sizes = DEFAULT_FILL_SIZES,
 }: Props) {
-  const primaryUrl = (src ?? "").trim();
-  const [broken, setBroken] = useState(false);
+  const primaryUrl = toAssetsPublicUrl(src);
   const [loaded, setLoaded] = useState(false);
+  const [showSlowHint, setShowSlowHint] = useState(false);
 
   useEffect(() => {
-    setBroken(false);
     setLoaded(false);
+    setShowSlowHint(false);
   }, [primaryUrl]);
 
   const displaySrc = primaryUrl.length > 0 ? primaryUrl : "";
   const prioritized = typeof index === "number" && index < 4;
   const effectiveLoading: "lazy" | "eager" = prioritized ? "eager" : loading;
 
+  useEffect(() => {
+    if (!displaySrc || loaded) return;
+    const id = window.setTimeout(() => {
+      setShowSlowHint(true);
+    }, 10000);
+    return () => window.clearTimeout(id);
+  }, [displaySrc, loaded]);
+
   const onImgError = useCallback(() => {
-    setBroken(true);
+    // 保持同一 URL，不做任何域名切换；继续停留在骨架屏。
   }, []);
 
-  const showPlaceholder = Boolean(primaryUrl) && !loaded && !broken;
+  const showPlaceholder = Boolean(primaryUrl) && !loaded;
   const fill = layout === "fill";
 
   return (
@@ -96,23 +125,6 @@ export function WorkRemoteImage({
           )}
           aria-hidden
         />
-      ) : broken ? (
-        <div
-          className={cx(
-            "z-[1] flex items-center justify-center bg-stone-200/35 text-center text-xs text-stone-600/90",
-            fill
-              ? "absolute inset-0 h-full w-full"
-              : "relative mx-auto flex min-h-[4rem] w-full max-w-full flex-col gap-1 px-2 py-4",
-            imgClassName,
-          )}
-          role="img"
-          aria-label={alt}
-        >
-          <span className="font-medium text-stone-700">图片加载失败</span>
-          <span className="break-all text-[10px] leading-tight text-stone-500/90">
-            {displaySrc}
-          </span>
-        </div>
       ) : fill ? (
         <Image
           key={displaySrc}
@@ -128,8 +140,9 @@ export function WorkRemoteImage({
             loaded ? "opacity-100" : "opacity-0",
             imgClassName,
           )}
-          onLoad={() => {
+          onLoadingComplete={() => {
             setLoaded(true);
+            setShowSlowHint(false);
           }}
           onError={onImgError}
         />
@@ -149,11 +162,19 @@ export function WorkRemoteImage({
             loaded ? "opacity-100" : "opacity-0",
             imgClassName,
           )}
-          onLoad={() => {
+          onLoadingComplete={() => {
             setLoaded(true);
+            setShowSlowHint(false);
           }}
           onError={onImgError}
         />
+      )}
+      {showPlaceholder && showSlowHint && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[3] px-3 pb-3">
+          <div className="rounded-lg border border-sky-200/50 bg-white/45 px-2.5 py-1.5 text-center text-[11px] text-sky-900/85 backdrop-blur-sm">
+            加载稍慢，请稍后
+          </div>
+        </div>
       )}
     </div>
   );
