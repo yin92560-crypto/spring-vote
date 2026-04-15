@@ -128,7 +128,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     topThree: "前三名",
     otherRanks: "其他名次",
     rankPageTitle: "春日人气排行榜",
-    rankPageDesc: "所有作品按实时票数排序，快冲票帮你爱的作品冲刺首页。",
+    rankPageDesc: "所有作品每五分钟刷新一次票数，快冲票帮你爱的作品冲刺首页🥳",
     rankSyncHint: "投票或管理变更后会自动刷新；切换回此标签时也会更新",
     backHome: "返回首页",
     rankLoadError: "榜单暂时无法加载",
@@ -201,7 +201,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     otherRanks: "Other ranks",
     rankPageTitle: "Spring Popularity Leaderboard",
     rankPageDesc:
-      "All works sorted by live vote count; top three on the podium, others in a compact list.",
+      "Rankings refresh every 5 minutes. Vote now to help your favorite entries reach the top! 🥳",
     rankSyncHint: "Refreshes after votes or admin changes; updates when you return to this tab.",
     backHome: "Back to home",
     rankLoadError: "Leaderboard could not load",
@@ -272,7 +272,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     otherRanks: "その他の順位",
     rankPageTitle: "春の人気ランキング",
     rankPageDesc:
-      "全作品をリアルタイム票数の多い順に表示。上位三名は表彰台、その他はリストで順位を表示します。",
+      "ランキングは5分ごとに更新されます。お気に入りの作品が上位に入れるよう、今すぐ投票しましょう！🥳",
     rankSyncHint: "投票や管理操作後に自動更新。このタブに戻ると最新表示になります。",
     backHome: "トップへ戻る",
     rankLoadError: "ランキングを読み込めませんでした",

@@ -85,7 +85,7 @@ export function RankPageView() {
           >
             {t("rankPageTitle")}
           </h1>
-          <p className="mx-auto mt-3 max-w-2xl text-pretty text-base leading-relaxed text-[#666] sm:text-lg">
+          <p className="mx-auto mt-3 max-w-2xl break-words text-pretty text-base leading-relaxed text-[#666] sm:text-lg">
             {t("rankPageDesc")}
           </p>
         </section>
