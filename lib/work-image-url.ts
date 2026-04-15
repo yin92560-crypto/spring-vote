@@ -1,11 +1,24 @@
-/**
- * R2 公共访问根（与 `app/api/upload/route.ts` 一致，用于补全非绝对地址）。
- * 仅应在服务端读取；浏览器端拿到的应是 `/api/works` 已规范化的绝对 URL。
- */
+import { getR2PublicOrigin } from "@/lib/r2";
+
+/** @deprecated 使用 {@link getR2PublicOrigin}；保留别名供旧代码引用 */
 export function getR2PublicBaseUrl(): string {
-  const fromEnv = process.env.R2_PUBLIC_BASE_URL?.trim().replace(/\/+$/, "");
-  if (fromEnv) return fromEnv;
-  return "https://pub-c32b84ede21d4770b966e9e4718d0a0d.r2.dev";
+  return getR2PublicOrigin();
+}
+
+function collapseDuplicateWorksPath(pathname: string): string {
+  let p = pathname.replace(/\/+/g, "/");
+  while (p.includes("/works/works/")) {
+    p = p.replace(/\/works\/works\//g, "/works/");
+  }
+  return p;
+}
+
+function stripLeadingWorksDupes(relativePath: string): string {
+  let p = relativePath.replace(/^\/+/, "");
+  while (p.startsWith("works/works/")) {
+    p = p.slice("works/".length);
+  }
+  return p;
 }
 
 /**
@@ -23,6 +36,7 @@ export function normalizeWorkImageUrl(raw: string | null | undefined): string {
       const u = new URL(t);
       if (u.protocol !== "http:" && u.protocol !== "https:") return "";
       u.hash = "";
+      u.pathname = collapseDuplicateWorksPath(u.pathname);
       return u.href;
     } catch {
       return "";
@@ -31,14 +45,16 @@ export function normalizeWorkImageUrl(raw: string | null | undefined): string {
 
   if (t.startsWith("//")) {
     try {
-      return new URL(`https:${t}`).href;
+      const u = new URL(`https:${t}`);
+      u.pathname = collapseDuplicateWorksPath(u.pathname);
+      return u.href;
     } catch {
       return "";
     }
   }
 
-  const base = `${getR2PublicBaseUrl().replace(/\/+$/, "")}/`;
-  const path = t.replace(/^\/+/, "");
+  const base = `${getR2PublicOrigin().replace(/\/+$/, "")}/`;
+  const path = stripLeadingWorksDupes(t);
   try {
     return new URL(path, base).href;
   } catch {
@@ -46,9 +62,14 @@ export function normalizeWorkImageUrl(raw: string | null | undefined): string {
   }
 }
 
-/** 与上传接口生成的 Key 一致：`{folder}/{uuid}/{timestamp}.{ext}` */
+/**
+ * 与当前上传 Key 一致：`works/<uuid>.<ext>`；
+ * 兼容历史：`{segment}/<uuid>/<timestamp>.<ext>`。
+ */
 export function isSafeR2ObjectKey(key: string): boolean {
-  return /^[a-zA-Z0-9_-]+\/[0-9a-f-]{36}\/\d+\.[a-zA-Z0-9]+$/.test(key.trim());
+  const k = key.trim();
+  if (/^works\/[0-9a-f-]{36}\.[a-zA-Z0-9]+$/i.test(k)) return true;
+  return /^[a-zA-Z0-9_-]+\/[0-9a-f-]{36}\/\d+\.[a-zA-Z0-9]+$/i.test(k);
 }
 
 /** 写入 `image_path` 时：优先 R2 规范 Key，其余仅允许安全字符（兼容历史数据） */

@@ -348,9 +348,7 @@ export function WorkDetailModal({
                 key={`full-${work.id}-${hdUrl}`}
                 src={hdUrl}
                 alt=""
-                className={`max-h-[min(88dvh,920px)] w-auto max-w-full cursor-zoom-out rounded-lg object-contain shadow-2xl ring-1 ring-white/10 transition-opacity duration-500 ease-out ${
-                  fullImageLoaded ? "opacity-100" : "opacity-0"
-                }`}
+                className="max-h-[min(88dvh,920px)] w-auto max-w-full cursor-zoom-out rounded-lg object-contain opacity-100 shadow-2xl ring-1 ring-white/10"
                 onLoad={() => setFullImageLoaded(true)}
                 onError={() => setFullImageLoaded(true)}
               />

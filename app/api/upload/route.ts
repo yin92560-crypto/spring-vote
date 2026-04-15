@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { getR2PublicBaseUrl } from "@/lib/work-image-url";
+import {
+  buildR2PublicUrlForObjectKey,
+  createWorksFlatObjectKey,
+} from "@/lib/r2";
 
 export const dynamic = "force-dynamic";
 
@@ -32,9 +35,6 @@ export async function POST(request: Request) {
   try {
     const form = await request.formData();
     const file = form.get("file");
-    const rawFolder = String(form.get("folder") ?? "works").trim() || "works";
-    const folder =
-      rawFolder.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 64) || "works";
     if (!(file instanceof File) || file.size === 0) {
       return NextResponse.json({ error: "请上传图片文件" }, { status: 400 });
     }
@@ -43,8 +43,6 @@ export async function POST(request: Request) {
     const endpoint = validateR2Endpoint(readEnv("R2_ENDPOINT"), bucketName);
     const accessKeyId = readEnv("R2_ACCESS_KEY_ID");
     const secretAccessKey = readEnv("R2_SECRET_ACCESS_KEY");
-    const publicBase = getR2PublicBaseUrl();
-
     const client = new S3Client({
       region: "auto",
       endpoint,
@@ -55,7 +53,7 @@ export async function POST(request: Request) {
       .toLowerCase()
       .replace(/[^a-z0-9]/g, "");
     const ext = /^(webp|jpeg|jpg|png|gif)$/.test(extPart) ? extPart : "webp";
-    const key = `${folder}/${crypto.randomUUID()}/${Date.now()}.${ext}`;
+    const key = createWorksFlatObjectKey(ext);
     const body = Buffer.from(await file.arrayBuffer());
 
     const response = await client.send(
@@ -71,7 +69,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       key,
-      url: `${publicBase}/${key}`,
+      url: buildR2PublicUrlForObjectKey(key),
       etag: response.ETag ?? null,
     });
   } catch (error) {
