@@ -91,6 +91,7 @@ function PodiumCard({
           >
             <WorkRemoteImage
               src={work.imageUrl}
+              index={place - 1}
               alt=""
               className="h-full w-full"
               imgClassName="object-cover transition-transform duration-500 ease-out hover:scale-105"
@@ -133,7 +134,7 @@ function PodiumCard({
   );
 }
 
-function RestRow({ work, rank }: { work: Work; rank: number }) {
+function RestRow({ work, rank, index }: { work: Work; rank: number; index: number }) {
   const { t } = useI18n();
   return (
     <li>
@@ -150,6 +151,7 @@ function RestRow({ work, rank }: { work: Work; rank: number }) {
         <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-xl bg-stone-100/50 sm:h-[4.5rem] sm:w-28">
           <WorkRemoteImage
             src={work.imageUrl}
+            index={index}
             alt=""
             className="h-full w-full"
             imgClassName="object-cover transition duration-300 group-hover:scale-105"
@@ -232,7 +234,7 @@ export function RankLeaderboard({ works }: Props) {
           </h2>
           <ul className="grid gap-3 sm:grid-cols-1 sm:gap-4 lg:grid-cols-2">
             {rest.map((w, i) => (
-              <RestRow key={w.id} work={w} rank={i + 4} />
+              <RestRow key={w.id} work={w} rank={i + 4} index={i + 3} />
             ))}
           </ul>
         </section>

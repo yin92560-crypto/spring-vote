@@ -9,7 +9,6 @@ import {
   useState,
 } from "react";
 import { WorkRemoteImage } from "@/components/work-remote-image";
-import { withImageLoadRetryQuery } from "@/lib/work-image-client";
 import { VotePillButton } from "@/components/vote-pill-button";
 import { useI18n } from "@/lib/i18n-context";
 import type { Work } from "@/lib/types";
@@ -50,7 +49,6 @@ export function WorkDetailModal({
   const [fullPreview, setFullPreview] = useState(false);
   const [fullPreviewShown, setFullPreviewShown] = useState(false);
   const [fullImageLoaded, setFullImageLoaded] = useState(false);
-  const [hdLoadErrors, setHdLoadErrors] = useState(0);
   const closeFullTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { index, canNavigate } = useMemo(() => {
@@ -82,7 +80,6 @@ export function WorkDetailModal({
     closeFullTimerRef.current = setTimeout(() => {
       setFullPreview(false);
       setFullImageLoaded(false);
-      setHdLoadErrors(0);
       closeFullTimerRef.current = null;
     }, 320);
   }, []);
@@ -105,19 +102,13 @@ export function WorkDetailModal({
       setFullPreview(false);
       setFullPreviewShown(false);
       setFullImageLoaded(false);
-      setHdLoadErrors(0);
     }, 0);
     return () => window.clearTimeout(t);
   }, [work?.id]);
 
   useEffect(() => {
-    setHdLoadErrors(0);
     setFullImageLoaded(false);
   }, [work?.imageUrl]);
-
-  useEffect(() => {
-    if (hdLoadErrors >= 2) setFullImageLoaded(true);
-  }, [hdLoadErrors]);
 
   useEffect(() => {
     if (!fullPreview) return;
@@ -186,10 +177,6 @@ export function WorkDetailModal({
   if (!work) return null;
 
   const hdUrl = originalImageUrl(work);
-  const hdDisplaySrc = withImageLoadRetryQuery(
-    hdUrl,
-    hdLoadErrors >= 1 && hdLoadErrors < 2 ? 1 : 0,
-  );
 
   return (
     <>
@@ -360,19 +347,16 @@ export function WorkDetailModal({
                 </div>
               )}
               <Image
-                key={`full-${work.id}-${hdDisplaySrc}-${hdLoadErrors}`}
-                src={hdDisplaySrc}
+                key={`full-${work.id}-${hdUrl}`}
+                src={hdUrl}
                 alt=""
                 width={2400}
                 height={1800}
                 unoptimized
                 sizes="100vw"
                 className="max-h-[min(88dvh,920px)] w-auto max-w-full cursor-zoom-out rounded-lg object-contain opacity-100 shadow-2xl ring-1 ring-white/10"
-                onLoad={() => {
-                  setFullImageLoaded(true);
-                  setHdLoadErrors(0);
-                }}
-                onError={() => setHdLoadErrors((n) => n + 1)}
+                onLoad={() => setFullImageLoaded(true)}
+                onError={() => setFullImageLoaded(true)}
               />
             </div>
           </div>

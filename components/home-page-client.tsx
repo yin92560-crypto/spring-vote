@@ -456,7 +456,7 @@ function HomePageContent() {
               ) : (
                 <>
                   <ul className="mt-7 grid gap-5 sm:mt-8 sm:gap-7 sm:grid-cols-2 lg:grid-cols-3">
-                    {pagedWorks.map((w) => (
+                    {pagedWorks.map((w, idx) => (
                       <li key={w.id}>
                         <article className="glass-panel group flex flex-col overflow-hidden rounded-[1.6rem] shadow-sm transition-all duration-300 ease-out hover:-translate-y-1 hover:bg-white/95 hover:backdrop-blur-xl hover:shadow-2xl">
                           <button
@@ -469,6 +469,7 @@ function HomePageContent() {
                             </div>
                             <WorkRemoteImage
                               src={w.imageUrl}
+                              index={idx}
                               alt={`${w.workTitle || w.title} (${t("displayNoLabel")} ${w.displayNo})`}
                               className="absolute inset-0 h-full w-full"
                               imgClassName="object-cover transition-transform duration-500 ease-out will-change-transform group-hover:scale-105"

@@ -699,7 +699,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
           <p className="text-sm text-stone-800/65">暂无作品</p>
         ) : (
           <ul className="space-y-4">
-            {works.map((w) => (
+            {works.map((w, idx) => (
               <li
                 key={w.id}
                 className="glass-panel flex flex-col gap-4 rounded-[1.15rem] p-4 sm:flex-row sm:items-center"
@@ -708,6 +708,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
                   <div className="h-16 w-24 shrink-0 overflow-hidden rounded-lg bg-stone-100">
                     <WorkRemoteImage
                       src={w.imageUrl}
+                      index={idx}
                       alt=""
                       className="h-full w-full"
                       imgClassName="object-cover"
