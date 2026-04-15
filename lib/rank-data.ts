@@ -1,5 +1,6 @@
 import { addDisplayNumbers } from "@/lib/work-display";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { normalizeWorkImageUrl } from "@/lib/work-image-url";
 import {
   getVoteRedis,
   keyDirtyWorkDays,
@@ -17,11 +18,15 @@ const RANK_LIST_CACHE_KEY = "rank:list:v1";
 export async function fetchWorksRankedByVotes(): Promise<Work[]> {
   const redis = getVoteRedis();
   let list: Work[] | null = null;
-  try {
-    const cached = await redis.get<string>(RANK_LIST_CACHE_KEY);
-    if (typeof cached === "string" && cached) {
-      list = JSON.parse(cached) as Work[];
-    }
+    try {
+      const cached = await redis.get<string>(RANK_LIST_CACHE_KEY);
+      if (typeof cached === "string" && cached) {
+        const parsed = JSON.parse(cached) as Work[];
+        list = parsed.map((w) => ({
+          ...w,
+          imageUrl: normalizeWorkImageUrl(w.imageUrl),
+        }));
+      }
   } catch (cacheErr) {
     console.error("read rank cache failed:", cacheErr);
   }
@@ -59,7 +64,7 @@ export async function fetchWorksRankedByVotes(): Promise<Work[]> {
         title: w.title as string,
         workTitle: (w.work_title as string | null) ?? (w.title as string),
         authorName: (w.author_name as string | null) ?? "",
-        imageUrl: w.image_url as string,
+        imageUrl: normalizeWorkImageUrl(w.image_url as string),
         votes: counts.get(w.id as string) ?? 0,
         createdAt: w.created_at as string,
       }))

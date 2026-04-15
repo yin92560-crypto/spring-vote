@@ -107,6 +107,7 @@ function HomeSiteNav() {
             height={28}
             className="h-7 w-auto shrink-0 rounded-md"
             priority
+            unoptimized
           />
           <p className="min-w-0 font-display text-[0.95rem] font-medium text-stone-800 sm:text-lg">
             <span className="text-gradient-spring-title">{t("title")}</span>

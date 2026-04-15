@@ -11,6 +11,10 @@ import {
 } from "@/lib/vote-redis";
 import { addDisplayNumbers } from "@/lib/work-display";
 import type { Work } from "@/lib/types";
+import {
+  isAcceptableWorksImagePath,
+  normalizeWorkImageUrl,
+} from "@/lib/work-image-url";
 
 export const dynamic = "force-dynamic";
 const WORKS_LIST_CACHE_KEY = "works:list:v1";
@@ -20,6 +24,13 @@ type WorksCacheItem = Pick<
   Work,
   "id" | "title" | "workTitle" | "authorName" | "imageUrl" | "votes" | "createdAt" | "displayNo"
 >;
+
+function withNormalizedImageUrls(items: WorksCacheItem[]): WorksCacheItem[] {
+  return items.map((w) => ({
+    ...w,
+    imageUrl: normalizeWorkImageUrl(w.imageUrl),
+  }));
+}
 
 export async function GET(request: Request) {
   try {
@@ -37,7 +48,7 @@ export async function GET(request: Request) {
     try {
       const cached = await redis.get<string>(WORKS_LIST_CACHE_KEY);
       if (typeof cached === "string" && cached) {
-        list = JSON.parse(cached) as WorksCacheItem[];
+        list = withNormalizedImageUrls(JSON.parse(cached) as WorksCacheItem[]);
       }
     } catch (cacheErr) {
       console.error("read works cache failed:", cacheErr);
@@ -74,7 +85,7 @@ export async function GET(request: Request) {
           title: w.title as string,
           workTitle: (w.work_title as string | null) ?? (w.title as string),
           authorName: (w.author_name as string | null) ?? "",
-          imageUrl: w.image_url as string,
+          imageUrl: normalizeWorkImageUrl(w.image_url as string),
           votes: counts.get(w.id as string) ?? 0,
           createdAt: w.created_at as string,
         }))
@@ -127,12 +138,26 @@ export async function POST(request: Request) {
     const title = String(body.title ?? "");
     const workTitle = String(body.workTitle ?? "");
     const authorName = String(body.authorName ?? "");
-    const imageUrl = String(body.imageUrl ?? "").trim();
+    const imageUrl = normalizeWorkImageUrl(String(body.imageUrl ?? "").trim());
     const imagePath = String(body.imagePath ?? "").trim();
 
     if (!imageUrl || !imagePath) {
       return NextResponse.json(
         { error: "缺少 R2 图片地址或路径" },
+        { status: 400 }
+      );
+    }
+
+    if (!/^https:\/\//i.test(imageUrl)) {
+      return NextResponse.json(
+        { error: "图片地址须为完整的 https URL（含域名与对象路径）" },
+        { status: 400 }
+      );
+    }
+
+    if (!isAcceptableWorksImagePath(imagePath)) {
+      return NextResponse.json(
+        { error: "图片路径含非法字符，请重新上传" },
         { status: 400 }
       );
     }

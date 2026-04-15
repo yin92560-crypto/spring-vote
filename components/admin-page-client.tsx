@@ -436,6 +436,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
               height={30}
               className="h-7 w-auto rounded-md"
               priority
+              unoptimized
             />
           </div>
           <h1 className="font-display text-2xl font-semibold text-[#4a2f22] sm:text-3xl">作品管理</h1>

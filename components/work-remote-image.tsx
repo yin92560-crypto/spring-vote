@@ -1,8 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-
-export const WORK_IMAGE_FALLBACK_SRC = "/work-image-fallback.svg";
+import { useEffect, useState } from "react";
 
 function cx(...parts: (string | false | undefined | null)[]) {
   return parts.filter(Boolean).join(" ");
@@ -24,8 +22,7 @@ type Props = {
 };
 
 /**
- * 远程作品图：懒加载、加载占位、失败时回退到本地 SVG。
- * 说明：普通 `<img>` 跨域展示一般不触发 CORS 控制台报错；若地址 404/403 或 URL 错误，Network 里可见失败请求。
+ * 远程作品图：直接使用接口下发的绝对 URL；加载占位；失败时仅显示占位（不加载备用 SVG，便于排查 R2）。
  */
 export function WorkRemoteImage({
   src,
@@ -35,23 +32,16 @@ export function WorkRemoteImage({
   loading = "lazy",
   layout = "fill",
 }: Props) {
-  const initial = src?.trim() || WORK_IMAGE_FALLBACK_SRC;
-  const [resolvedSrc, setResolvedSrc] = useState(initial);
+  const primaryUrl = (src ?? "").trim();
+  const [broken, setBroken] = useState(false);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    const next = src?.trim() || WORK_IMAGE_FALLBACK_SRC;
-    setResolvedSrc(next);
+    setBroken(false);
     setLoaded(false);
-  }, [src]);
+  }, [primaryUrl]);
 
-  const handleError = useCallback(() => {
-    setResolvedSrc((cur) =>
-      cur === WORK_IMAGE_FALLBACK_SRC ? cur : WORK_IMAGE_FALLBACK_SRC,
-    );
-  }, []);
-
-  const showPlaceholder = !loaded;
+  const showPlaceholder = Boolean(primaryUrl) && !loaded && !broken;
   const fill = layout === "fill";
 
   return (
@@ -62,6 +52,7 @@ export function WorkRemoteImage({
         className,
       )}
       data-work-remote-image
+      data-img-src={primaryUrl || undefined}
     >
       {showPlaceholder && (
         <div
@@ -75,24 +66,52 @@ export function WorkRemoteImage({
           />
         </div>
       )}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={resolvedSrc}
-        alt={alt}
-        loading={loading}
-        decoding="async"
-        className={cx(
-          "z-[1]",
-          fill
-            ? "absolute inset-0 h-full w-full"
-            : "relative mx-auto block h-auto w-full max-w-full",
-          imgClassName,
-          loaded ? "opacity-100" : "opacity-0",
-          "transition-opacity duration-300 ease-out",
-        )}
-        onLoad={() => setLoaded(true)}
-        onError={handleError}
-      />
+      {!primaryUrl ? (
+        <div
+          className={cx(
+            "z-[1] bg-gradient-to-br from-stone-100 via-stone-50/90 to-teal-50/35",
+            fill
+              ? "absolute inset-0 h-full w-full"
+              : "relative mx-auto block min-h-[4rem] w-full max-w-full",
+            imgClassName,
+          )}
+          aria-hidden
+        />
+      ) : broken ? (
+        <div
+          className={cx(
+            "z-[1] flex items-center justify-center bg-stone-200/35 text-center text-xs text-stone-600/90",
+            fill
+              ? "absolute inset-0 h-full w-full"
+              : "relative mx-auto flex min-h-[4rem] w-full max-w-full flex-col gap-1 px-2 py-4",
+            imgClassName,
+          )}
+          role="img"
+          aria-label={alt}
+        >
+          <span className="font-medium text-stone-700">图片加载失败</span>
+          <span className="break-all text-[10px] leading-tight text-stone-500/90">
+            {primaryUrl}
+          </span>
+        </div>
+      ) : (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={primaryUrl}
+          alt={alt}
+          loading={loading}
+          decoding="async"
+          className={cx(
+            "z-[1] opacity-100",
+            fill
+              ? "absolute inset-0 h-full w-full"
+              : "relative mx-auto block h-auto w-full max-w-full",
+            imgClassName,
+          )}
+          onLoad={() => setLoaded(true)}
+          onError={() => setBroken(true)}
+        />
+      )}
     </div>
   );
 }

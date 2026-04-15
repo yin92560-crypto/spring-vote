@@ -29,6 +29,7 @@ export function RankPageView({ rankResult }: { rankResult: RankResult }) {
               height={28}
               className="h-7 w-auto shrink-0 rounded-md"
               priority
+              unoptimized
             />
             <Link
               href="/"
