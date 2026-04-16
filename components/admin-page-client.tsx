@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import useSWR from "swr";
 import { Download } from "lucide-react";
 import * as XLSX from "xlsx";
 import { SpringLoadingIndicator } from "@/components/spring-loading";
@@ -101,8 +102,28 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
   const [editWorkTitle, setEditWorkTitle] = useState("");
   const [editAuthorName, setEditAuthorName] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
-  const [stats, setStats] = useState<AdminStats>({ pv: 0, works: 0, votes: 0 });
-  const [statsLoading, setStatsLoading] = useState(true);
+  const statsFetcher = async ([url, secret]: [string, string]) => {
+    const headers: HeadersInit = {};
+    if (secret.trim()) headers["x-admin-secret"] = secret.trim();
+    const res = await fetch(url, { headers });
+    if (!res.ok) throw new Error("加载统计失败");
+    const j = (await res.json()) as Partial<AdminStats>;
+    return {
+      pv: Number(j.pv ?? 0),
+      works: Number(j.works ?? 0),
+      votes: Number(j.votes ?? 0),
+    } satisfies AdminStats;
+  };
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    mutate: mutateStats,
+  } = useSWR<AdminStats, Error>(["/api/admin/stats", adminSecret], statsFetcher, {
+    dedupingInterval: 300000,
+    refreshInterval: 300000,
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+  });
 
   useEffect(() => {
     if (files.length === 0) {
@@ -137,29 +158,6 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
     if (adminSecret.trim()) h["x-admin-secret"] = adminSecret.trim();
     return h;
   };
-
-  const fetchStats = async () => {
-    setStatsLoading(true);
-    try {
-      const res = await fetch("/api/admin/stats", {
-        headers: adminHeaders(),
-        cache: "no-store",
-      });
-      if (!res.ok) return;
-      const j = (await res.json()) as Partial<AdminStats>;
-      setStats({
-        pv: Number(j.pv ?? 0),
-        works: Number(j.works ?? 0),
-        votes: Number(j.votes ?? 0),
-      });
-    } finally {
-      setStatsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void fetchStats();
-  }, [adminSecret]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -229,7 +227,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
       if (ok > 0) {
         notifyVoteDataChanged();
         router.refresh();
-        void fetchStats();
+        void mutateStats();
       }
 
       if (failures.length === 0) {
@@ -265,7 +263,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
     }
     notifyVoteDataChanged();
     router.refresh();
-    void fetchStats();
+    void mutateStats();
     setMessage("已删除");
     setTimeout(() => setMessage(null), 2000);
   };
@@ -314,7 +312,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
 
       notifyVoteDataChanged();
       router.refresh();
-      void fetchStats();
+      void mutateStats();
       closeEdit();
       setMessage("修改成功");
       setTimeout(() => setMessage(null), 2000);
@@ -336,7 +334,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
     }
     notifyVoteDataChanged();
     router.refresh();
-    void fetchStats();
+    void mutateStats();
     setMessage("已清空全部投票记录");
     setTimeout(() => setMessage(null), 2000);
   };
@@ -466,7 +464,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
             总浏览量 (PV)
           </p>
           <p className="mt-2 text-3xl font-black tabular-nums text-[#4a2f22]">
-            {statsLoading ? "…" : stats.pv}
+            {statsLoading ? "…" : (stats?.pv ?? 0)}
           </p>
         </article>
         <article className="rounded-2xl border border-emerald-200/70 bg-white/60 px-4 py-4 shadow-[0_0_18px_rgba(155,209,165,0.22)] backdrop-blur-sm">
@@ -474,7 +472,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
             参赛作品总数
           </p>
           <p className="mt-2 text-3xl font-black tabular-nums text-[#4a2f22]">
-            {statsLoading ? "…" : stats.works}
+            {statsLoading ? "…" : (stats?.works ?? 0)}
           </p>
         </article>
         <article className="rounded-2xl border border-amber-200/70 bg-white/60 px-4 py-4 shadow-[0_0_18px_rgba(251,191,36,0.2)] backdrop-blur-sm">
@@ -482,7 +480,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
             累计投票数
           </p>
           <p className="mt-2 text-3xl font-black tabular-nums text-[#4a2f22]">
-            {statsLoading ? "…" : stats.votes}
+            {statsLoading ? "…" : (stats?.votes ?? 0)}
           </p>
         </article>
       </section>

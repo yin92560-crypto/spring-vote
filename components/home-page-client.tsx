@@ -598,7 +598,7 @@ function HomePageContent() {
                             </div>
                           </button>
                           <div className="flex items-center justify-between gap-3 px-4 py-4">
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
                               <p className="truncate font-semibold text-[#4a2f22]">
                                 {w.workTitle || w.title}
                               </p>
@@ -614,6 +614,7 @@ function HomePageContent() {
                               disabled={remaining <= 0 || Boolean(votePendingWorkId)}
                               loading={Boolean(votePendingWorkId)}
                               onVote={() => voteFromCard(w.id)}
+                              className="min-w-[80px] shrink-0"
                             >
                               {votePendingWorkId ? t("voteSubmitting") : t("voteCard")}
                             </VotePillButton>

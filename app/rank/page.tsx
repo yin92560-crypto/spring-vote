@@ -11,5 +11,9 @@ export const metadata: Metadata = {
 };
 
 export default async function RankPage() {
-  return <RankPageView />;
+  return (
+    <main className="relative mx-auto flex min-h-screen w-full flex-1 flex-col">
+      <RankPageView />
+    </main>
+  );
 }
