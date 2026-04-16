@@ -99,4 +99,4 @@ export async function fetchWorksRankedByVotes(): Promise<Work[]> {
   });
   return ranked.slice(0, 50);
 }
- 
+  
