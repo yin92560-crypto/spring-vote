@@ -26,7 +26,6 @@ import { useVoteHomeState } from "@/lib/use-vote-store";
 import { getOrCreateClientVoterId } from "@/lib/client-voter-id";
 
 const DAILY_VOTE_LIMIT = 3;
-const SEARCH_MIN_LENGTH = 2;
 const SEARCH_RESULT_LIMIT = 20;
 
 function todayInShanghaiForClient(): string {
@@ -194,7 +193,7 @@ function HomePageContent() {
 
   const normalizedSearch = searchQuery.trim();
   const filteredWorks = useMemo(() => {
-    if (normalizedSearch.length < SEARCH_MIN_LENGTH) return works;
+    if (!normalizedSearch) return works;
     if (searchResults) return searchResults;
     return [];
   }, [works, normalizedSearch, searchResults]);
@@ -271,6 +270,17 @@ function HomePageContent() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const timer = window.setInterval(() => {
+      // 静默触发：不展示任何 UI 提示，失败仅吞掉
+      void fetch("/api/votes/flush").catch(() => {
+        /* ignore */
+      });
+    }, 300000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
     const serverUsed = Math.max(0, DAILY_VOTE_LIMIT - remaining);
     setLocalUsedVotes(serverUsed);
     try {
@@ -287,7 +297,7 @@ function HomePageContent() {
 
   useEffect(() => {
     const keyword = normalizedSearch;
-    if (keyword.length < SEARCH_MIN_LENGTH) {
+    if (!keyword) {
       setSearchResults(null);
       setSearchLimited(false);
       setSearchLoading(false);
@@ -300,7 +310,7 @@ function HomePageContent() {
     const timer = window.setTimeout(async () => {
       try {
         const r = await fetch(
-          `/api/works?q=${encodeURIComponent(keyword)}&limit=${SEARCH_RESULT_LIMIT}`,
+          `/api/search?q=${encodeURIComponent(keyword)}&limit=${SEARCH_RESULT_LIMIT}&t=${Date.now()}`,
           {
             signal: ctrl.signal,
             headers: voterId ? { "x-voter-id": voterId } : undefined,
@@ -607,14 +617,14 @@ function HomePageContent() {
                 </div>
                 <p className="mt-2 text-center text-xs text-stone-800/55">
                   {t("worksTotal", { count: works.length })}
-                  {normalizedSearch.length >= SEARCH_MIN_LENGTH
+                  {normalizedSearch
                     ? t("worksFiltered", { count: filteredWorks.length })
                     : null}
                 </p>
-                {normalizedSearch.length >= SEARCH_MIN_LENGTH && searchLoading && (
+                {normalizedSearch && searchLoading && (
                   <p className="mt-1 text-center text-xs text-stone-700/75">搜索中…</p>
                 )}
-                {normalizedSearch.length >= SEARCH_MIN_LENGTH && searchLimited && (
+                {normalizedSearch && searchLimited && (
                   <p className="mt-1 text-center text-xs text-stone-700/75">
                     请输入更精确的关键词查询更多
                   </p>
