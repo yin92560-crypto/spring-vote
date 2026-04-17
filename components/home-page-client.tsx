@@ -191,11 +191,12 @@ function HomePageContent() {
   const deviceFingerprintLoadingRef = useRef<Promise<string> | null>(null);
 
   const normalizedSearch = searchQuery.trim();
+  const worksList = works ?? [];
   /** 全量作品来自 /api/works；搜索仅用本地过滤，避免「等接口时整页空白」 */
   const filteredWorks = useMemo(() => {
-    if (!normalizedSearch) return works;
-    return filterWorksBySearch(works, normalizedSearch);
-  }, [works, normalizedSearch]);
+    if (!normalizedSearch) return worksList;
+    return filterWorksBySearch(worksList, normalizedSearch);
+  }, [worksList, normalizedSearch]);
   const pageSize = 18;
   const totalPages = Math.max(1, Math.ceil(filteredWorks.length / pageSize));
   const pagedWorks = useMemo(() => {
@@ -237,7 +238,7 @@ function HomePageContent() {
   };
 
   useEffect(() => {
-    if (works.length === 0) return;
+    if (worksList.length === 0) return;
     if (skipUrlSyncOnceRef.current) {
       skipUrlSyncOnceRef.current = false;
       return;
@@ -247,9 +248,9 @@ function HomePageContent() {
       setDetailWork(null);
       return;
     }
-    const w = findWorkByDisplayQuery(works, idParam);
+    const w = findWorkByDisplayQuery(worksList, idParam);
     setDetailWork(w ?? null);
-  }, [searchParams, works]);
+  }, [searchParams, worksList]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -474,7 +475,7 @@ function HomePageContent() {
       ? ["2026华勤全球员工", "春日摄影大赛"]
       : [t("subtitle")];
 
-  if (loading) {
+  if (loading || works === undefined) {
     return <HomeLoadingFallback />;
   }
 

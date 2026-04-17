@@ -13,28 +13,40 @@ export function emitVoteRefresh(): void {
 }
 
 export function useVoteHomeState(): {
-  works: Work[];
+  works: Work[] | undefined;
   remaining: number;
   loading: boolean;
   refresh: () => Promise<void>;
 } {
-  const [works, setWorks] = useState<Work[]>([]);
+  const [works, setWorks] = useState<Work[] | undefined>(undefined);
   const [remaining, setRemaining] = useState(3);
   const [loading, setLoading] = useState(true);
 
+  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
   const refresh = useCallback(async () => {
     const voterId = getOrCreateClientVoterId();
-    const r = await fetch("/api/works", {
-      cache: "no-store",
-      headers: voterId ? { "x-voter-id": voterId } : undefined,
-    });
-    if (!r.ok) {
-      console.error("useVoteHomeState: /api/works failed", r.status, r.statusText);
-      return;
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        const r = await fetch("/api/works", {
+          cache: "no-store",
+          headers: voterId ? { "x-voter-id": voterId } : undefined,
+        });
+        if (!r.ok) {
+          throw new Error(`HTTP ${r.status} ${r.statusText}`);
+        }
+        const j = (await r.json()) as { works: Work[]; remaining: number };
+        if (Array.isArray(j.works)) setWorks(j.works);
+        if (typeof j.remaining === "number") setRemaining(j.remaining);
+        return;
+      } catch (err) {
+        if (attempt >= 3) {
+          console.error("useVoteHomeState: /api/works failed after retries", err);
+          return;
+        }
+        await sleep(350 * attempt);
+      }
     }
-    const j = (await r.json()) as { works: Work[]; remaining: number };
-    if (Array.isArray(j.works)) setWorks(j.works);
-    if (typeof j.remaining === "number") setRemaining(j.remaining);
   }, []);
 
   useEffect(() => {
