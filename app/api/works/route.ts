@@ -15,6 +15,11 @@ import {
   isAcceptableWorksImagePath,
   normalizeWorkImageUrl,
 } from "@/lib/work-image-url";
+import {
+  fetchWorksTableAll,
+  fetchWorksTableWithOr,
+  votesFromRow,
+} from "@/lib/supabase-works-columns";
 
 export const dynamic = "force-dynamic";
 const WORKS_LIST_CACHE_KEY = "works:list:v1";
@@ -64,27 +69,31 @@ export async function GET(request: Request) {
     if (searchKeyword.length >= 2) {
       const safeKeyword = searchKeyword.slice(0, 40).replace(/[%_]/g, "");
       const supabase = createAdminClient();
-      const { data: works, error: wErr } = await supabase
-        .from("works")
-        .select("id, title, work_title, author_name, image_url, created_at, votes_count")
-        .or(`work_title.ilike.%${safeKeyword}%,author_name.ilike.%${safeKeyword}%`)
-        .order("created_at", { ascending: false })
-        .limit(searchLimit + 1);
-      if (wErr) {
+      let workRows;
+      let usedVotesFallback: boolean;
+      try {
+        const r = await fetchWorksTableWithOr(
+          supabase,
+          `work_title.ilike.%${safeKeyword}%,author_name.ilike.%${safeKeyword}%`,
+          { limit: searchLimit + 1 }
+        );
+        workRows = r.rows;
+        usedVotesFallback = r.usedVotesCountFallback;
+      } catch (wErr) {
         console.error(wErr);
         return NextResponse.json({ error: "搜索失败，请稍后重试" }, { status: 500 });
       }
 
-      const limited = (works ?? []).length > searchLimit;
+      const limited = workRows.length > searchLimit;
 
       const list = addDisplayNumbers(
-        (works ?? []).slice(0, searchLimit).map((w) => ({
+        workRows.slice(0, searchLimit).map((w) => ({
           id: w.id as string,
           title: w.title as string,
           workTitle: (w.work_title as string | null) ?? (w.title as string),
           authorName: (w.author_name as string | null) ?? "",
           imageUrl: normalizeWorkImageUrl(w.image_url as string),
-          votes: Number((w as { votes_count?: number | null }).votes_count ?? 0),
+          votes: votesFromRow(w, usedVotesFallback),
           createdAt: w.created_at as string,
         })),
       );
@@ -106,23 +115,25 @@ export async function GET(request: Request) {
 
     if (!list) {
       const supabase = createAdminClient();
-      const { data: works, error: wErr } = await supabase
-        .from("works")
-        .select("id, title, work_title, author_name, image_url, created_at, votes_count")
-        .order("created_at", { ascending: false });
-      if (wErr) {
+      let workRows;
+      let usedVotesFallback: boolean;
+      try {
+        const r = await fetchWorksTableAll(supabase);
+        workRows = r.rows;
+        usedVotesFallback = r.usedVotesCountFallback;
+      } catch (wErr) {
         console.error(wErr);
         return NextResponse.json({ error: "读取作品失败" }, { status: 500 });
       }
 
       list = addDisplayNumbers(
-        (works ?? []).map((w) => ({
+        workRows.map((w) => ({
           id: w.id as string,
           title: w.title as string,
           workTitle: (w.work_title as string | null) ?? (w.title as string),
           authorName: (w.author_name as string | null) ?? "",
           imageUrl: normalizeWorkImageUrl(w.image_url as string),
-          votes: Number((w as { votes_count?: number | null }).votes_count ?? 0),
+          votes: votesFromRow(w, usedVotesFallback),
           createdAt: w.created_at as string,
         }))
       );

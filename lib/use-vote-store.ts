@@ -28,7 +28,10 @@ export function useVoteHomeState(): {
       cache: "no-store",
       headers: voterId ? { "x-voter-id": voterId } : undefined,
     });
-    if (!r.ok) return;
+    if (!r.ok) {
+      console.error("useVoteHomeState: /api/works failed", r.status, r.statusText);
+      return;
+    }
     const j = (await r.json()) as { works: Work[]; remaining: number };
     if (Array.isArray(j.works)) setWorks(j.works);
     if (typeof j.remaining === "number") setRemaining(j.remaining);
@@ -72,7 +75,10 @@ export function useWorksList(): {
       cache: "no-store",
       headers: voterId ? { "x-voter-id": voterId } : undefined,
     });
-    if (!r.ok) return;
+    if (!r.ok) {
+      console.error("useWorksList: /api/works failed", r.status, r.statusText);
+      return;
+    }
     const j = (await r.json()) as { works: Work[] };
     if (Array.isArray(j.works)) setWorks(j.works);
   }, []);

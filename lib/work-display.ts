@@ -34,5 +34,14 @@ export function filterWorksBySearch(works: Work[], raw: string): Work[] {
   }
 
   const lower = q.toLowerCase();
-  return works.filter((w) => w.title.toLowerCase().includes(lower));
+  return works.filter((w) => {
+    const title = (w.title ?? "").toLowerCase();
+    const workTitle = (w.workTitle ?? "").toLowerCase();
+    const author = (w.authorName ?? "").toLowerCase();
+    return (
+      title.includes(lower) ||
+      workTitle.includes(lower) ||
+      author.includes(lower)
+    );
+  });
 }

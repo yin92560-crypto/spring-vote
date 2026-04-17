@@ -4,6 +4,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { addDisplayNumbers } from "@/lib/work-display";
 import { keyDailyUserVotes, getVoteRedis, voteUserKey } from "@/lib/vote-redis";
 import { normalizeWorkImageUrl } from "@/lib/work-image-url";
+import {
+  fetchWorksTableWithOr,
+  votesFromRow,
+} from "@/lib/supabase-works-columns";
 import type { Work } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
@@ -34,20 +38,23 @@ export async function GET(request: Request) {
     }).format(new Date());
 
     const supabase = createAdminClient();
-    const { data: works, error: wErr } = await supabase
-      .from("works")
-      .select("id, title, work_title, author_name, image_url, created_at, votes_count")
-      .or(`work_title.ilike.%${safeKeyword}%,author_name.ilike.%${safeKeyword}%`)
-      .order("created_at", { ascending: false })
-      .limit(limit + 1);
-
-    if (wErr) {
+    let workRows;
+    let usedVotesFallback: boolean;
+    try {
+      const r = await fetchWorksTableWithOr(
+        supabase,
+        `work_title.ilike.%${safeKeyword}%,author_name.ilike.%${safeKeyword}%`,
+        { limit: limit + 1 }
+      );
+      workRows = r.rows;
+      usedVotesFallback = r.usedVotesCountFallback;
+    } catch (wErr) {
       console.error(wErr);
       return NextResponse.json({ error: "搜索失败，请稍后重试" }, { status: 500 });
     }
 
-    const sliced = (works ?? []).slice(0, limit);
-    const limited = (works ?? []).length > limit;
+    const sliced = workRows.slice(0, limit);
+    const limited = workRows.length > limit;
 
     const list = addDisplayNumbers(
       sliced.map((w) => ({
@@ -56,7 +63,7 @@ export async function GET(request: Request) {
         workTitle: (w.work_title as string | null) ?? (w.title as string),
         authorName: (w.author_name as string | null) ?? "",
         imageUrl: normalizeWorkImageUrl(w.image_url as string),
-        votes: Number((w as { votes_count?: number | null }).votes_count ?? 0),
+        votes: votesFromRow(w, usedVotesFallback),
         createdAt: w.created_at as string,
       })),
     ) as Work[];

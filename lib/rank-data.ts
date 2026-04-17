@@ -1,5 +1,9 @@
 import { addDisplayNumbers } from "@/lib/work-display";
 import { createAdminClient } from "@/lib/supabase/admin";
+import {
+  fetchWorksTableAll,
+  votesFromRow,
+} from "@/lib/supabase-works-columns";
 import { normalizeWorkImageUrl } from "@/lib/work-image-url";
 import {
   getVoteRedis,
@@ -15,24 +19,25 @@ import type { Work } from "@/lib/types";
  */
 export async function fetchWorksRankedByVotes(): Promise<Work[]> {
   const supabase = createAdminClient();
-  const { data: works, error: wErr } = await supabase
-    .from("works")
-    .select("id, title, work_title, author_name, image_url, created_at, votes_count")
-    .order("created_at", { ascending: false });
-
-  if (wErr) {
+  let workRows;
+  let usedVotesFallback: boolean;
+  try {
+    const r = await fetchWorksTableAll(supabase);
+    workRows = r.rows;
+    usedVotesFallback = r.usedVotesCountFallback;
+  } catch (wErr) {
     console.error(wErr);
     throw new Error("读取作品失败");
   }
 
   const list = addDisplayNumbers(
-    (works ?? []).map((w) => ({
+    workRows.map((w) => ({
       id: w.id as string,
       title: w.title as string,
       workTitle: (w.work_title as string | null) ?? (w.title as string),
       authorName: (w.author_name as string | null) ?? "",
       imageUrl: normalizeWorkImageUrl(w.image_url as string),
-      votes: Number((w as { votes_count?: number | null }).votes_count ?? 0),
+      votes: votesFromRow(w, usedVotesFallback),
       createdAt: w.created_at as string,
     }))
   );
