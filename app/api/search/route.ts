@@ -39,7 +39,7 @@ export async function GET(request: Request) {
 
     const supabase = createAdminClient();
     let workRows;
-    let usedVotesFallback: boolean;
+    let tallyColumn;
     try {
       const r = await fetchWorksTableWithOr(
         supabase,
@@ -47,7 +47,7 @@ export async function GET(request: Request) {
         { limit: limit + 1 }
       );
       workRows = r.rows;
-      usedVotesFallback = r.usedVotesCountFallback;
+      tallyColumn = r.tallyColumn;
     } catch (wErr) {
       console.error(wErr);
       return NextResponse.json({ error: "搜索失败，请稍后重试" }, { status: 500 });
@@ -63,7 +63,7 @@ export async function GET(request: Request) {
         workTitle: (w.work_title as string | null) ?? (w.title as string),
         authorName: (w.author_name as string | null) ?? "",
         imageUrl: normalizeWorkImageUrl(w.image_url as string),
-        votes: votesFromRow(w, usedVotesFallback),
+        votes: votesFromRow(w, tallyColumn),
         createdAt: w.created_at as string,
       })),
     ) as Work[];

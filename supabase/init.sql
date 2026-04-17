@@ -25,8 +25,23 @@ create index if not exists idx_votes_ip_date on public.votes (voter_ip, vote_dat
 create index if not exists idx_votes_work_id on public.votes (work_id);
 create index if not exists idx_votes_voter_ip_created_at on public.votes (voter_ip, created_at desc);
 
--- 作品累计票数（cast_vote / apply_redis_vote_flush 会原子累加；排行榜优先读此列）
-alter table public.works add column if not exists votes_count integer not null default 0;
+-- 作品累计票数列：标准名为 votes_count。若历史库误用 works.votes（与表 public.votes 不同），重命名为 votes_count。
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'works' and column_name = 'votes_count'
+  ) then
+    if exists (
+      select 1 from information_schema.columns
+      where table_schema = 'public' and table_name = 'works' and column_name = 'votes'
+    ) then
+      alter table public.works rename column votes to votes_count;
+    else
+      alter table public.works add column votes_count integer not null default 0;
+    end if;
+  end if;
+end $$;
 
 -- 若后续引入登录用户字段 user_id，则自动补齐 user_id + created_at 索引（避免 count/范围查询慢）
 do $$
@@ -52,6 +67,8 @@ as $$
 declare
   v_today date := (timezone('Asia/Shanghai', now()))::date;
   v_count int;
+  v_total int;
+  v_col text;
 begin
   select count(*)::int into v_count
   from public.votes
@@ -69,9 +86,24 @@ begin
   insert into public.votes (work_id, voter_ip, vote_date)
   values (p_work_id, p_voter_ip, v_today);
 
-  update public.works w
-    set votes_count = (select count(*)::int from public.votes v where v.work_id = w.id)
-    where w.id = p_work_id;
+  select count(*)::int into v_total
+  from public.votes v where v.work_id = p_work_id;
+
+  select c.column_name into v_col
+  from information_schema.columns c
+  where c.table_schema = 'public' and c.table_name = 'works'
+    and c.column_name in ('votes_count', 'votes')
+  order by case c.column_name when 'votes_count' then 0 else 1 end
+  limit 1;
+
+  if v_col is null then
+    return jsonb_build_object('ok', false, 'reason', '作品表缺少汇总列 votes_count 或 votes');
+  end if;
+
+  execute format(
+    'update public.works w set %I = $1 where w.id = $2',
+    v_col
+  ) using v_total, p_work_id;
 
   return jsonb_build_object('ok', true);
 end;
@@ -94,6 +126,8 @@ set search_path = public
 as $$
 declare
   i int;
+  v_total int;
+  v_col text;
 begin
   if p_count is null or p_count <= 0 then
     return jsonb_build_object('ok', true, 'inserted', 0);
@@ -108,22 +142,52 @@ begin
     values (p_work_id, 'redis-sync', p_vote_date);
   end loop;
 
-  -- 与排行榜 lib/rank-data 读取的 works.votes_count 对齐：用 votes 行数作为真值，
-  -- 等价于「当前已落库票数 + 本次 Redis 桶票数」，且能修复从未回填的 votes_count。
-  update public.works w
-    set votes_count = (select count(*)::int from public.votes v where v.work_id = w.id)
-    where w.id = p_work_id;
+  select count(*)::int into v_total
+  from public.votes v where v.work_id = p_work_id;
 
-  return jsonb_build_object('ok', true, 'inserted', p_count);
+  select c.column_name into v_col
+  from information_schema.columns c
+  where c.table_schema = 'public' and c.table_name = 'works'
+    and c.column_name in ('votes_count', 'votes')
+  order by case c.column_name when 'votes_count' then 0 else 1 end
+  limit 1;
+
+  if v_col is null then
+    return jsonb_build_object('ok', false, 'reason', '作品表缺少汇总列 votes_count 或 votes');
+  end if;
+
+  execute format(
+    'update public.works w set %I = $1 where w.id = $2',
+    v_col
+  ) using v_total, p_work_id;
+
+  return jsonb_build_object('ok', true, 'inserted', p_count, 'tally_column', v_col);
 end;
 $$;
 
 revoke all on function public.apply_redis_vote_flush (uuid, date, int) from public;
 grant execute on function public.apply_redis_vote_flush (uuid, date, int) to service_role;
 
--- 与已有 votes 行对齐（可重复执行）
-update public.works w
-set votes_count = coalesce((select count(*)::int from public.votes v where v.work_id = w.id), 0);
+-- 与已有 votes 行对齐（可重复执行；列名 votes_count 或 votes）
+do $$
+declare
+  v_col text;
+begin
+  select c.column_name into v_col
+  from information_schema.columns c
+  where c.table_schema = 'public' and c.table_name = 'works'
+    and c.column_name in ('votes_count', 'votes')
+  order by case c.column_name when 'votes_count' then 0 else 1 end
+  limit 1;
+  if v_col is not null then
+    execute format(
+      'update public.works w set %I = coalesce((select count(*)::int from public.votes v where v.work_id = w.id), 0)',
+      v_col
+    );
+  else
+    raise notice 'works: skip tally backfill (no votes_count/votes column)';
+  end if;
+end $$;
 
 -- 行级安全：禁止匿名直连表读写；Next.js 使用 service_role 密钥可绕过 RLS
 alter table public.works enable row level security;

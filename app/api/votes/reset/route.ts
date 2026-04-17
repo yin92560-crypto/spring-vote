@@ -34,12 +34,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "清空失败" }, { status: 500 });
     }
 
-    const { error: wcErr } = await supabase
-      .from("works")
-      .update({ votes_count: 0 })
-      .neq("id", "00000000-0000-0000-0000-000000000000");
-    if (wcErr) {
-      console.error("reset works.votes_count failed:", wcErr);
+    const nilId = "00000000-0000-0000-0000-000000000000";
+    let tallyCleared = false;
+    for (const col of ["votes_count", "votes"] as const) {
+      const { error: wcErr } = await supabase
+        .from("works")
+        .update({ [col]: 0 } as Record<string, number>)
+        .neq("id", nilId);
+      if (!wcErr) tallyCleared = true;
+    }
+    if (!tallyCleared) {
       return NextResponse.json({ error: "清空作品票数汇总失败" }, { status: 500 });
     }
 

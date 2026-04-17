@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 const WORKS_LIST_CACHE_KEY = "works:list:v1";
 const RANK_LIST_CACHE_KEY = "rank:list:v1";
 
-/** 与 lib/rank-data、lib/supabase-works-columns 一致：汇总列名为 works.votes_count */
+/** 汇总票数写在 public.works 上（标准列 votes_count；历史库可能为 votes），与 lib/supabase-works-columns 探测顺序一致 */
 
 type FlushResult = {
   ok: boolean;
