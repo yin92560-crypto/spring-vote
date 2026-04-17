@@ -69,9 +69,9 @@ begin
   insert into public.votes (work_id, voter_ip, vote_date)
   values (p_work_id, p_voter_ip, v_today);
 
-  update public.works
-    set votes_count = coalesce(votes_count, 0) + 1
-    where id = p_work_id;
+  update public.works w
+    set votes_count = (select count(*)::int from public.votes v where v.work_id = w.id)
+    where w.id = p_work_id;
 
   return jsonb_build_object('ok', true);
 end;
@@ -108,9 +108,11 @@ begin
     values (p_work_id, 'redis-sync', p_vote_date);
   end loop;
 
-  update public.works
-    set votes_count = coalesce(votes_count, 0) + p_count
-    where id = p_work_id;
+  -- 与排行榜 lib/rank-data 读取的 works.votes_count 对齐：用 votes 行数作为真值，
+  -- 等价于「当前已落库票数 + 本次 Redis 桶票数」，且能修复从未回填的 votes_count。
+  update public.works w
+    set votes_count = (select count(*)::int from public.votes v where v.work_id = w.id)
+    where w.id = p_work_id;
 
   return jsonb_build_object('ok', true, 'inserted', p_count);
 end;

@@ -12,6 +12,8 @@ export const dynamic = "force-dynamic";
 const WORKS_LIST_CACHE_KEY = "works:list:v1";
 const RANK_LIST_CACHE_KEY = "rank:list:v1";
 
+/** 与 lib/rank-data、lib/supabase-works-columns 一致：汇总列名为 works.votes_count */
+
 type FlushResult = {
   ok: boolean;
   flushed?: number;
