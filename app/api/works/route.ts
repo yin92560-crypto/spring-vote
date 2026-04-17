@@ -34,6 +34,19 @@ function withNormalizedImageUrls(items: WorksCacheItem[]): WorksCacheItem[] {
 
 export async function GET(request: Request) {
   try {
+    const url = new URL(request.url);
+    const blockedSearchParam =
+      url.searchParams.get("q") ??
+      url.searchParams.get("query") ??
+      url.searchParams.get("keyword") ??
+      url.searchParams.get("search");
+    if (blockedSearchParam) {
+      return NextResponse.json(
+        { error: "为了系统稳定，搜索功能暂不开放，请通过分类浏览" },
+        { status: 403 }
+      );
+    }
+
     const ip = getClientIp(request.headers);
     const ua = request.headers.get("user-agent") ?? "";
     const today = new Intl.DateTimeFormat("en-CA", {

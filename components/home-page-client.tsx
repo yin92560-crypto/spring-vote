@@ -25,6 +25,7 @@ import { notifyVoteDataChanged } from "@/lib/vote-sync";
 import { useVoteHomeState } from "@/lib/use-vote-store";
 
 const DAILY_VOTE_LIMIT = 3;
+const SEARCH_FEATURE_ENABLED = false;
 
 function todayInShanghaiForClient(): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -186,10 +187,10 @@ function HomePageContent() {
   const skipUrlSyncOnceRef = useRef(false);
   const voteCooldownUntilRef = useRef<Map<string, number>>(new Map());
 
-  const filteredWorks = useMemo(
-    () => filterWorksBySearch(works, searchQuery),
-    [works, searchQuery]
-  );
+  const filteredWorks = useMemo(() => {
+    if (!SEARCH_FEATURE_ENABLED) return works;
+    return filterWorksBySearch(works, searchQuery);
+  }, [works, searchQuery]);
   const pageSize = 18;
   const totalPages = Math.max(1, Math.ceil(filteredWorks.length / pageSize));
   const pagedWorks = useMemo(() => {
@@ -273,6 +274,10 @@ function HomePageContent() {
   }, [remaining]);
 
   useEffect(() => {
+    if (!SEARCH_FEATURE_ENABLED && searchQuery) {
+      setSearchQuery("");
+      return;
+    }
     setPage(1);
     setJumpPage("");
   }, [searchQuery]);
@@ -529,31 +534,8 @@ function HomePageContent() {
           ) : (
             <>
               <div className="mx-auto max-w-xl">
-                <label htmlFor="work-search" className="sr-only">
-                  {t("searchAria")}
-                </label>
-                <div className="search-glow flex items-center gap-3 rounded-full border border-emerald-300/80 bg-white/72 px-5 py-3 shadow-[0_8px_20px_rgba(56,74,55,0.25)] backdrop-blur-md">
-                  <span
-                    className="shrink-0 text-lg text-emerald-900/70"
-                    aria-hidden
-                  >
-                    🔍
-                  </span>
-                  <input
-                    id="work-search"
-                    type="search"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={t("searchPlaceholder")}
-                    className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-emerald-950 placeholder:text-emerald-900/55 outline-none transition-all duration-300 ease-out"
-                    autoComplete="off"
-                  />
-                </div>
                 <p className="mt-2 text-center text-xs text-stone-800/55">
                   {t("worksTotal", { count: works.length })}
-                  {searchQuery.trim()
-                    ? t("worksFiltered", { count: filteredWorks.length })
-                    : null}
                 </p>
               </div>
 
