@@ -23,6 +23,7 @@ import { VotePillButton } from "@/components/vote-pill-button";
 import { useI18n } from "@/lib/i18n-context";
 import { notifyVoteDataChanged } from "@/lib/vote-sync";
 import { useVoteHomeState } from "@/lib/use-vote-store";
+import FingerprintJS from "@fingerprintjs/fingerprintjs";
 import { getOrCreateClientVoterId } from "@/lib/client-voter-id";
 
 const DAILY_VOTE_LIMIT = 3;
@@ -186,6 +187,8 @@ function HomePageContent() {
   /** 避免「先 setState 再 replaceQuery」时 effect 因 id 尚未写入而误关弹窗 */
   const skipUrlSyncOnceRef = useRef(false);
   const voteCooldownUntilRef = useRef<Map<string, number>>(new Map());
+  const deviceFingerprintRef = useRef<string | null>(null);
+  const deviceFingerprintLoadingRef = useRef<Promise<string> | null>(null);
 
   const normalizedSearch = searchQuery.trim();
   /** 全量作品来自 /api/works；搜索仅用本地过滤，避免「等接口时整页空白」 */
@@ -295,12 +298,33 @@ function HomePageContent() {
     setPage((prev) => Math.min(Math.max(prev, 1), totalPages));
   }, [totalPages]);
 
+  const getDeviceFingerprint = async (): Promise<string> => {
+    if (deviceFingerprintRef.current) return deviceFingerprintRef.current;
+    if (deviceFingerprintLoadingRef.current) return deviceFingerprintLoadingRef.current;
+
+    const pending = (async () => {
+      const fp = await FingerprintJS.load();
+      const result = await fp.get();
+      const visitorId = String(result.visitorId ?? "").trim();
+      deviceFingerprintRef.current = visitorId;
+      return visitorId;
+    })();
+    deviceFingerprintLoadingRef.current = pending;
+
+    try {
+      return await pending;
+    } finally {
+      deviceFingerprintLoadingRef.current = null;
+    }
+  };
+
   const requestVoteOnce = async (workId: string) => {
     const voterId = getOrCreateClientVoterId();
+    const deviceFingerprint = await getDeviceFingerprint();
     return fetch("/api/votes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ workId, voterId }),
+      body: JSON.stringify({ workId, voterId, device_fingerprint: deviceFingerprint }),
     });
   };
 
