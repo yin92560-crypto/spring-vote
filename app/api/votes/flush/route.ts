@@ -52,6 +52,10 @@ export async function POST(request: Request) {
         voter_ip: "redis-sync",
         vote_date: parsed.day,
       }));
+      const supabaseUrlPreview = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").slice(0, 15);
+      console.log("[votes.flush] SUPABASE_URL preview:", supabaseUrlPreview);
+      console.log("[votes.flush] target table:", "votes");
+      console.log("[votes.flush] insert payload:", rows);
       const { error } = await supabase.from("votes").insert(rows);
       if (error) {
         console.error("flush votes failed:", parsed.workId, parsed.day, error);

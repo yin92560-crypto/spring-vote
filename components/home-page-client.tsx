@@ -26,7 +26,8 @@ import { useVoteHomeState } from "@/lib/use-vote-store";
 import { getOrCreateClientVoterId } from "@/lib/client-voter-id";
 
 const DAILY_VOTE_LIMIT = 3;
-const SEARCH_FEATURE_ENABLED = false;
+const SEARCH_MIN_LENGTH = 2;
+const SEARCH_RESULT_LIMIT = 20;
 
 function todayInShanghaiForClient(): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -179,6 +180,9 @@ function HomePageContent() {
   const { works, remaining, loading, refresh } = useVoteHomeState();
   const [toast, setToast] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Work[] | null>(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [searchLimited, setSearchLimited] = useState(false);
   const [page, setPage] = useState(1);
   const [jumpPage, setJumpPage] = useState("");
   const [detailWork, setDetailWork] = useState<Work | null>(null);
@@ -188,10 +192,12 @@ function HomePageContent() {
   const skipUrlSyncOnceRef = useRef(false);
   const voteCooldownUntilRef = useRef<Map<string, number>>(new Map());
 
+  const normalizedSearch = searchQuery.trim();
   const filteredWorks = useMemo(() => {
-    if (!SEARCH_FEATURE_ENABLED) return works;
-    return filterWorksBySearch(works, searchQuery);
-  }, [works, searchQuery]);
+    if (normalizedSearch.length < SEARCH_MIN_LENGTH) return works;
+    if (searchResults) return searchResults;
+    return [];
+  }, [works, normalizedSearch, searchResults]);
   const pageSize = 18;
   const totalPages = Math.max(1, Math.ceil(filteredWorks.length / pageSize));
   const pagedWorks = useMemo(() => {
@@ -275,13 +281,59 @@ function HomePageContent() {
   }, [remaining]);
 
   useEffect(() => {
-    if (!SEARCH_FEATURE_ENABLED && searchQuery) {
-      setSearchQuery("");
-      return;
-    }
     setPage(1);
     setJumpPage("");
   }, [searchQuery]);
+
+  useEffect(() => {
+    const keyword = normalizedSearch;
+    if (keyword.length < SEARCH_MIN_LENGTH) {
+      setSearchResults(null);
+      setSearchLimited(false);
+      setSearchLoading(false);
+      return;
+    }
+
+    const voterId = getOrCreateClientVoterId();
+    const ctrl = new AbortController();
+    setSearchLoading(true);
+    const timer = window.setTimeout(async () => {
+      try {
+        const r = await fetch(
+          `/api/works?q=${encodeURIComponent(keyword)}&limit=${SEARCH_RESULT_LIMIT}`,
+          {
+            signal: ctrl.signal,
+            headers: voterId ? { "x-voter-id": voterId } : undefined,
+          },
+        );
+        const j = (await r.json()) as {
+          works?: Work[];
+          limited?: boolean;
+          error?: string;
+        };
+        if (!r.ok) {
+          setSearchResults([]);
+          setSearchLimited(false);
+          setToast(j.error ?? t("toastRequestFail"));
+          setTimeout(() => setToast(null), 2400);
+          return;
+        }
+        setSearchResults(Array.isArray(j.works) ? j.works : []);
+        setSearchLimited(Boolean(j.limited));
+      } catch {
+        if (!ctrl.signal.aborted) {
+          setSearchResults([]);
+        }
+      } finally {
+        if (!ctrl.signal.aborted) setSearchLoading(false);
+      }
+    }, 500);
+
+    return () => {
+      ctrl.abort();
+      window.clearTimeout(timer);
+    };
+  }, [normalizedSearch, t]);
 
   useEffect(() => {
     setPage((prev) => Math.min(Math.max(prev, 1), totalPages));
@@ -536,9 +588,37 @@ function HomePageContent() {
           ) : (
             <>
               <div className="mx-auto max-w-xl">
+                <label htmlFor="work-search" className="sr-only">
+                  {t("searchAria")}
+                </label>
+                <div className="search-glow flex items-center gap-3 rounded-full border border-emerald-300/80 bg-white/72 px-5 py-3 shadow-[0_8px_20px_rgba(56,74,55,0.25)] backdrop-blur-md">
+                  <span className="shrink-0 text-lg text-emerald-900/70" aria-hidden>
+                    🔍
+                  </span>
+                  <input
+                    id="work-search"
+                    type="search"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder={t("searchPlaceholder")}
+                    className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-emerald-950 placeholder:text-emerald-900/55 outline-none transition-all duration-300 ease-out"
+                    autoComplete="off"
+                  />
+                </div>
                 <p className="mt-2 text-center text-xs text-stone-800/55">
                   {t("worksTotal", { count: works.length })}
+                  {normalizedSearch.length >= SEARCH_MIN_LENGTH
+                    ? t("worksFiltered", { count: filteredWorks.length })
+                    : null}
                 </p>
+                {normalizedSearch.length >= SEARCH_MIN_LENGTH && searchLoading && (
+                  <p className="mt-1 text-center text-xs text-stone-700/75">搜索中…</p>
+                )}
+                {normalizedSearch.length >= SEARCH_MIN_LENGTH && searchLimited && (
+                  <p className="mt-1 text-center text-xs text-stone-700/75">
+                    请输入更精确的关键词查询更多
+                  </p>
+                )}
               </div>
 
               {filteredWorks.length === 0 ? (

@@ -37,17 +37,16 @@ function withNormalizedImageUrls(items: WorksCacheItem[]): WorksCacheItem[] {
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
-    const blockedSearchParam =
+    const rawSearchParam =
       url.searchParams.get("q") ??
       url.searchParams.get("query") ??
       url.searchParams.get("keyword") ??
       url.searchParams.get("search");
-    if (blockedSearchParam) {
-      return NextResponse.json(
-        { error: "为了系统稳定，搜索功能暂不开放，请通过分类浏览" },
-        { status: 403 }
-      );
-    }
+    const searchKeyword = (rawSearchParam ?? "").trim();
+    const searchLimit = Math.min(
+      Math.max(Number(url.searchParams.get("limit") ?? 20) || 20, 1),
+      20,
+    );
 
     const ip = getClientIp(request.headers);
     const ua = request.headers.get("user-agent") ?? "";
@@ -61,6 +60,56 @@ export async function GET(request: Request) {
     }).format(new Date());
 
     const redis = getVoteRedis();
+    // 搜索接口：作品名 + 作者双维度匹配，限制返回前 20。
+    if (searchKeyword.length >= 2) {
+      const safeKeyword = searchKeyword.slice(0, 40).replace(/[%_]/g, "");
+      const supabase = createAdminClient();
+      const { data: works, error: wErr } = await supabase
+        .from("works")
+        .select("id, title, work_title, author_name, image_url, created_at")
+        .or(`work_title.ilike.%${safeKeyword}%,author_name.ilike.%${safeKeyword}%`)
+        .order("created_at", { ascending: false })
+        .limit(searchLimit + 1);
+      if (wErr) {
+        console.error(wErr);
+        return NextResponse.json({ error: "搜索失败，请稍后重试" }, { status: 500 });
+      }
+
+      const ids = (works ?? []).map((w) => w.id as string);
+      const limited = ids.length > searchLimit;
+      const selectedIds = ids.slice(0, searchLimit);
+
+      const { data: voteRows, error: vErr } = selectedIds.length
+        ? await supabase.from("votes").select("work_id").in("work_id", selectedIds)
+        : { data: [], error: null };
+      if (vErr) {
+        console.error(vErr);
+        return NextResponse.json({ error: "搜索失败，请稍后重试" }, { status: 500 });
+      }
+
+      const counts = new Map<string, number>();
+      for (const row of voteRows ?? []) {
+        const wid = row.work_id as string;
+        counts.set(wid, (counts.get(wid) ?? 0) + 1);
+      }
+
+      const list = addDisplayNumbers(
+        (works ?? []).slice(0, searchLimit).map((w) => ({
+          id: w.id as string,
+          title: w.title as string,
+          workTitle: (w.work_title as string | null) ?? (w.title as string),
+          authorName: (w.author_name as string | null) ?? "",
+          imageUrl: normalizeWorkImageUrl(w.image_url as string),
+          votes: counts.get(w.id as string) ?? 0,
+          createdAt: w.created_at as string,
+        })),
+      );
+
+      const userKey = voterId || voteUserKey(ip, ua);
+      const used = Number((await redis.get<number>(keyDailyUserVotes(today, userKey))) ?? 0);
+      const remaining = Math.max(0, 3 - used);
+      return NextResponse.json({ works: list, remaining, limited });
+    }
     let list: WorksCacheItem[] | null = null;
     try {
       const cached = await redis.get<string>(WORKS_LIST_CACHE_KEY);
