@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { Work } from "./types";
+import { getOrCreateClientVoterId } from "./client-voter-id";
 
 /** 与 lib/vote-sync 中广播配合：同窗口内刷新作品列表 */
 export const VOTE_DATA_CHANGED_EVENT = "spring-vote-refresh";
@@ -22,7 +23,11 @@ export function useVoteHomeState(): {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const r = await fetch("/api/works", { cache: "no-store" });
+    const voterId = getOrCreateClientVoterId();
+    const r = await fetch("/api/works", {
+      cache: "no-store",
+      headers: voterId ? { "x-voter-id": voterId } : undefined,
+    });
     if (!r.ok) return;
     const j = (await r.json()) as { works: Work[]; remaining: number };
     if (Array.isArray(j.works)) setWorks(j.works);
@@ -62,7 +67,11 @@ export function useWorksList(): {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const r = await fetch("/api/works", { cache: "no-store" });
+    const voterId = getOrCreateClientVoterId();
+    const r = await fetch("/api/works", {
+      cache: "no-store",
+      headers: voterId ? { "x-voter-id": voterId } : undefined,
+    });
     if (!r.ok) return;
     const j = (await r.json()) as { works: Work[] };
     if (Array.isArray(j.works)) setWorks(j.works);

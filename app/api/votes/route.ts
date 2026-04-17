@@ -16,10 +16,12 @@ export const dynamic = "force-dynamic";
 export const runtime = "edge";
 
 const DAILY_LIMIT = 3;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export async function POST(request: Request) {
   try {
-    let body: { workId?: string };
+    let body: { workId?: string; voterId?: string };
     try {
       body = await request.json();
     } catch {
@@ -31,10 +33,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "缺少作品 id" }, { status: 400 });
     }
 
+    const incomingVoterId = String(body.voterId ?? "").trim();
+    const voterId = UUID_RE.test(incomingVoterId) ? incomingVoterId : "";
+
     const ip = getClientIp(request.headers);
     const ua = request.headers.get("user-agent") ?? "";
     const day = todayInShanghai();
-    const userKey = voteUserKey(ip, ua);
+    // 优先使用浏览器持久 voterId，IP 仅作为旧客户端兼容兜底。
+    const userKey = voterId || voteUserKey(ip, ua);
     const redis = getVoteRedis();
 
     const lockKey = keyDailyUserWorkLock(day, userKey, workId);

@@ -19,6 +19,8 @@ import {
 export const dynamic = "force-dynamic";
 const WORKS_LIST_CACHE_KEY = "works:list:v1";
 const RANK_LIST_CACHE_KEY = "rank:list:v1";
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 type WorksCacheItem = Pick<
   Work,
@@ -49,6 +51,8 @@ export async function GET(request: Request) {
 
     const ip = getClientIp(request.headers);
     const ua = request.headers.get("user-agent") ?? "";
+    const headerVoterId = request.headers.get("x-voter-id")?.trim() ?? "";
+    const voterId = UUID_RE.test(headerVoterId) ? headerVoterId : "";
     const today = new Intl.DateTimeFormat("en-CA", {
       timeZone: "Asia/Shanghai",
       year: "numeric",
@@ -128,7 +132,8 @@ export async function GET(request: Request) {
       console.error("read redis vote cache failed:", redisErr);
     }
 
-    const userKey = voteUserKey(ip, ua);
+    // 优先用浏览器持久 voterId 计算今日剩余票数。
+    const userKey = voterId || voteUserKey(ip, ua);
     const used = Number((await redis.get<number>(keyDailyUserVotes(today, userKey))) ?? 0);
     const remaining = Math.max(0, 3 - used);
 

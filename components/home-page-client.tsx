@@ -23,6 +23,7 @@ import { VotePillButton } from "@/components/vote-pill-button";
 import { useI18n } from "@/lib/i18n-context";
 import { notifyVoteDataChanged } from "@/lib/vote-sync";
 import { useVoteHomeState } from "@/lib/use-vote-store";
+import { getOrCreateClientVoterId } from "@/lib/client-voter-id";
 
 const DAILY_VOTE_LIMIT = 3;
 const SEARCH_FEATURE_ENABLED = false;
@@ -287,10 +288,11 @@ function HomePageContent() {
   }, [totalPages]);
 
   const requestVoteOnce = async (workId: string) => {
+    const voterId = getOrCreateClientVoterId();
     return fetch("/api/votes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ workId }),
+      body: JSON.stringify({ workId, voterId }),
     });
   };
 
