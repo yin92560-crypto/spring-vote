@@ -25,6 +25,9 @@ create index if not exists idx_votes_ip_date on public.votes (voter_ip, vote_dat
 create index if not exists idx_votes_work_id on public.votes (work_id);
 create index if not exists idx_votes_voter_ip_created_at on public.votes (voter_ip, created_at desc);
 
+-- 作品累计票数（cast_vote / apply_redis_vote_flush 会原子累加；排行榜优先读此列）
+alter table public.works add column if not exists votes_count integer not null default 0;
+
 -- 若后续引入登录用户字段 user_id，则自动补齐 user_id + created_at 索引（避免 count/范围查询慢）
 do $$
 begin
@@ -66,6 +69,10 @@ begin
   insert into public.votes (work_id, voter_ip, vote_date)
   values (p_work_id, p_voter_ip, v_today);
 
+  update public.works
+    set votes_count = coalesce(votes_count, 0) + 1
+    where id = p_work_id;
+
   return jsonb_build_object('ok', true);
 end;
 $$;
@@ -73,6 +80,48 @@ $$;
 -- 仅允许 service_role 调用（与 Next.js 服务端 API 使用的密钥一致）
 revoke all on function public.cast_vote (uuid, text) from public;
 grant execute on function public.cast_vote (uuid, text) to service_role;
+
+-- 将 Redis 桶内票数一次性写入 votes，并在同一事务内累加 works.votes_count（避免只写子表导致不同步）
+create or replace function public.apply_redis_vote_flush (
+  p_work_id uuid,
+  p_vote_date date,
+  p_count int
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  i int;
+begin
+  if p_count is null or p_count <= 0 then
+    return jsonb_build_object('ok', true, 'inserted', 0);
+  end if;
+
+  if not exists (select 1 from public.works where id = p_work_id) then
+    return jsonb_build_object('ok', false, 'reason', '作品不存在');
+  end if;
+
+  for i in 1..p_count loop
+    insert into public.votes (work_id, voter_ip, vote_date)
+    values (p_work_id, 'redis-sync', p_vote_date);
+  end loop;
+
+  update public.works
+    set votes_count = coalesce(votes_count, 0) + p_count
+    where id = p_work_id;
+
+  return jsonb_build_object('ok', true, 'inserted', p_count);
+end;
+$$;
+
+revoke all on function public.apply_redis_vote_flush (uuid, date, int) from public;
+grant execute on function public.apply_redis_vote_flush (uuid, date, int) to service_role;
+
+-- 与已有 votes 行对齐（可重复执行）
+update public.works w
+set votes_count = coalesce((select count(*)::int from public.votes v where v.work_id = w.id), 0);
 
 -- 行级安全：禁止匿名直连表读写；Next.js 使用 service_role 密钥可绕过 RLS
 alter table public.works enable row level security;

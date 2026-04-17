@@ -34,6 +34,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "清空失败" }, { status: 500 });
     }
 
+    const { error: wcErr } = await supabase
+      .from("works")
+      .update({ votes_count: 0 })
+      .neq("id", "00000000-0000-0000-0000-000000000000");
+    if (wcErr) {
+      console.error("reset works.votes_count failed:", wcErr);
+      return NextResponse.json({ error: "清空作品票数汇总失败" }, { status: 500 });
+    }
+
     // 清理 Redis 投票缓存，避免清零后旧缓存再次回写。
     try {
       const redis = getVoteRedis();

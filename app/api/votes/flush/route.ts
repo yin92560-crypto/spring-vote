@@ -69,20 +69,24 @@ async function runFlush(request: Request): Promise<NextResponse<FlushResult>> {
           continue;
         }
 
-        const rows = Array.from({ length: count }, () => ({
-          work_id: parsed.workId,
-          voter_ip: "redis-sync",
-          vote_date: parsed.day,
-        }));
         const supabaseUrlPreview = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").slice(0, 15);
         console.log("[votes.flush] SUPABASE_URL preview:", supabaseUrlPreview);
-        console.log("[votes.flush] target table:", "votes");
-        console.log("[votes.flush] insert payload:", rows);
-        const { error } = await supabase.from("votes").insert(rows);
+        const { data: flushResult, error } = await supabase.rpc("apply_redis_vote_flush", {
+          p_work_id: parsed.workId,
+          p_vote_date: parsed.day,
+          p_count: count,
+        });
         if (error) {
-          const msg = typeof error.message === "string" ? error.message : "insert failed";
+          const msg = typeof error.message === "string" ? error.message : "rpc failed";
           console.error("flush votes failed:", parsed.workId, parsed.day, error);
           perWorkErrors.push({ member, reason: msg });
+          continue;
+        }
+        const fr = flushResult as { ok?: boolean; reason?: string } | null;
+        if (!fr?.ok) {
+          const reason = typeof fr?.reason === "string" ? fr.reason : "apply_redis_vote_flush rejected";
+          console.error("flush votes rpc not ok:", parsed.workId, parsed.day, flushResult);
+          perWorkErrors.push({ member, reason });
           continue;
         }
 

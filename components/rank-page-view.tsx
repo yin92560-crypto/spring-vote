@@ -28,7 +28,7 @@ export function RankPageView() {
   const rankedWorks = (data?.works ?? []).slice().sort((a, b) => {
     if (b.votes !== a.votes) return b.votes - a.votes;
     return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-  }).slice(0, 50);
+  });
 
   return (
     <main className="relative flex min-h-screen flex-1 flex-col">

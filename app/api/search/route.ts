@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     const supabase = createAdminClient();
     const { data: works, error: wErr } = await supabase
       .from("works")
-      .select("id, title, work_title, author_name, image_url, created_at")
+      .select("id, title, work_title, author_name, image_url, created_at, votes_count")
       .or(`work_title.ilike.%${safeKeyword}%,author_name.ilike.%${safeKeyword}%`)
       .order("created_at", { ascending: false })
       .limit(limit + 1);
@@ -47,22 +47,7 @@ export async function GET(request: Request) {
     }
 
     const sliced = (works ?? []).slice(0, limit);
-    const ids = sliced.map((w) => w.id as string);
     const limited = (works ?? []).length > limit;
-
-    const { data: voteRows, error: vErr } = ids.length
-      ? await supabase.from("votes").select("work_id").in("work_id", ids)
-      : { data: [], error: null };
-    if (vErr) {
-      console.error(vErr);
-      return NextResponse.json({ error: "搜索失败，请稍后重试" }, { status: 500 });
-    }
-
-    const counts = new Map<string, number>();
-    for (const row of voteRows ?? []) {
-      const wid = row.work_id as string;
-      counts.set(wid, (counts.get(wid) ?? 0) + 1);
-    }
 
     const list = addDisplayNumbers(
       sliced.map((w) => ({
@@ -71,7 +56,7 @@ export async function GET(request: Request) {
         workTitle: (w.work_title as string | null) ?? (w.title as string),
         authorName: (w.author_name as string | null) ?? "",
         imageUrl: normalizeWorkImageUrl(w.image_url as string),
-        votes: counts.get(w.id as string) ?? 0,
+        votes: Number((w as { votes_count?: number | null }).votes_count ?? 0),
         createdAt: w.created_at as string,
       })),
     ) as Work[];
