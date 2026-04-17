@@ -298,6 +298,13 @@ function HomePageContent() {
     setPage((prev) => Math.min(Math.max(prev, 1), totalPages));
   }, [totalPages]);
 
+  useEffect(() => {
+    // 作品列表渲染与指纹采集解耦：页面先显示，再后台预热指纹。
+    void getDeviceFingerprint().catch((err) => {
+      console.error("prefetch device fingerprint failed:", err);
+    });
+  }, []);
+
   const getDeviceFingerprint = async (): Promise<string> => {
     if (deviceFingerprintRef.current) return deviceFingerprintRef.current;
     if (deviceFingerprintLoadingRef.current) return deviceFingerprintLoadingRef.current;
@@ -320,7 +327,13 @@ function HomePageContent() {
 
   const requestVoteOnce = async (workId: string) => {
     const voterId = getOrCreateClientVoterId();
-    const deviceFingerprint = await getDeviceFingerprint();
+    let deviceFingerprint = "";
+    try {
+      deviceFingerprint = await getDeviceFingerprint();
+    } catch (err) {
+      // 保底：指纹异常时继续投票，由后端按降级策略放行并记录日志。
+      console.error("get device fingerprint for vote failed:", err);
+    }
     return fetch("/api/votes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

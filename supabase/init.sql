@@ -12,16 +12,19 @@ create table if not exists public.works (
   created_at timestamptz not null default now()
 );
 
--- 投票表：每条记录为一票；按 voter_ip + vote_date（东八区日）限制每日 3 票
+-- 投票表：每条记录为一票；device_fingerprint 用于每日限额
 create table if not exists public.votes (
   id uuid primary key default gen_random_uuid(),
   work_id uuid not null references public.works (id) on delete cascade,
   voter_ip text not null,
+  device_fingerprint text,
   vote_date date not null,
   created_at timestamptz not null default now()
 );
 
+alter table public.votes add column if not exists device_fingerprint text;
 create index if not exists idx_votes_ip_date on public.votes (voter_ip, vote_date);
+create index if not exists idx_votes_device_fingerprint_date on public.votes (device_fingerprint, vote_date);
 create index if not exists idx_votes_work_id on public.votes (work_id);
 create index if not exists idx_votes_voter_ip_created_at on public.votes (voter_ip, created_at desc);
 
@@ -57,8 +60,8 @@ begin
   end if;
 end $$;
 
--- 原子投票：校验当日票数与作品存在性后插入（与 API 使用的时区一致：Asia/Shanghai）
-create or replace function public.cast_vote (p_work_id uuid, p_voter_ip text)
+-- 原子投票：仅以 device_fingerprint 做每日 3 票限制；缺失时放行（保底）
+create or replace function public.cast_vote (p_work_id uuid, p_device_fingerprint text)
 returns jsonb
 language plpgsql
 security definer
@@ -69,22 +72,25 @@ declare
   v_count int;
   v_total int;
   v_col text;
+  v_fp text := nullif(trim(p_device_fingerprint), '');
 begin
-  select count(*)::int into v_count
-  from public.votes
-  where voter_ip = p_voter_ip
-    and vote_date = v_today;
+  if v_fp is not null then
+    select count(*)::int into v_count
+    from public.votes
+    where device_fingerprint = v_fp
+      and vote_date = v_today;
 
-  if v_count >= 3 then
-    return jsonb_build_object('ok', false, 'reason', '今日票数已用完');
+    if v_count >= 3 then
+      return jsonb_build_object('ok', false, 'reason', '今日票数已用完');
+    end if;
   end if;
 
   if not exists (select 1 from public.works where id = p_work_id) then
     return jsonb_build_object('ok', false, 'reason', '作品不存在');
   end if;
 
-  insert into public.votes (work_id, voter_ip, vote_date)
-  values (p_work_id, p_voter_ip, v_today);
+  insert into public.votes (work_id, voter_ip, device_fingerprint, vote_date)
+  values (p_work_id, 'device-fingerprint', v_fp, v_today);
 
   select count(*)::int into v_total
   from public.votes v where v.work_id = p_work_id;

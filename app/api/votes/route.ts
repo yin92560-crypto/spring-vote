@@ -44,30 +44,38 @@ export async function POST(request: Request) {
     const ip = getClientIp(request.headers);
     const ua = request.headers.get("user-agent") ?? "";
     const day = todayInShanghai();
-    // 优先使用设备指纹，其次浏览器持久 voterId，IP 仅作为旧客户端兼容兜底。
-    const userKey = deviceFingerprint || voterId || voteUserKey(ip, ua);
     const redis = getVoteRedis();
+    if (deviceFingerprint) {
+      // 核心逻辑：仅使用设备指纹进行每日限额与同作品去重。
+      const userKey = deviceFingerprint;
+      const lockKey = keyDailyUserWorkLock(day, userKey, workId);
+      const lockOk = await redis.set(lockKey, "1", { nx: true, ex: 86400 });
+      if (lockOk !== "OK") {
+        return NextResponse.json({
+          ok: false,
+          reason: "同一作品今日仅可投一次",
+        });
+      }
 
-    const lockKey = keyDailyUserWorkLock(day, userKey, workId);
-    const lockOk = await redis.set(lockKey, "1", { nx: true, ex: 86400 });
-    if (lockOk !== "OK") {
-      return NextResponse.json({
-        ok: false,
-        reason: "同一作品今日仅可投一次",
-      });
-    }
-
-    const dailyKey = keyDailyUserVotes(day, userKey);
-    const dailyCount = await redis.incr(dailyKey);
-    if (dailyCount === 1) {
-      await redis.expire(dailyKey, 86400);
-    }
-    if (dailyCount > DAILY_LIMIT) {
-      await redis.decr(dailyKey);
-      await redis.del(lockKey);
-      return NextResponse.json({
-        ok: false,
-        reason: "今日票数已用完",
+      const dailyKey = keyDailyUserVotes(day, userKey);
+      const dailyCount = await redis.incr(dailyKey);
+      if (dailyCount === 1) {
+        await redis.expire(dailyKey, 86400);
+      }
+      if (dailyCount > DAILY_LIMIT) {
+        await redis.decr(dailyKey);
+        await redis.del(lockKey);
+        return NextResponse.json({
+          ok: false,
+          reason: "今日票数已用完",
+        });
+      }
+    } else {
+      // 保底策略：指纹不可用时允许投票，但打印日志以便后续排查。
+      console.error("vote without device_fingerprint", {
+        workId,
+        hasVoterId: Boolean(voterId),
+        fallbackKeyPreview: voteUserKey(ip, ua).slice(0, 24),
       });
     }
 
