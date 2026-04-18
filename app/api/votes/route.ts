@@ -41,6 +41,12 @@ export async function POST(request: Request) {
     if (error) {
       console.error("cast_vote RPC failed:", error);
       const msg = String((error as { message?: string }).message ?? "");
+      if (/limit_reached/i.test(msg)) {
+        return NextResponse.json(
+          { ok: false, reason: "limit_reached" },
+          { status: 200 }
+        );
+      }
       if (/今日投票次数已达上限|已为该作品投过票|次数已达上限/.test(msg)) {
         return NextResponse.json(
           { ok: false, reason: msg },
@@ -52,9 +58,13 @@ export async function POST(request: Request) {
 
     const result = data as CastVoteResult | null;
     if (!result?.ok) {
+      const rawReason =
+        typeof result?.reason === "string" ? result.reason : "投票失败";
+      const reason =
+        /limit_reached/i.test(rawReason) ? "limit_reached" : rawReason;
       return NextResponse.json({
         ok: false,
-        reason: typeof result?.reason === "string" ? result.reason : "投票失败",
+        reason,
       });
     }
 

@@ -118,7 +118,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     toastRequestFail: "请求失败",
     toastVoteOk: "投票成功，感谢支持",
     toastVoteFail: "无法投票",
-    toastVoteDailyLimit: "您今日投票次数已达上限，请明日再来。",
+    toastVoteDailyLimit: "您今日的 {n} 票已用完",
     toastVoteAlreadyToday: "今日已为该作品投过票",
     toastVoteNoQuota: "今日票数已用完",
     shareCopied: "链接已复制，快去发给同事拉票吧！",
@@ -193,8 +193,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     toastRequestFail: "Request failed",
     toastVoteOk: "Vote recorded. Thank you!",
     toastVoteFail: "Cannot vote",
-    toastVoteDailyLimit:
-      "You have used all your votes for today. Please come back tomorrow.",
+    toastVoteDailyLimit: "You have used all {n} votes for today.",
     toastVoteAlreadyToday: "You have already voted for this work today.",
     toastVoteNoQuota: "No votes left for today.",
     shareCopied: "Link copied. Share it with your team!",
@@ -268,8 +267,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     toastRequestFail: "リクエストに失敗しました",
     toastVoteOk: "投票しました。ありがとうございます",
     toastVoteFail: "投票できません",
-    toastVoteDailyLimit:
-      "本日の投票回数の上限に達しました。明日またお越しください。",
+    toastVoteDailyLimit: "本日の{n}票は使い切りました",
     toastVoteAlreadyToday: "本日はこの作品に投票済みです",
     toastVoteNoQuota: "本日の投票枠を使い切りました",
     shareCopied: "リンクをコピーしました。共有してください",

@@ -182,6 +182,10 @@ function HomePageContent() {
   const [detailWork, setDetailWork] = useState<Work | null>(null);
   const [votePendingWorkId, setVotePendingWorkId] = useState<string | null>(null);
   const [localUsedVotes, setLocalUsedVotes] = useState(0);
+  /** 仅读 votes 表：今日已投过的不同作品数（/api/votes/today） */
+  const [todayUsedFromVotesTable, setTodayUsedFromVotesTable] = useState<number | null>(
+    null
+  );
   /** 今日已为哪些作品投过票（localStorage 恢复，首屏即锁定按钮） */
   const [votedWorkIdsToday, setVotedWorkIdsToday] = useState<string[]>([]);
   /** 避免「先 setState 再 replaceQuery」时 effect 因 id 尚未写入而误关弹窗 */
@@ -190,17 +194,22 @@ function HomePageContent() {
 
   const normalizedSearch = searchQuery.trim();
 
-  /** 本地与接口取「已用票数」较大值，避免清缓存或多端不同步时额度异常 */
+  /** 本地、/api/works、votes 表取「已用票数」较大值，与数据库真实投票一致 */
   const effectiveUsedVotes = useMemo(() => {
     const cap = dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT;
-    const usedFromApi = Math.max(0, cap - apiRemaining);
-    return Math.min(cap, Math.max(localUsedVotes, usedFromApi));
-  }, [dailyVoteLimit, apiRemaining, localUsedVotes]);
+    const usedFromApiWorks = Math.max(0, cap - apiRemaining);
+    const usedFromVotesTable = todayUsedFromVotesTable ?? 0;
+    return Math.min(
+      cap,
+      Math.max(localUsedVotes, usedFromApiWorks, usedFromVotesTable)
+    );
+  }, [dailyVoteLimit, apiRemaining, localUsedVotes, todayUsedFromVotesTable]);
 
-  const remainingDisplay = Math.max(
-    0,
-    (dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT) - effectiveUsedVotes
-  );
+  /** 今日剩余票数：dailyLimit − 已投数量，供首页与按钮禁用统一使用 */
+  const remainingVotes = useMemo(() => {
+    const cap = dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT;
+    return Math.max(0, cap - effectiveUsedVotes);
+  }, [dailyVoteLimit, effectiveUsedVotes]);
   const worksList = works ?? [];
   const worksWithVoteFlags = useMemo(
     () =>
@@ -278,6 +287,39 @@ function HomePageContent() {
     setVotedWorkIdsToday(votedWorkIds);
   }, []);
 
+  /** 初始化：仅从 votes 表拉取今日记录（只读），同步剩余票与已投作品 id */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const voterId = getOrCreateClientVoterId();
+    if (!voterId) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const r = await fetch("/api/votes/today", {
+          cache: "no-store",
+          headers: { "x-voter-id": voterId },
+        });
+        if (!r.ok || cancelled) return;
+        const j = (await r.json()) as {
+          used?: number;
+          votedWorkIds?: string[];
+        };
+        if (typeof j.used === "number") {
+          setTodayUsedFromVotesTable(j.used);
+        }
+        const ids = j.votedWorkIds;
+        if (Array.isArray(ids) && ids.length > 0) {
+          setVotedWorkIdsToday((prev) => [...new Set([...prev, ...ids])]);
+        }
+      } catch {
+        /* ignore */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   /** 接口返回的今日已投作品 id 与本地合并，保证与数据库一致 */
   useEffect(() => {
     if (loading) return;
@@ -324,11 +366,12 @@ function HomePageContent() {
   };
 
   const mapVoteFailureReason = (reason: string) => {
-    if (reason === "limit_reached") {
-      return t("toastVoteDailyLimit");
+    const cap = dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT;
+    if (reason === "limit_reached" || /limit_reached/i.test(reason)) {
+      return t("toastVoteDailyLimit", { n: cap });
     }
     if (/今日投票次数已达上限|次数已达上限|投票次数/.test(reason)) {
-      return t("toastVoteDailyLimit");
+      return t("toastVoteDailyLimit", { n: cap });
     }
     if (/已为该作品投过票/.test(reason)) {
       return t("toastVoteAlreadyToday");
@@ -337,17 +380,43 @@ function HomePageContent() {
   };
 
   const mapHttpVoteErrorBody = (err: string | undefined) => {
+    const cap = dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT;
     if (!err) return t("toastRequestFail");
-    if (err === "limit_reached") {
-      return t("toastVoteDailyLimit");
+    if (err === "limit_reached" || /limit_reached/i.test(err)) {
+      return t("toastVoteDailyLimit", { n: cap });
     }
     if (/今日投票次数已达上限|次数已达上限|投票次数/.test(err)) {
-      return t("toastVoteDailyLimit");
+      return t("toastVoteDailyLimit", { n: cap });
     }
     if (/已为该作品投过票/.test(err)) {
       return t("toastVoteAlreadyToday");
     }
     return err;
+  };
+
+  const isLimitReachedPayload = (j: {
+    ok?: boolean;
+    reason?: string;
+    error?: string;
+  }) => {
+    const r = String(j.reason ?? "");
+    const e = String(j.error ?? "");
+    return (
+      r === "limit_reached" ||
+      e === "limit_reached" ||
+      /limit_reached/i.test(r) ||
+      /limit_reached/i.test(e)
+    );
+  };
+
+  const applyLimitReachedFromServer = () => {
+    markLocalDailyLimitReachedFromServer();
+    const cap = dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT;
+    setLocalUsedVotes(cap);
+    setTodayUsedFromVotesTable(cap);
+    setToast(t("toastVoteDailyLimit", { n: cap }));
+    notifyVoteDataChanged();
+    void refresh();
   };
 
   const shouldRetryVote = (res: Response | null, errMsg?: string): boolean => {
@@ -376,6 +445,12 @@ function HomePageContent() {
       }
     }
 
+    if (isLimitReachedPayload(j)) {
+      applyLimitReachedFromServer();
+      setTimeout(() => setToast(null), 3200);
+      return false;
+    }
+
     if (!res.ok && shouldRetryVote(res, j.error)) {
       await new Promise((r) => setTimeout(r, 2000));
       try {
@@ -387,6 +462,11 @@ function HomePageContent() {
         };
         res = retryRes;
         j = retryJson;
+        if (isLimitReachedPayload(j)) {
+          applyLimitReachedFromServer();
+          setTimeout(() => setToast(null), 3200);
+          return false;
+        }
       } catch {
         setToast(t("toastRequestFail"));
         setTimeout(() => setToast(null), 2400);
@@ -395,16 +475,6 @@ function HomePageContent() {
     }
 
     if (!res.ok) {
-      if (j.reason === "limit_reached" || j.error === "limit_reached") {
-        markLocalDailyLimitReachedFromServer();
-        const cap = dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT;
-        setLocalUsedVotes(cap);
-        setToast(t("toastVoteDailyLimit"));
-        notifyVoteDataChanged();
-        void refresh();
-        setTimeout(() => setToast(null), 2400);
-        return false;
-      }
       setToast(mapHttpVoteErrorBody(j.error));
       setTimeout(() => setToast(null), 2400);
       return false;
@@ -420,16 +490,6 @@ function HomePageContent() {
       router.refresh();
       await refresh();
       return true;
-    }
-    if (j.reason === "limit_reached") {
-      markLocalDailyLimitReachedFromServer();
-      const cap = dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT;
-      setLocalUsedVotes(cap);
-      setToast(t("toastVoteDailyLimit"));
-      notifyVoteDataChanged();
-      void refresh();
-      setTimeout(() => setToast(null), 2400);
-      return false;
     }
     setToast(mapVoteFailureReason(j.reason ?? t("toastVoteFail")));
     setTimeout(() => setToast(null), 2400);
@@ -451,7 +511,7 @@ function HomePageContent() {
       setTimeout(() => setToast(null), 2000);
       return;
     }
-    if (remainingDisplay <= 0) {
+    if (remainingVotes <= 0) {
       setToast(t("toastVoteNoQuota"));
       setTimeout(() => setToast(null), 2000);
       return;
@@ -564,7 +624,7 @@ function HomePageContent() {
             <p className="mt-5 text-base font-semibold text-[#3b372f] drop-shadow-[0_1px_2px_rgba(255,255,255,0.35)]">
               {t("remainingVotes")}{" "}
               <span className="tabular-nums text-xl text-[#3b372f]">
-                {remainingDisplay}
+                {remainingVotes}
               </span>
               <span className="text-[#3b372f]/85">
                 {" "}
@@ -589,7 +649,7 @@ function HomePageContent() {
           onNavigateTo={openDetail}
           shareUrl={shareUrl}
           onClose={closeDetail}
-          remaining={remainingDisplay}
+          remaining={remainingVotes}
           voting={Boolean(
             detailWork && votePendingWorkId === detailWork.id
           )}
@@ -699,7 +759,7 @@ function HomePageContent() {
                             </div>
                             <VotePillButton
                               disabled={
-                                remainingDisplay <= 0 ||
+                                remainingVotes <= 0 ||
                                 Boolean(w.isVoted) ||
                                 Boolean(votePendingWorkId)
                               }
