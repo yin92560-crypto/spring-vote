@@ -20,6 +20,7 @@ export type MessageKey =
   | "heroDesc"
   | "voteRules"
   | "remainingVotes"
+  | "remainingVotesBanner"
   | "rank"
   | "admin"
   | "upload"
@@ -93,6 +94,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     heroDesc: "用镜头定格春日，谁藏了最美的春天？",
     voteRules: "投票规则：每人每日可投{n}票，快来为心仪作品助力吧！",
     remainingVotes: "今日剩余票数",
+    remainingVotesBanner: "今日剩余 {remaining}/{cap}",
     rank: "排行榜",
     admin: "管理后台",
     upload: "上传作品",
@@ -168,6 +170,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     voteRules:
       "Voting rules: {n} votes per person per day. Come support your favorite works!",
     remainingVotes: "Votes remaining today",
+    remainingVotesBanner: "Today: {remaining} / {cap} left",
     rank: "Leaderboard",
     admin: "Admin",
     upload: "Upload",
@@ -242,6 +245,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     voteRules:
       "投票ルール：お一人様1日{n}票まで投票できます。お気に入りの作品を応援しましょう！",
     remainingVotes: "本日の残り票数",
+    remainingVotesBanner: "本日の残り {remaining}/{cap}",
     rank: "ランキング",
     admin: "管理",
     upload: "投稿する",

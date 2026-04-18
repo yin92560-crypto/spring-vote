@@ -101,14 +101,12 @@ function HomeLoadingFallbackInner({
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-6 pt-[calc(var(--nav-safe)+1rem)] sm:px-6">
       <p className="mb-6 text-center text-base font-semibold text-[#3b372f]">
-        {t("remainingVotes")}{" "}
-        <span className="tabular-nums text-xl text-[#3b372f]">
-          {showRemaining ? remainingVotesProp : "…"}
-        </span>
-        <span className="text-[#3b372f]/85">
-          {" "}
-          / {cap}
-        </span>
+        {showRemaining
+          ? t("remainingVotesBanner", {
+              remaining: remainingVotesProp,
+              cap,
+            })
+          : t("remainingVotes")}
       </p>
       <SpringLoadingIndicator label={t("loadingSpring")} />
       <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -407,34 +405,48 @@ function HomePageContent() {
     return reason;
   };
 
-  const mapHttpVoteErrorBody = (err: string | undefined) => {
-    const cap = dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT;
-    if (!err) return t("toastRequestFail");
-    if (err === "limit_reached" || /limit_reached/i.test(err)) {
-      return t("toastVoteDailyLimit", { n: cap });
-    }
-    if (/今日投票次数已达上限|次数已达上限|投票次数/.test(err)) {
-      return t("toastVoteDailyLimit", { n: cap });
-    }
-    if (/已为该作品投过票/.test(err)) {
-      return t("toastVoteAlreadyToday");
-    }
-    return err;
-  };
-
-  const isLimitReachedPayload = (j: {
+  /** 含 limit_reached、次数已达上限（含 rpc_error 文案内嵌） */
+  function voteResponseImpliesDailyLimitExhausted(j: {
     ok?: boolean;
     reason?: string;
     error?: string;
-  }) => {
-    const r = String(j.reason ?? "");
-    const e = String(j.error ?? "");
-    return (
-      r === "limit_reached" ||
-      e === "limit_reached" ||
-      /limit_reached/i.test(r) ||
-      /limit_reached/i.test(e)
-    );
+  }) {
+    const blob = `${String(j.reason ?? "")}\n${String(j.error ?? "")}`;
+    if (/limit_reached/i.test(blob)) return true;
+    if (/今日投票次数已达上限|次数已达上限|投票次数已达/.test(blob)) {
+      return true;
+    }
+    return false;
+  }
+
+  async function readVoteResponseJson(
+    res: Response
+  ): Promise<{ ok?: boolean; reason?: string; error?: string }> {
+    try {
+      const text = await res.text();
+      if (!text.trim()) return {};
+      return JSON.parse(text) as {
+        ok?: boolean;
+        reason?: string;
+        error?: string;
+      };
+    } catch {
+      return {};
+    }
+  }
+
+  const mapHttpVoteErrorBody = (err: string | undefined, reason?: string) => {
+    const cap = dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT;
+    if (voteResponseImpliesDailyLimitExhausted({ error: err, reason })) {
+      return t("toastVoteDailyLimit", { n: cap });
+    }
+    if (!err && !reason) return t("toastRequestFail");
+    if (reason === "rpc_error" && err) return err;
+    if (reason && reason !== "rpc_error") {
+      return mapVoteFailureReason(reason);
+    }
+    if (err) return err;
+    return t("toastRequestFail");
   };
 
   const applyLimitReachedFromServer = () => {
@@ -460,12 +472,12 @@ function HomePageContent() {
     let j: { ok?: boolean; reason?: string; error?: string };
     try {
       res = await requestVoteOnce(workId);
-      j = (await res.json()) as { ok?: boolean; reason?: string; error?: string };
+      j = await readVoteResponseJson(res);
     } catch {
       await new Promise((r) => setTimeout(r, 2000));
       try {
         res = await requestVoteOnce(workId);
-        j = (await res.json()) as { ok?: boolean; reason?: string; error?: string };
+        j = await readVoteResponseJson(res);
       } catch {
         setToast(t("toastRequestFail"));
         setTimeout(() => setToast(null), 2400);
@@ -473,7 +485,7 @@ function HomePageContent() {
       }
     }
 
-    if (isLimitReachedPayload(j)) {
+    if (voteResponseImpliesDailyLimitExhausted(j)) {
       applyLimitReachedFromServer();
       setTimeout(() => setToast(null), 3200);
       return false;
@@ -483,14 +495,9 @@ function HomePageContent() {
       await new Promise((r) => setTimeout(r, 2000));
       try {
         const retryRes = await requestVoteOnce(workId);
-        const retryJson = (await retryRes.json()) as {
-          ok?: boolean;
-          reason?: string;
-          error?: string;
-        };
         res = retryRes;
-        j = retryJson;
-        if (isLimitReachedPayload(j)) {
+        j = await readVoteResponseJson(retryRes);
+        if (voteResponseImpliesDailyLimitExhausted(j)) {
           applyLimitReachedFromServer();
           setTimeout(() => setToast(null), 3200);
           return false;
@@ -503,7 +510,12 @@ function HomePageContent() {
     }
 
     if (!res.ok) {
-      setToast(mapHttpVoteErrorBody(j.error));
+      if (voteResponseImpliesDailyLimitExhausted(j)) {
+        applyLimitReachedFromServer();
+        setTimeout(() => setToast(null), 3200);
+        return false;
+      }
+      setToast(mapHttpVoteErrorBody(j.error, j.reason));
       setTimeout(() => setToast(null), 2400);
       return false;
     }
@@ -519,7 +531,16 @@ function HomePageContent() {
       await refresh();
       return true;
     }
-    setToast(mapVoteFailureReason(j.reason ?? t("toastVoteFail")));
+    if (voteResponseImpliesDailyLimitExhausted(j)) {
+      applyLimitReachedFromServer();
+      setTimeout(() => setToast(null), 3200);
+      return false;
+    }
+    const failMsg =
+      j.reason === "rpc_error" && j.error
+        ? j.error
+        : mapVoteFailureReason(j.reason ?? j.error ?? t("toastVoteFail"));
+    setToast(failMsg);
     setTimeout(() => setToast(null), 2400);
     return false;
   };
@@ -655,13 +676,11 @@ function HomePageContent() {
               })}
             </p>
             <p className="mt-5 text-base font-semibold text-[#3b372f] drop-shadow-[0_1px_2px_rgba(255,255,255,0.35)]">
-              {t("remainingVotes")}{" "}
               <span className="tabular-nums text-xl text-[#3b372f]">
-                {remainingVotes}
-              </span>
-              <span className="text-[#3b372f]/85">
-                {" "}
-                / {dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT}
+                {t("remainingVotesBanner", {
+                  remaining: remainingVotes,
+                  cap: dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT,
+                })}
               </span>
             </p>
           </div>

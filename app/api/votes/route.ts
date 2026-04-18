@@ -91,7 +91,11 @@ export async function POST(request: Request) {
           return NextResponse.json({ ok: false, reason: msg }, { status: 200 });
         }
         return NextResponse.json(
-          { ok: false, reason: "rpc_error", error: "投票失败，请稍后重试" },
+          {
+            ok: false,
+            reason: "rpc_error",
+            error: msg || "投票失败，请稍后重试",
+          },
           { status: 200 }
         );
       }
