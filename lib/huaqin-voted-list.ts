@@ -26,6 +26,11 @@ function legacyDailyUsedKey(voterId: string, day: string): string {
   return `spring-vote-daily-used:${day}:${voterId}`;
 }
 
+/** 服务端返回 reason: limit_reached 时写入，刷新后仍视为今日已用尽 */
+function limitReachedFlagKey(day: string, voterId: string): string {
+  return `huaqin_limit_reached:${day}:${voterId}`;
+}
+
 function parseStoredList(raw: string | null): HuaqinVoteEntry[] {
   if (!raw || typeof raw !== "string") return [];
   try {
@@ -63,6 +68,14 @@ export function getTodayVoteStateForVoter(voterId: string): {
   }
   try {
     const today = getTodayShanghai();
+    if (window.localStorage.getItem(limitReachedFlagKey(today, voterId)) === "1") {
+      const entries = parseStoredList(window.localStorage.getItem(HUAQIN_VOTED_LIST_KEY));
+      const todays = entries.filter((e) => e.voterId === voterId && e.date === today);
+      const unique = new Set<string>();
+      for (const e of todays) unique.add(e.workId);
+      const votedWorkIds = [...unique];
+      return { used: DAILY_VOTE_LIMIT, votedWorkIds };
+    }
     const entries = parseStoredList(window.localStorage.getItem(HUAQIN_VOTED_LIST_KEY));
     const todays = entries.filter((e) => e.voterId === voterId && e.date === today);
     const unique = new Set<string>();
@@ -108,4 +121,23 @@ export function hydrateVoteStateFromStorage(): {
   const voterId = getOrCreateClientVoterId();
   if (!voterId) return { voterId: "", used: 0, votedWorkIds: [] };
   return { voterId, ...getTodayVoteStateForVoter(voterId) };
+}
+
+/**
+ * 当接口明确返回今日额度已用尽（如 reason === 'limit_reached'）时调用：
+ * 持久化「今日已用尽」，使剩余票为 0 且刷新后仍生效。
+ */
+export function markLocalDailyLimitReachedFromServer(): void {
+  const voterId = getOrCreateClientVoterId();
+  if (typeof window === "undefined" || !voterId) return;
+  const today = getTodayShanghai();
+  try {
+    window.localStorage.setItem(limitReachedFlagKey(today, voterId), "1");
+    window.localStorage.setItem(
+      legacyDailyUsedKey(voterId, today),
+      String(DAILY_VOTE_LIMIT)
+    );
+  } catch {
+    /* ignore */
+  }
 }

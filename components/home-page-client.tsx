@@ -26,7 +26,10 @@ import { notifyVoteDataChanged } from "@/lib/vote-sync";
 import { useVoteHomeState } from "@/lib/use-vote-store";
 import { incrementClientDailyVoteUsed } from "@/lib/client-vote-daily";
 import { getOrCreateClientVoterId } from "@/lib/client-voter-id";
-import { hydrateVoteStateFromStorage } from "@/lib/huaqin-voted-list";
+import {
+  hydrateVoteStateFromStorage,
+  markLocalDailyLimitReachedFromServer,
+} from "@/lib/huaqin-voted-list";
 import { DAILY_VOTE_LIMIT } from "@/lib/vote-config";
 
 function SpringFooter() {
@@ -321,6 +324,9 @@ function HomePageContent() {
   };
 
   const mapVoteFailureReason = (reason: string) => {
+    if (reason === "limit_reached") {
+      return t("toastVoteDailyLimit");
+    }
     if (/今日投票次数已达上限|次数已达上限|投票次数/.test(reason)) {
       return t("toastVoteDailyLimit");
     }
@@ -332,6 +338,9 @@ function HomePageContent() {
 
   const mapHttpVoteErrorBody = (err: string | undefined) => {
     if (!err) return t("toastRequestFail");
+    if (err === "limit_reached") {
+      return t("toastVoteDailyLimit");
+    }
     if (/今日投票次数已达上限|次数已达上限|投票次数/.test(err)) {
       return t("toastVoteDailyLimit");
     }
@@ -386,6 +395,16 @@ function HomePageContent() {
     }
 
     if (!res.ok) {
+      if (j.reason === "limit_reached" || j.error === "limit_reached") {
+        markLocalDailyLimitReachedFromServer();
+        const cap = dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT;
+        setLocalUsedVotes(cap);
+        setToast(t("toastVoteDailyLimit"));
+        notifyVoteDataChanged();
+        void refresh();
+        setTimeout(() => setToast(null), 2400);
+        return false;
+      }
       setToast(mapHttpVoteErrorBody(j.error));
       setTimeout(() => setToast(null), 2400);
       return false;
@@ -401,6 +420,16 @@ function HomePageContent() {
       router.refresh();
       await refresh();
       return true;
+    }
+    if (j.reason === "limit_reached") {
+      markLocalDailyLimitReachedFromServer();
+      const cap = dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT;
+      setLocalUsedVotes(cap);
+      setToast(t("toastVoteDailyLimit"));
+      notifyVoteDataChanged();
+      void refresh();
+      setTimeout(() => setToast(null), 2400);
+      return false;
     }
     setToast(mapVoteFailureReason(j.reason ?? t("toastVoteFail")));
     setTimeout(() => setToast(null), 2400);
