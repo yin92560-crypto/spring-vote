@@ -60,8 +60,13 @@ begin
   end if;
 end $$;
 
--- 原子投票：仅以 device_fingerprint 做每日 3 票限制；缺失时放行（保底）
-create or replace function public.cast_vote (p_work_id uuid, p_device_fingerprint text)
+-- 原子投票：以 device_fingerprint 做每日 3 票限制（API 对空指纹传 unknown）；voter_ip 来自客户端 IP
+drop function if exists public.cast_vote(uuid, text);
+create or replace function public.cast_vote (
+  p_work_id uuid,
+  p_device_fingerprint text,
+  p_voter_ip text
+)
 returns jsonb
 language plpgsql
 security definer
@@ -72,12 +77,22 @@ declare
   v_count int;
   v_total int;
   v_col text;
-  v_fp text := nullif(trim(p_device_fingerprint), '');
+  v_fp text := coalesce(nullif(trim(p_device_fingerprint), ''), 'unknown');
+  v_ip text := coalesce(nullif(trim(p_voter_ip), ''), 'unknown');
 begin
-  if v_fp is not null then
+  if v_fp is not null and v_fp <> 'unknown' then
     select count(*)::int into v_count
     from public.votes
     where device_fingerprint = v_fp
+      and vote_date = v_today;
+
+    if v_count >= 3 then
+      return jsonb_build_object('ok', false, 'reason', '今日票数已用完');
+    end if;
+  elsif v_ip <> 'unknown' then
+    select count(*)::int into v_count
+    from public.votes
+    where voter_ip = v_ip
       and vote_date = v_today;
 
     if v_count >= 3 then
@@ -90,7 +105,7 @@ begin
   end if;
 
   insert into public.votes (work_id, voter_ip, device_fingerprint, vote_date)
-  values (p_work_id, 'device-fingerprint', v_fp, v_today);
+  values (p_work_id, v_ip, v_fp, v_today);
 
   select count(*)::int into v_total
   from public.votes v where v.work_id = p_work_id;
@@ -116,8 +131,8 @@ end;
 $$;
 
 -- 仅允许 service_role 调用（与 Next.js 服务端 API 使用的密钥一致）
-revoke all on function public.cast_vote (uuid, text) from public;
-grant execute on function public.cast_vote (uuid, text) to service_role;
+revoke all on function public.cast_vote (uuid, text, text) from public;
+grant execute on function public.cast_vote (uuid, text, text) to service_role;
 
 -- 将 Redis 桶内票数一次性写入 votes，并在同一事务内累加 works.votes_count（避免只写子表导致不同步）
 create or replace function public.apply_redis_vote_flush (
