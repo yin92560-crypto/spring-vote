@@ -85,19 +85,40 @@ function SpringFooter() {
   );
 }
 
-function HomeLoadingFallbackInner() {
+type HomeLoadingFallbackProps = {
+  /** 与首页同源：来自 votes 预检 + localStorage，加载作品列表时也可显示 */
+  remainingVotes?: number;
+  dailyCap?: number;
+};
+
+function HomeLoadingFallbackInner({
+  remainingVotes: remainingVotesProp,
+  dailyCap,
+}: HomeLoadingFallbackProps) {
   const { t } = useI18n();
+  const cap = dailyCap ?? DAILY_VOTE_LIMIT;
+  const showRemaining = typeof remainingVotesProp === "number";
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-6 pt-[calc(var(--nav-safe)+1rem)] sm:px-6">
+      <p className="mb-6 text-center text-base font-semibold text-[#3b372f]">
+        {t("remainingVotes")}{" "}
+        <span className="tabular-nums text-xl text-[#3b372f]">
+          {showRemaining ? remainingVotesProp : "…"}
+        </span>
+        <span className="text-[#3b372f]/85">
+          {" "}
+          / {cap}
+        </span>
+      </p>
       <SpringLoadingIndicator label={t("loadingSpring")} />
-        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="glass-panel aspect-[4/3] animate-pulse rounded-3xl bg-emerald-50/15"
-            />
-          ))}
-        </div>
+      <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="glass-panel aspect-[4/3] animate-pulse rounded-3xl bg-emerald-50/15"
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -151,11 +172,11 @@ function HomeSiteNav() {
   );
 }
 
-function HomeLoadingFallback() {
+function HomeLoadingFallback(props?: HomeLoadingFallbackProps) {
   return (
     <div className="flex w-full flex-1 flex-col">
       <HomeSiteNav />
-      <HomeLoadingFallbackInner />
+      <HomeLoadingFallbackInner {...(props ?? {})} />
       <SpringFooter />
     </div>
   );
@@ -287,8 +308,8 @@ function HomePageContent() {
     setVotedWorkIdsToday(votedWorkIds);
   }, []);
 
-  /** 初始化：仅从 votes 表拉取今日记录（只读），同步剩余票与已投作品 id */
-  useEffect(() => {
+  /** 初始化预检：立即请求 votes 表今日记录（与 localStorage voter_id），更新顶部剩余票 */
+  useLayoutEffect(() => {
     if (typeof window === "undefined") return;
     const voterId = getOrCreateClientVoterId();
     if (!voterId) return;
@@ -361,7 +382,12 @@ function HomePageContent() {
     return fetch("/api/votes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ workId, voterId }),
+      body: JSON.stringify({
+        workId,
+        voterId,
+        /** 与 voterId 相同 UUID，满足接口对 voter_ip 字段名的兼容要求 */
+        voter_ip: voterId,
+      }),
     });
   };
 
@@ -564,7 +590,12 @@ function HomePageContent() {
       : [t("subtitle")];
 
   if (loading || works === undefined) {
-    return <HomeLoadingFallback />;
+    return (
+      <HomeLoadingFallback
+        remainingVotes={remainingVotes}
+        dailyCap={dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT}
+      />
+    );
   }
 
   return (

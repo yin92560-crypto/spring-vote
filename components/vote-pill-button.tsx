@@ -39,7 +39,7 @@ export function VotePillButton({
       type="button"
       disabled={disabled || loading}
       onClick={() => void handleClick()}
-      className={`vote-pill-btn group relative overflow-visible ${className}`}
+      className={`vote-pill-btn group relative overflow-visible disabled:pointer-events-none disabled:opacity-45 ${className}`}
     >
       {burstId > 0 && (
         <span
