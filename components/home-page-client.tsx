@@ -23,23 +23,12 @@ import { VotePillButton } from "@/components/vote-pill-button";
 import { useI18n } from "@/lib/i18n-context";
 import { notifyVoteDataChanged } from "@/lib/vote-sync";
 import { useVoteHomeState } from "@/lib/use-vote-store";
-import FingerprintJS from "@fingerprintjs/fingerprintjs";
-import { getOrCreateClientVoterId } from "@/lib/client-voter-id";
+import {
+  getClientDailyVoteUsed,
+  incrementClientDailyVoteUsed,
+} from "@/lib/client-vote-daily";
 
 const DAILY_VOTE_LIMIT = 3;
-
-function todayInShanghaiForClient(): string {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Asia/Shanghai",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(new Date());
-}
-
-function voteCacheKey(): string {
-  return `vote:client-used:${todayInShanghaiForClient()}`;
-}
 
 function SpringFooter() {
   const { t } = useI18n();
@@ -176,7 +165,7 @@ function HomePageContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const { works, remaining, loading, refresh } = useVoteHomeState();
+  const { works, loading, refresh } = useVoteHomeState();
   const [toast, setToast] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -187,10 +176,9 @@ function HomePageContent() {
   /** 避免「先 setState 再 replaceQuery」时 effect 因 id 尚未写入而误关弹窗 */
   const skipUrlSyncOnceRef = useRef(false);
   const voteCooldownUntilRef = useRef<Map<string, number>>(new Map());
-  const deviceFingerprintRef = useRef<string | null>(null);
-  const deviceFingerprintLoadingRef = useRef<Promise<string> | null>(null);
 
   const normalizedSearch = searchQuery.trim();
+  const remainingLocal = Math.max(0, DAILY_VOTE_LIMIT - localUsedVotes);
   const worksList = works ?? [];
   /** 全量作品来自 /api/works；搜索仅用本地过滤，避免「等接口时整页空白」 */
   const filteredWorks = useMemo(() => {
@@ -254,14 +242,7 @@ function HomePageContent() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    try {
-      const cached = Number(window.localStorage.getItem(voteCacheKey()) ?? "0");
-      if (Number.isFinite(cached) && cached >= 0) {
-        setLocalUsedVotes(Math.min(DAILY_VOTE_LIMIT, cached));
-      }
-    } catch {
-      /* ignore */
-    }
+    setLocalUsedVotes(getClientDailyVoteUsed());
     void fetch("/api/stats/pv", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -281,16 +262,6 @@ function HomePageContent() {
   }, []);
 
   useEffect(() => {
-    const serverUsed = Math.max(0, DAILY_VOTE_LIMIT - remaining);
-    setLocalUsedVotes(serverUsed);
-    try {
-      window.localStorage.setItem(voteCacheKey(), String(serverUsed));
-    } catch {
-      /* ignore */
-    }
-  }, [remaining]);
-
-  useEffect(() => {
     setPage(1);
     setJumpPage("");
   }, [searchQuery]);
@@ -299,46 +270,11 @@ function HomePageContent() {
     setPage((prev) => Math.min(Math.max(prev, 1), totalPages));
   }, [totalPages]);
 
-  useEffect(() => {
-    // 作品列表渲染与指纹采集解耦：页面先显示，再后台预热指纹。
-    void getDeviceFingerprint().catch((err) => {
-      console.error("prefetch device fingerprint failed:", err);
-    });
-  }, []);
-
-  const getDeviceFingerprint = async (): Promise<string> => {
-    if (deviceFingerprintRef.current) return deviceFingerprintRef.current;
-    if (deviceFingerprintLoadingRef.current) return deviceFingerprintLoadingRef.current;
-
-    const pending = (async () => {
-      const fp = await FingerprintJS.load();
-      const result = await fp.get();
-      const visitorId = String(result.visitorId ?? "").trim();
-      deviceFingerprintRef.current = visitorId;
-      return visitorId;
-    })();
-    deviceFingerprintLoadingRef.current = pending;
-
-    try {
-      return await pending;
-    } finally {
-      deviceFingerprintLoadingRef.current = null;
-    }
-  };
-
   const requestVoteOnce = async (workId: string) => {
-    const voterId = getOrCreateClientVoterId();
-    let deviceFingerprint = "";
-    try {
-      deviceFingerprint = await getDeviceFingerprint();
-    } catch (err) {
-      // 保底：指纹异常时继续投票，由后端按降级策略放行并记录日志。
-      console.error("get device fingerprint for vote failed:", err);
-    }
     return fetch("/api/votes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ workId, voterId, device_fingerprint: deviceFingerprint }),
+      body: JSON.stringify({ workId }),
     });
   };
 
@@ -392,16 +328,8 @@ function HomePageContent() {
       return false;
     }
     if (j.ok) {
-      let nextUsed = DAILY_VOTE_LIMIT;
-      setLocalUsedVotes((prev) => {
-        nextUsed = Math.min(DAILY_VOTE_LIMIT, prev + 1);
-        return nextUsed;
-      });
-      try {
-        window.localStorage.setItem(voteCacheKey(), String(nextUsed));
-      } catch {
-        /* ignore */
-      }
+      const nextUsed = incrementClientDailyVoteUsed();
+      setLocalUsedVotes(nextUsed);
       setToast(t("toastVoteOk"));
       notifyVoteDataChanged();
       router.refresh();
@@ -533,7 +461,7 @@ function HomePageContent() {
             </p>
             <p className="mt-5 text-base font-semibold text-[#3b372f] drop-shadow-[0_1px_2px_rgba(255,255,255,0.35)]">
               {t("remainingVotes")}{" "}
-              <span className="tabular-nums text-xl text-[#3b372f]">{remaining}</span>
+              <span className="tabular-nums text-xl text-[#3b372f]">{remainingLocal}</span>
               <span className="text-[#3b372f]/85"> / 3</span>
             </p>
           </div>
@@ -554,7 +482,7 @@ function HomePageContent() {
           onNavigateTo={openDetail}
           shareUrl={shareUrl}
           onClose={closeDetail}
-          remaining={remaining}
+          remaining={remainingLocal}
           voting={Boolean(votePendingWorkId)}
           onVote={() => void voteFromModal()}
           onShareCopied={() => {
@@ -661,7 +589,7 @@ function HomePageContent() {
                               </p>
                             </div>
                             <VotePillButton
-                              disabled={remaining <= 0 || Boolean(votePendingWorkId)}
+                              disabled={remainingLocal <= 0 || Boolean(votePendingWorkId)}
                               loading={Boolean(votePendingWorkId)}
                               onVote={() => voteFromCard(w.id)}
                               className="min-w-[80px] shrink-0"

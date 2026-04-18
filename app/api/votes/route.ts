@@ -5,13 +5,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
-const DEVICE_FINGERPRINT_RE = /^[a-zA-Z0-9_-]{8,128}$/;
-
 type CastVoteResult = { ok?: boolean; reason?: string };
 
 export async function POST(request: Request) {
   try {
-    let body: { workId?: string; voterId?: string; device_fingerprint?: string };
+    let body: { workId?: string };
     try {
       body = await request.json();
     } catch {
@@ -23,18 +21,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "缺少作品 id" }, { status: 400 });
     }
 
-    const incomingDeviceFingerprint = String(body.device_fingerprint ?? "").trim();
-    const p_device_fingerprint = DEVICE_FINGERPRINT_RE.test(incomingDeviceFingerprint)
-      ? incomingDeviceFingerprint
-      : "unknown";
-
     const ip = getClientIp(request.headers);
-    const p_voter_ip = (typeof ip === "string" && ip.trim() !== "" ? ip.trim() : null) ?? "unknown";
+    const p_voter_ip =
+      (typeof ip === "string" && ip.trim() !== "" ? ip.trim() : null) ?? "unknown";
 
     const supabase = createAdminClient();
     const { data, error } = await supabase.rpc("cast_vote", {
       p_work_id: workId,
-      p_device_fingerprint,
       p_voter_ip,
     });
 

@@ -12,7 +12,7 @@ create table if not exists public.works (
   created_at timestamptz not null default now()
 );
 
--- 投票表：每条记录为一票；device_fingerprint 用于每日限额
+-- 投票表：每条记录为一票；device_fingerprint 可选归档，日限额由前端 localStorage 控制
 create table if not exists public.votes (
   id uuid primary key default gen_random_uuid(),
   work_id uuid not null references public.works (id) on delete cascade,
@@ -60,11 +60,11 @@ begin
   end if;
 end $$;
 
--- 原子投票：以 device_fingerprint 做每日 3 票限制（API 对空指纹传 unknown）；voter_ip 来自客户端 IP
+-- 原子投票：仅校验作品存在并落库；每日 3 票由浏览器 localStorage 控制；p_voter_ip 仅作日志记录
+drop function if exists public.cast_vote(uuid, text, text);
 drop function if exists public.cast_vote(uuid, text);
 create or replace function public.cast_vote (
   p_work_id uuid,
-  p_device_fingerprint text,
   p_voter_ip text
 )
 returns jsonb
@@ -74,38 +74,16 @@ set search_path = public
 as $$
 declare
   v_today date := (timezone('Asia/Shanghai', now()))::date;
-  v_count int;
   v_total int;
   v_col text;
-  v_fp text := coalesce(nullif(trim(p_device_fingerprint), ''), 'unknown');
   v_ip text := coalesce(nullif(trim(p_voter_ip), ''), 'unknown');
 begin
-  if v_fp is not null and v_fp <> 'unknown' then
-    select count(*)::int into v_count
-    from public.votes
-    where device_fingerprint = v_fp
-      and vote_date = v_today;
-
-    if v_count >= 3 then
-      return jsonb_build_object('ok', false, 'reason', '今日票数已用完');
-    end if;
-  elsif v_ip <> 'unknown' then
-    select count(*)::int into v_count
-    from public.votes
-    where voter_ip = v_ip
-      and vote_date = v_today;
-
-    if v_count >= 3 then
-      return jsonb_build_object('ok', false, 'reason', '今日票数已用完');
-    end if;
-  end if;
-
   if not exists (select 1 from public.works where id = p_work_id) then
     return jsonb_build_object('ok', false, 'reason', '作品不存在');
   end if;
 
   insert into public.votes (work_id, voter_ip, device_fingerprint, vote_date)
-  values (p_work_id, v_ip, v_fp, v_today);
+  values (p_work_id, v_ip, null, v_today);
 
   select count(*)::int into v_total
   from public.votes v where v.work_id = p_work_id;
@@ -131,8 +109,8 @@ end;
 $$;
 
 -- 仅允许 service_role 调用（与 Next.js 服务端 API 使用的密钥一致）
-revoke all on function public.cast_vote (uuid, text, text) from public;
-grant execute on function public.cast_vote (uuid, text, text) to service_role;
+revoke all on function public.cast_vote (uuid, text) from public;
+grant execute on function public.cast_vote (uuid, text) to service_role;
 
 -- 将 Redis 桶内票数一次性写入 votes，并在同一事务内累加 works.votes_count（避免只写子表导致不同步）
 create or replace function public.apply_redis_vote_flush (
