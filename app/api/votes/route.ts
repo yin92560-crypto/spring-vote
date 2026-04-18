@@ -13,9 +13,11 @@ type CastVoteResult = { ok?: boolean; reason?: string };
 type VoteBody = {
   p_work_id?: string;
   workId?: string;
-  p_voter_ip?: string;
-  voter_ip?: string;
   voterId?: string;
+  voter_id?: string;
+  /** 历史：部分客户端把浏览器 UUID 放在 voter_ip 字段 */
+  voter_ip?: string;
+  p_voter_ip?: string;
 };
 
 function normalizeRpcResult(data: unknown): CastVoteResult | null {
@@ -46,35 +48,39 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "无效请求" }, { status: 400 });
     }
 
-    /** 与 RPC cast_vote(p_work_id, p_voter_ip, p_voter_id) 对齐：优先读 p_* 字段名 */
-    const workId = String(body.p_work_id ?? body.workId ?? "").trim();
-    if (!workId || !UUID_RE.test(workId)) {
+    /** p_work_id：标准 UUID（作品 id） */
+    const rawWorkId = String(body.p_work_id ?? body.workId ?? "").trim();
+    const p_work_id = rawWorkId.toLowerCase();
+    if (!p_work_id || !UUID_RE.test(p_work_id)) {
       return NextResponse.json({ error: "缺少或无效的作品 id" }, { status: 400 });
     }
 
-    const uuidLine = String(
-      body.p_voter_ip ?? body.voter_ip ?? body.voterId ?? ""
-    ).trim();
-    const p_voter_id = UUID_RE.test(uuidLine) ? uuidLine : "";
+    /** p_voter_id：浏览器 localStorage 的 UUID（勿与真实 IP 混淆） */
+    const uuidPrimary = String(body.voterId ?? body.voter_id ?? "").trim();
+    const uuidLegacy = String(body.voter_ip ?? "").trim();
+    const p_voter_id = UUID_RE.test(uuidPrimary)
+      ? uuidPrimary
+      : UUID_RE.test(uuidLegacy)
+        ? uuidLegacy
+        : "";
 
+    /** p_voter_ip：用户真实 IP（写入 votes.voter_ip 列） */
     const headerIp = getClientIp(request.headers);
-    const realIp =
+    const p_voter_ip =
       (typeof headerIp === "string" && headerIp.trim() !== ""
         ? headerIp.trim()
         : null) ?? "unknown";
 
-    /**
-     * p_voter_ip：RPC 与 votes.voter_ip 列；若 body 传来浏览器 UUID，则写入该 UUID（与「查票 voter_ip = UUID」一致）。
-     * 若无 UUID，则退回真实 IP。
-     */
-    const p_voter_ip = p_voter_id ? p_voter_id : realIp;
-
     try {
       const supabase = createAdminClient();
+      /**
+       * 与数据库函数参数名一致；对象键顺序固定，避免部分环境绑定错位。
+       * cast_vote(…, p_voter_id, p_voter_ip, p_work_id) — 以名称匹配为准。
+       */
       const { data, error } = await supabase.rpc("cast_vote", {
-        p_work_id: workId,
-        p_voter_ip,
         p_voter_id,
+        p_voter_ip,
+        p_work_id,
       });
 
       if (error) {
