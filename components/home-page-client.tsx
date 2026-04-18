@@ -308,8 +308,8 @@ function HomePageContent() {
     setVotedWorkIdsToday(votedWorkIds);
   }, []);
 
-  /** 初始化预检：立即请求 votes 表今日记录（与 localStorage voter_id），更新顶部剩余票 */
-  useLayoutEffect(() => {
+  /** 初始化查票：votes 表中 voter_ip = 本地 UUID（及 voter_client_id）今日记录 → 顶部今日剩余票数 */
+  useEffect(() => {
     if (typeof window === "undefined") return;
     const voterId = getOrCreateClientVoterId();
     if (!voterId) return;
@@ -383,9 +383,11 @@ function HomePageContent() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        /** 与 public.cast_vote(p_work_id, p_voter_ip, p_voter_id) 一致 */
+        p_work_id: workId,
+        p_voter_ip: voterId,
         workId,
         voterId,
-        /** 与 voterId 相同 UUID，满足接口对 voter_ip 字段名的兼容要求 */
         voter_ip: voterId,
       }),
     });
