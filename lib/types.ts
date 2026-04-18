@@ -10,4 +10,6 @@ export type Work = {
   createdAt: string;
   /** 展示编号，如 001（按创建时间升序，API 计算） */
   displayNo: string;
+  /** 本地：当前浏览器今日是否已为该作品投过票（由 huaqin_voted_list 恢复） */
+  isVoted?: boolean;
 };

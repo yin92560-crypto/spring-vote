@@ -23,6 +23,7 @@ create table if not exists public.votes (
 );
 
 alter table public.votes add column if not exists device_fingerprint text;
+alter table public.votes add column if not exists voter_client_id text;
 create index if not exists idx_votes_ip_date on public.votes (voter_ip, vote_date);
 create index if not exists idx_votes_device_fingerprint_date on public.votes (device_fingerprint, vote_date);
 create index if not exists idx_votes_work_id on public.votes (work_id);
@@ -60,12 +61,13 @@ begin
   end if;
 end $$;
 
--- 原子投票：仅校验作品存在并落库；每日 3 票由浏览器 localStorage 控制；p_voter_ip 仅作日志记录
+-- 原子投票：仅校验作品存在并落库；每日 3 票由浏览器 localStorage 控制；p_voter_ip 日志；p_voter_id 为浏览器 UUID
 drop function if exists public.cast_vote(uuid, text, text);
 drop function if exists public.cast_vote(uuid, text);
 create or replace function public.cast_vote (
   p_work_id uuid,
-  p_voter_ip text
+  p_voter_ip text,
+  p_voter_id text
 )
 returns jsonb
 language plpgsql
@@ -77,13 +79,14 @@ declare
   v_total int;
   v_col text;
   v_ip text := coalesce(nullif(trim(p_voter_ip), ''), 'unknown');
+  v_client text := nullif(trim(p_voter_id), '');
 begin
   if not exists (select 1 from public.works where id = p_work_id) then
     return jsonb_build_object('ok', false, 'reason', '作品不存在');
   end if;
 
-  insert into public.votes (work_id, voter_ip, device_fingerprint, vote_date)
-  values (p_work_id, v_ip, null, v_today);
+  insert into public.votes (work_id, voter_ip, device_fingerprint, vote_date, voter_client_id)
+  values (p_work_id, v_ip, null, v_today, v_client);
 
   select count(*)::int into v_total
   from public.votes v where v.work_id = p_work_id;
@@ -109,8 +112,8 @@ end;
 $$;
 
 -- 仅允许 service_role 调用（与 Next.js 服务端 API 使用的密钥一致）
-revoke all on function public.cast_vote (uuid, text) from public;
-grant execute on function public.cast_vote (uuid, text) to service_role;
+revoke all on function public.cast_vote (uuid, text, text) from public;
+grant execute on function public.cast_vote (uuid, text, text) to service_role;
 
 -- 将 Redis 桶内票数一次性写入 votes，并在同一事务内累加 works.votes_count（避免只写子表导致不同步）
 create or replace function public.apply_redis_vote_flush (

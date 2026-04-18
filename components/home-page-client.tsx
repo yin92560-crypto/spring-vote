@@ -8,6 +8,7 @@ import {
   Suspense,
   useEffect,
   useId,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -23,10 +24,9 @@ import { VotePillButton } from "@/components/vote-pill-button";
 import { useI18n } from "@/lib/i18n-context";
 import { notifyVoteDataChanged } from "@/lib/vote-sync";
 import { useVoteHomeState } from "@/lib/use-vote-store";
-import {
-  getClientDailyVoteUsed,
-  incrementClientDailyVoteUsed,
-} from "@/lib/client-vote-daily";
+import { incrementClientDailyVoteUsed } from "@/lib/client-vote-daily";
+import { getOrCreateClientVoterId } from "@/lib/client-voter-id";
+import { hydrateVoteStateFromStorage } from "@/lib/huaqin-voted-list";
 
 const DAILY_VOTE_LIMIT = 3;
 
@@ -173,6 +173,8 @@ function HomePageContent() {
   const [detailWork, setDetailWork] = useState<Work | null>(null);
   const [votePendingWorkId, setVotePendingWorkId] = useState<string | null>(null);
   const [localUsedVotes, setLocalUsedVotes] = useState(0);
+  /** 今日已为哪些作品投过票（localStorage 恢复，首屏即锁定按钮） */
+  const [votedWorkIdsToday, setVotedWorkIdsToday] = useState<string[]>([]);
   /** 避免「先 setState 再 replaceQuery」时 effect 因 id 尚未写入而误关弹窗 */
   const skipUrlSyncOnceRef = useRef(false);
   const voteCooldownUntilRef = useRef<Map<string, number>>(new Map());
@@ -180,11 +182,19 @@ function HomePageContent() {
   const normalizedSearch = searchQuery.trim();
   const remainingLocal = Math.max(0, DAILY_VOTE_LIMIT - localUsedVotes);
   const worksList = works ?? [];
+  const worksWithVoteFlags = useMemo(
+    () =>
+      worksList.map((w) => ({
+        ...w,
+        isVoted: votedWorkIdsToday.includes(w.id),
+      })),
+    [worksList, votedWorkIdsToday]
+  );
   /** 全量作品来自 /api/works；搜索仅用本地过滤，避免「等接口时整页空白」 */
   const filteredWorks = useMemo(() => {
-    if (!normalizedSearch) return worksList;
-    return filterWorksBySearch(worksList, normalizedSearch);
-  }, [worksList, normalizedSearch]);
+    if (!normalizedSearch) return worksWithVoteFlags;
+    return filterWorksBySearch(worksWithVoteFlags, normalizedSearch);
+  }, [worksWithVoteFlags, normalizedSearch]);
   const pageSize = 18;
   const totalPages = Math.max(1, Math.ceil(filteredWorks.length / pageSize));
   const pagedWorks = useMemo(() => {
@@ -226,7 +236,7 @@ function HomePageContent() {
   };
 
   useEffect(() => {
-    if (worksList.length === 0) return;
+    if (worksWithVoteFlags.length === 0) return;
     if (skipUrlSyncOnceRef.current) {
       skipUrlSyncOnceRef.current = false;
       return;
@@ -236,13 +246,20 @@ function HomePageContent() {
       setDetailWork(null);
       return;
     }
-    const w = findWorkByDisplayQuery(worksList, idParam);
+    const w = findWorkByDisplayQuery(worksWithVoteFlags, idParam);
     setDetailWork(w ?? null);
-  }, [searchParams, worksList]);
+  }, [searchParams, worksWithVoteFlags]);
+
+  useLayoutEffect(() => {
+    if (typeof window === "undefined") return;
+    getOrCreateClientVoterId();
+    const { used, votedWorkIds } = hydrateVoteStateFromStorage();
+    setLocalUsedVotes(used);
+    setVotedWorkIdsToday(votedWorkIds);
+  }, []);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setLocalUsedVotes(getClientDailyVoteUsed());
     void fetch("/api/stats/pv", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -271,10 +288,11 @@ function HomePageContent() {
   }, [totalPages]);
 
   const requestVoteOnce = async (workId: string) => {
+    const voterId = getOrCreateClientVoterId();
     return fetch("/api/votes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ workId }),
+      body: JSON.stringify({ workId, voterId }),
     });
   };
 
@@ -328,8 +346,11 @@ function HomePageContent() {
       return false;
     }
     if (j.ok) {
-      const nextUsed = incrementClientDailyVoteUsed();
+      const nextUsed = incrementClientDailyVoteUsed(workId);
       setLocalUsedVotes(nextUsed);
+      setVotedWorkIdsToday((prev) =>
+        prev.includes(workId) ? prev : [...prev, workId]
+      );
       setToast(t("toastVoteOk"));
       notifyVoteDataChanged();
       router.refresh();
@@ -351,6 +372,11 @@ function HomePageContent() {
 
   const submitVote = async (workId: string) => {
     if (votePendingWorkId) return;
+    if (votedWorkIdsToday.includes(workId)) {
+      setToast("今日已为该作品投过票");
+      setTimeout(() => setToast(null), 2000);
+      return;
+    }
     if (localUsedVotes >= DAILY_VOTE_LIMIT) {
       setToast("今日票数已用完");
       setTimeout(() => setToast(null), 2000);
@@ -483,7 +509,9 @@ function HomePageContent() {
           shareUrl={shareUrl}
           onClose={closeDetail}
           remaining={remainingLocal}
-          voting={Boolean(votePendingWorkId)}
+          voting={Boolean(
+            detailWork && votePendingWorkId === detailWork.id
+          )}
           onVote={() => void voteFromModal()}
           onShareCopied={() => {
             setToast(t("shareCopied"));
@@ -589,12 +617,18 @@ function HomePageContent() {
                               </p>
                             </div>
                             <VotePillButton
-                              disabled={remainingLocal <= 0 || Boolean(votePendingWorkId)}
-                              loading={Boolean(votePendingWorkId)}
+                              disabled={
+                                remainingLocal <= 0 ||
+                                Boolean(w.isVoted) ||
+                                Boolean(votePendingWorkId)
+                              }
+                              loading={votePendingWorkId === w.id}
                               onVote={() => voteFromCard(w.id)}
                               className="min-w-[80px] shrink-0"
                             >
-                              {votePendingWorkId ? t("voteSubmitting") : t("voteCard")}
+                              {votePendingWorkId === w.id
+                                ? t("voteSubmitting")
+                                : t("voteCard")}
                             </VotePillButton>
                           </div>
                         </article>

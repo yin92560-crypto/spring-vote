@@ -285,7 +285,7 @@ export function WorkDetailModal({
                 {t("close")}
               </button>
               <VotePillButton
-                disabled={remaining <= 0 || voting}
+                disabled={remaining <= 0 || voting || Boolean(work?.isVoted)}
                 loading={voting}
                 onVote={onVote}
                 className="vote-pill-btn-lg order-2 w-full sm:order-3 sm:min-w-[200px]"
