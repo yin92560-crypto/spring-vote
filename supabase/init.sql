@@ -28,6 +28,8 @@ create index if not exists idx_votes_ip_date on public.votes (voter_ip, vote_dat
 create index if not exists idx_votes_device_fingerprint_date on public.votes (device_fingerprint, vote_date);
 create index if not exists idx_votes_work_id on public.votes (work_id);
 create index if not exists idx_votes_voter_ip_created_at on public.votes (voter_ip, created_at desc);
+create index if not exists idx_votes_client_id_vote_date on public.votes (voter_client_id, vote_date)
+  where voter_client_id is not null;
 
 -- 作品累计票数列：标准名为 votes_count。若历史库误用 works.votes（与表 public.votes 不同），重命名为 votes_count。
 do $$
@@ -80,9 +82,30 @@ declare
   v_col text;
   v_ip text := coalesce(nullif(trim(p_voter_ip), ''), 'unknown');
   v_client text := nullif(trim(p_voter_id), '');
+  v_day_distinct int;
 begin
   if not exists (select 1 from public.works where id = p_work_id) then
     return jsonb_build_object('ok', false, 'reason', '作品不存在');
+  end if;
+
+  -- 有浏览器 voter_id 时：同一作品同日仅一票；每日最多 3 个不同作品（与前端 daily limit 一致）
+  if v_client is not null then
+    if exists (
+      select 1 from public.votes
+      where work_id = p_work_id
+        and voter_client_id = v_client
+        and vote_date = v_today
+    ) then
+      return jsonb_build_object('ok', false, 'reason', '今日已为该作品投过票');
+    end if;
+
+    select count(distinct work_id)::int into v_day_distinct
+    from public.votes
+    where voter_client_id = v_client and vote_date = v_today;
+
+    if coalesce(v_day_distinct, 0) >= 3 then
+      return jsonb_build_object('ok', false, 'reason', '今日投票次数已达上限');
+    end if;
   end if;
 
   insert into public.votes (work_id, voter_ip, device_fingerprint, vote_date, voter_client_id)

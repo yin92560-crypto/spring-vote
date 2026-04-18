@@ -20,6 +20,8 @@ import {
   fetchWorksTableWithOr,
   votesFromRow,
 } from "@/lib/supabase-works-columns";
+import { DAILY_VOTE_LIMIT } from "@/lib/vote-config";
+import { fetchTodayVoterUsageFromDb } from "@/lib/today-voter-usage";
 
 export const dynamic = "force-dynamic";
 const WORKS_LIST_CACHE_KEY = "works:list:v1";
@@ -99,9 +101,22 @@ export async function GET(request: Request) {
       );
 
       const userKey = voterId || voteUserKey(ip, ua);
-      const used = Number((await redis.get<number>(keyDailyUserVotes(today, userKey))) ?? 0);
-      const remaining = Math.max(0, 3 - used);
-      return NextResponse.json({ works: list, remaining, limited });
+      const usedRedis = Number((await redis.get<number>(keyDailyUserVotes(today, userKey))) ?? 0);
+      let used = usedRedis;
+      let votedWorkIds: string[] = [];
+      if (voterId) {
+        const db = await fetchTodayVoterUsageFromDb(supabase, voterId, today);
+        votedWorkIds = db.votedWorkIds;
+        used = Math.max(usedRedis, db.usedDistinctWorks);
+      }
+      const remaining = Math.max(0, DAILY_VOTE_LIMIT - used);
+      return NextResponse.json({
+        works: list,
+        remaining,
+        limited,
+        dailyVoteLimit: DAILY_VOTE_LIMIT,
+        votedWorkIds,
+      });
     }
     let list: WorksCacheItem[] | null = null;
     try {
@@ -162,12 +177,25 @@ export async function GET(request: Request) {
       console.error("read redis vote cache failed:", redisErr);
     }
 
-    // 优先用浏览器持久 voterId 计算今日剩余票数。
+    // 优先用浏览器持久 voterId + 数据库今日投票记录计算剩余票数（与 Redis 取较大已用值，避免漏计）。
     const userKey = voterId || voteUserKey(ip, ua);
-    const used = Number((await redis.get<number>(keyDailyUserVotes(today, userKey))) ?? 0);
-    const remaining = Math.max(0, 3 - used);
+    const usedRedis = Number((await redis.get<number>(keyDailyUserVotes(today, userKey))) ?? 0);
+    let used = usedRedis;
+    let votedWorkIds: string[] = [];
+    if (voterId) {
+      const supabase = createAdminClient();
+      const db = await fetchTodayVoterUsageFromDb(supabase, voterId, today);
+      votedWorkIds = db.votedWorkIds;
+      used = Math.max(usedRedis, db.usedDistinctWorks);
+    }
+    const remaining = Math.max(0, DAILY_VOTE_LIMIT - used);
 
-    return NextResponse.json({ works: list, remaining });
+    return NextResponse.json({
+      works: list,
+      remaining,
+      dailyVoteLimit: DAILY_VOTE_LIMIT,
+      votedWorkIds,
+    });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "服务器错误" }, { status: 500 });

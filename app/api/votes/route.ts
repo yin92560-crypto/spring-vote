@@ -40,6 +40,13 @@ export async function POST(request: Request) {
 
     if (error) {
       console.error("cast_vote RPC failed:", error);
+      const msg = String((error as { message?: string }).message ?? "");
+      if (/今日投票次数已达上限|已为该作品投过票|次数已达上限/.test(msg)) {
+        return NextResponse.json(
+          { ok: false, reason: msg },
+          { status: 200 }
+        );
+      }
       return NextResponse.json({ error: "投票失败，请稍后重试" }, { status: 500 });
     }
 

@@ -9,6 +9,8 @@ import {
   votesFromRow,
 } from "@/lib/supabase-works-columns";
 import type { Work } from "@/lib/types";
+import { DAILY_VOTE_LIMIT } from "@/lib/vote-config";
+import { fetchTodayVoterUsageFromDb } from "@/lib/today-voter-usage";
 
 export const dynamic = "force-dynamic";
 
@@ -70,10 +72,23 @@ export async function GET(request: Request) {
 
     const redis = getVoteRedis();
     const userKey = voterId || voteUserKey(ip, ua);
-    const used = Number((await redis.get<number>(keyDailyUserVotes(today, userKey))) ?? 0);
-    const remaining = Math.max(0, 3 - used);
+    const usedRedis = Number((await redis.get<number>(keyDailyUserVotes(today, userKey))) ?? 0);
+    let used = usedRedis;
+    let votedWorkIds: string[] = [];
+    if (voterId) {
+      const db = await fetchTodayVoterUsageFromDb(supabase, voterId, today);
+      votedWorkIds = db.votedWorkIds;
+      used = Math.max(usedRedis, db.usedDistinctWorks);
+    }
+    const remaining = Math.max(0, DAILY_VOTE_LIMIT - used);
 
-    return NextResponse.json({ works: list, remaining, limited });
+    return NextResponse.json({
+      works: list,
+      remaining,
+      limited,
+      dailyVoteLimit: DAILY_VOTE_LIMIT,
+      votedWorkIds,
+    });
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "服务器错误" }, { status: 500 });

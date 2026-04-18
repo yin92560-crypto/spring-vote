@@ -1,6 +1,7 @@
 "use client";
 
 import { getOrCreateClientVoterId } from "@/lib/client-voter-id";
+import { DAILY_VOTE_LIMIT } from "@/lib/vote-config";
 
 /** 与需求一致：投票记录（作品 ID + 上海日期 + voter_id）持久化键 */
 export const HUAQIN_VOTED_LIST_KEY = "huaqin_voted_list";
@@ -67,7 +68,7 @@ export function getTodayVoteStateForVoter(voterId: string): {
     const unique = new Set<string>();
     for (const e of todays) unique.add(e.workId);
     const votedWorkIds = [...unique];
-    return { used: Math.min(3, unique.size), votedWorkIds };
+    return { used: Math.min(DAILY_VOTE_LIMIT, unique.size), votedWorkIds };
   } catch {
     return { used: 0, votedWorkIds: [] };
   }

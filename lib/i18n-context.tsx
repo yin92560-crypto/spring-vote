@@ -45,6 +45,9 @@ export type MessageKey =
   | "toastRequestFail"
   | "toastVoteOk"
   | "toastVoteFail"
+  | "toastVoteDailyLimit"
+  | "toastVoteAlreadyToday"
+  | "toastVoteNoQuota"
   | "shareCopied"
   | "shareFailed"
   | "footerTagline"
@@ -88,7 +91,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     title: "捕捉春日计划",
     subtitle: "2026华勤全球员工春日摄影大赛",
     heroDesc: "用镜头定格春日，谁藏了最美的春天？",
-    voteRules: "投票规则：每人每日可投3票，快来为心仪作品助力吧！",
+    voteRules: "投票规则：每人每日可投{n}票，快来为心仪作品助力吧！",
     remainingVotes: "今日剩余票数",
     rank: "排行榜",
     admin: "管理后台",
@@ -115,6 +118,9 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     toastRequestFail: "请求失败",
     toastVoteOk: "投票成功，感谢支持",
     toastVoteFail: "无法投票",
+    toastVoteDailyLimit: "您今日投票次数已达上限，请明日再来。",
+    toastVoteAlreadyToday: "今日已为该作品投过票",
+    toastVoteNoQuota: "今日票数已用完",
     shareCopied: "链接已复制，快去发给同事拉票吧！",
     shareFailed: "复制失败，请手动复制浏览器地址栏中的链接",
     footerTagline: "扎根生长 · 春华秋实",
@@ -160,7 +166,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     heroDesc:
       "Capture the spring with your lens. Who found the most beautiful spring?",
     voteRules:
-      "Voting Rules: Each person can cast 3 votes per day. Come and support your favorite works!",
+      "Voting rules: {n} votes per person per day. Come support your favorite works!",
     remainingVotes: "Votes remaining today",
     rank: "Leaderboard",
     admin: "Admin",
@@ -187,6 +193,10 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     toastRequestFail: "Request failed",
     toastVoteOk: "Vote recorded. Thank you!",
     toastVoteFail: "Cannot vote",
+    toastVoteDailyLimit:
+      "You have used all your votes for today. Please come back tomorrow.",
+    toastVoteAlreadyToday: "You have already voted for this work today.",
+    toastVoteNoQuota: "No votes left for today.",
     shareCopied: "Link copied. Share it with your team!",
     shareFailed: "Copy failed. Copy the URL from the address bar.",
     footerTagline: "Rooted in growth · Spring to harvest",
@@ -231,7 +241,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     subtitle: "2026 華勤グローバル社員・春の写真コンテスト",
     heroDesc: "レンズで春を切り取ろう。一番美しい春を見つけたのは誰？",
     voteRules:
-      "投票ルール：お一人様1日3票まで投票できます。お気に入りの作品を応援しましょう！",
+      "投票ルール：お一人様1日{n}票まで投票できます。お気に入りの作品を応援しましょう！",
     remainingVotes: "本日の残り票数",
     rank: "ランキング",
     admin: "管理",
@@ -258,6 +268,10 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     toastRequestFail: "リクエストに失敗しました",
     toastVoteOk: "投票しました。ありがとうございます",
     toastVoteFail: "投票できません",
+    toastVoteDailyLimit:
+      "本日の投票回数の上限に達しました。明日またお越しください。",
+    toastVoteAlreadyToday: "本日はこの作品に投票済みです",
+    toastVoteNoQuota: "本日の投票枠を使い切りました",
     shareCopied: "リンクをコピーしました。共有してください",
     shareFailed: "コピーに失敗しました。アドレスバーからコピーしてください",
     footerTagline: "根を張り、春実る",

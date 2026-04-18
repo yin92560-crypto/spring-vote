@@ -27,8 +27,7 @@ import { useVoteHomeState } from "@/lib/use-vote-store";
 import { incrementClientDailyVoteUsed } from "@/lib/client-vote-daily";
 import { getOrCreateClientVoterId } from "@/lib/client-voter-id";
 import { hydrateVoteStateFromStorage } from "@/lib/huaqin-voted-list";
-
-const DAILY_VOTE_LIMIT = 3;
+import { DAILY_VOTE_LIMIT } from "@/lib/vote-config";
 
 function SpringFooter() {
   const { t } = useI18n();
@@ -165,7 +164,14 @@ function HomePageContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const { works, loading, refresh } = useVoteHomeState();
+  const {
+    works,
+    loading,
+    refresh,
+    remaining: apiRemaining,
+    dailyVoteLimit,
+    votedWorkIdsFromApi,
+  } = useVoteHomeState();
   const [toast, setToast] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -180,7 +186,18 @@ function HomePageContent() {
   const voteCooldownUntilRef = useRef<Map<string, number>>(new Map());
 
   const normalizedSearch = searchQuery.trim();
-  const remainingLocal = Math.max(0, DAILY_VOTE_LIMIT - localUsedVotes);
+
+  /** 本地与接口取「已用票数」较大值，避免清缓存或多端不同步时额度异常 */
+  const effectiveUsedVotes = useMemo(() => {
+    const cap = dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT;
+    const usedFromApi = Math.max(0, cap - apiRemaining);
+    return Math.min(cap, Math.max(localUsedVotes, usedFromApi));
+  }, [dailyVoteLimit, apiRemaining, localUsedVotes]);
+
+  const remainingDisplay = Math.max(
+    0,
+    (dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT) - effectiveUsedVotes
+  );
   const worksList = works ?? [];
   const worksWithVoteFlags = useMemo(
     () =>
@@ -258,6 +275,13 @@ function HomePageContent() {
     setVotedWorkIdsToday(votedWorkIds);
   }, []);
 
+  /** 接口返回的今日已投作品 id 与本地合并，保证与数据库一致 */
+  useEffect(() => {
+    if (loading) return;
+    if (votedWorkIdsFromApi.length === 0) return;
+    setVotedWorkIdsToday((prev) => [...new Set([...prev, ...votedWorkIdsFromApi])]);
+  }, [loading, votedWorkIdsFromApi]);
+
   useEffect(() => {
     if (typeof window === "undefined") return;
     void fetch("/api/stats/pv", {
@@ -294,6 +318,27 @@ function HomePageContent() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ workId, voterId }),
     });
+  };
+
+  const mapVoteFailureReason = (reason: string) => {
+    if (/今日投票次数已达上限|次数已达上限|投票次数/.test(reason)) {
+      return t("toastVoteDailyLimit");
+    }
+    if (/已为该作品投过票/.test(reason)) {
+      return t("toastVoteAlreadyToday");
+    }
+    return reason;
+  };
+
+  const mapHttpVoteErrorBody = (err: string | undefined) => {
+    if (!err) return t("toastRequestFail");
+    if (/今日投票次数已达上限|次数已达上限|投票次数/.test(err)) {
+      return t("toastVoteDailyLimit");
+    }
+    if (/已为该作品投过票/.test(err)) {
+      return t("toastVoteAlreadyToday");
+    }
+    return err;
   };
 
   const shouldRetryVote = (res: Response | null, errMsg?: string): boolean => {
@@ -341,7 +386,7 @@ function HomePageContent() {
     }
 
     if (!res.ok) {
-      setToast(j.error ?? t("toastRequestFail"));
+      setToast(mapHttpVoteErrorBody(j.error));
       setTimeout(() => setToast(null), 2400);
       return false;
     }
@@ -357,7 +402,7 @@ function HomePageContent() {
       await refresh();
       return true;
     }
-    setToast(j.reason ?? t("toastVoteFail"));
+    setToast(mapVoteFailureReason(j.reason ?? t("toastVoteFail")));
     setTimeout(() => setToast(null), 2400);
     return false;
   };
@@ -373,12 +418,12 @@ function HomePageContent() {
   const submitVote = async (workId: string) => {
     if (votePendingWorkId) return;
     if (votedWorkIdsToday.includes(workId)) {
-      setToast("今日已为该作品投过票");
+      setToast(t("toastVoteAlreadyToday"));
       setTimeout(() => setToast(null), 2000);
       return;
     }
-    if (localUsedVotes >= DAILY_VOTE_LIMIT) {
-      setToast("今日票数已用完");
+    if (remainingDisplay <= 0) {
+      setToast(t("toastVoteNoQuota"));
       setTimeout(() => setToast(null), 2000);
       return;
     }
@@ -483,12 +528,19 @@ function HomePageContent() {
               {t("heroDesc")}
             </p>
             <p className={`mx-auto mt-1.5 max-w-2xl font-medium leading-[1.8] text-[#2c2b27]/88 drop-shadow-[0_1px_2px_rgba(255,255,255,0.35)] ${ruleTextClass}`}>
-              {t("voteRules")}
+              {t("voteRules", {
+                n: dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT,
+              })}
             </p>
             <p className="mt-5 text-base font-semibold text-[#3b372f] drop-shadow-[0_1px_2px_rgba(255,255,255,0.35)]">
               {t("remainingVotes")}{" "}
-              <span className="tabular-nums text-xl text-[#3b372f]">{remainingLocal}</span>
-              <span className="text-[#3b372f]/85"> / 3</span>
+              <span className="tabular-nums text-xl text-[#3b372f]">
+                {remainingDisplay}
+              </span>
+              <span className="text-[#3b372f]/85">
+                {" "}
+                / {dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT}
+              </span>
             </p>
           </div>
         </section>
@@ -508,7 +560,7 @@ function HomePageContent() {
           onNavigateTo={openDetail}
           shareUrl={shareUrl}
           onClose={closeDetail}
-          remaining={remainingLocal}
+          remaining={remainingDisplay}
           voting={Boolean(
             detailWork && votePendingWorkId === detailWork.id
           )}
@@ -618,7 +670,7 @@ function HomePageContent() {
                             </div>
                             <VotePillButton
                               disabled={
-                                remainingLocal <= 0 ||
+                                remainingDisplay <= 0 ||
                                 Boolean(w.isVoted) ||
                                 Boolean(votePendingWorkId)
                               }

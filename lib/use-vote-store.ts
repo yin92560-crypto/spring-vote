@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Work } from "./types";
 import { getOrCreateClientVoterId } from "./client-voter-id";
+import { DAILY_VOTE_LIMIT } from "./vote-config";
 
 /** 与 lib/vote-sync 中广播配合：同窗口内刷新作品列表 */
 export const VOTE_DATA_CHANGED_EVENT = "spring-vote-refresh";
@@ -15,11 +16,15 @@ export function emitVoteRefresh(): void {
 export function useVoteHomeState(): {
   works: Work[] | undefined;
   remaining: number;
+  dailyVoteLimit: number;
+  votedWorkIdsFromApi: string[];
   loading: boolean;
   refresh: () => Promise<void>;
 } {
   const [works, setWorks] = useState<Work[] | undefined>(undefined);
-  const [remaining, setRemaining] = useState(3);
+  const [remaining, setRemaining] = useState(DAILY_VOTE_LIMIT);
+  const [dailyVoteLimit, setDailyVoteLimit] = useState(DAILY_VOTE_LIMIT);
+  const [votedWorkIdsFromApi, setVotedWorkIdsFromApi] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -35,9 +40,24 @@ export function useVoteHomeState(): {
         if (!r.ok) {
           throw new Error(`HTTP ${r.status} ${r.statusText}`);
         }
-        const j = (await r.json()) as { works: Work[]; remaining: number };
+        const j = (await r.json()) as {
+          works: Work[];
+          remaining: number;
+          dailyVoteLimit?: number;
+          votedWorkIds?: string[];
+        };
         if (Array.isArray(j.works)) setWorks(j.works);
         if (typeof j.remaining === "number") setRemaining(j.remaining);
+        if (typeof j.dailyVoteLimit === "number" && j.dailyVoteLimit > 0) {
+          setDailyVoteLimit(j.dailyVoteLimit);
+        } else {
+          setDailyVoteLimit(DAILY_VOTE_LIMIT);
+        }
+        setVotedWorkIdsFromApi(
+          Array.isArray(j.votedWorkIds)
+            ? j.votedWorkIds.filter((id) => typeof id === "string")
+            : []
+        );
         return;
       } catch (err) {
         if (attempt >= 3) {
@@ -70,7 +90,14 @@ export function useVoteHomeState(): {
     };
   }, [refresh]);
 
-  return { works, remaining, loading, refresh };
+  return {
+    works,
+    remaining,
+    dailyVoteLimit,
+    votedWorkIdsFromApi,
+    loading,
+    refresh,
+  };
 }
 
 export function useWorksList(): {
