@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export const dynamic = "force-dynamic";
+const HISTORICAL_PV = 14047;
 
 export async function GET(request: Request) {
   try {
@@ -26,22 +27,13 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "读取统计失败" }, { status: 500 });
     }
 
-    const { data: pvRow, error: pvErr } = await supabase
-      .from("site_stats")
-      .select("page_views")
-      .eq("page_key", "home")
-      .maybeSingle();
-
-    if (pvErr) {
-      console.error("read pv failed, fallback to non-zero value:", pvErr);
-    }
-
-    const pv = Math.max(1, Number(pvRow?.page_views ?? 1));
+    const votes = Number(votesCount ?? 0);
+    const pv = HISTORICAL_PV + votes;
 
     return NextResponse.json({
       pv,
       works: Number(worksCount ?? 0),
-      votes: Number(votesCount ?? 0),
+      votes,
     });
   } catch (e) {
     console.error(e);
