@@ -66,6 +66,38 @@ async function fetchVoteCountsMap(
   return counts;
 }
 
+function buildWorksPayload(
+  rows: unknown[],
+  voteCounts: Map<string, number>
+): Array<Work & { vote_count: number; actualVotes: number }> {
+  const baseRows: Array<Omit<Work, "displayNo">> = rows.map((w) => {
+    const id = String((w as { id?: unknown }).id ?? "");
+    const votes = voteCounts.get(id) ?? 0;
+    return {
+      id,
+      title: String((w as { title?: unknown }).title ?? ""),
+      workTitle: String(
+        (w as { work_title?: unknown; title?: unknown }).work_title ??
+          (w as { title?: unknown }).title ??
+          ""
+      ),
+      authorName: String((w as { author_name?: unknown }).author_name ?? ""),
+      imageUrl: normalizeWorkImageUrl(
+        String((w as { image_url?: unknown }).image_url ?? "")
+      ),
+      votes,
+      createdAt: String((w as { created_at?: unknown }).created_at ?? ""),
+    };
+  });
+
+  const withDisplayNo = addDisplayNumbers(baseRows);
+  return withDisplayNo.map((w) => ({
+    ...w,
+    vote_count: w.votes,
+    actualVotes: w.votes,
+  }));
+}
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
@@ -113,18 +145,7 @@ export async function GET(request: Request) {
         return title.includes(safeKeyword) || author.includes(safeKeyword);
       });
       const limited = filtered.length > searchLimit;
-      const list = addDisplayNumbers(
-        filtered.slice(0, searchLimit).map((w) => ({
-          id: String((w as { id?: unknown }).id ?? ""),
-          title: String((w as { title?: unknown }).title ?? ""),
-          workTitle: String((w as { work_title?: unknown; title?: unknown }).work_title ?? (w as { title?: unknown }).title ?? ""),
-          authorName: String((w as { author_name?: unknown }).author_name ?? ""),
-          imageUrl: normalizeWorkImageUrl(String((w as { image_url?: unknown }).image_url ?? "")),
-          votes: voteCounts.get(String((w as { id?: unknown }).id ?? "")) ?? 0,
-          actualVotes: voteCounts.get(String((w as { id?: unknown }).id ?? "")) ?? 0,
-          createdAt: String((w as { created_at?: unknown }).created_at ?? ""),
-        })) as Work[]
-      );
+      const list = buildWorksPayload(filtered.slice(0, searchLimit), voteCounts);
 
       let used = 0;
       let votedWorkIds: string[] = [];
@@ -157,18 +178,7 @@ export async function GET(request: Request) {
       supabase,
       new Set(workRows.map((w) => String((w as { id?: unknown }).id ?? "")))
     );
-    const list = addDisplayNumbers(
-      workRows.map((w) => ({
-        id: String((w as { id?: unknown }).id ?? ""),
-        title: String((w as { title?: unknown }).title ?? ""),
-        workTitle: String((w as { work_title?: unknown; title?: unknown }).work_title ?? (w as { title?: unknown }).title ?? ""),
-        authorName: String((w as { author_name?: unknown }).author_name ?? ""),
-        imageUrl: normalizeWorkImageUrl(String((w as { image_url?: unknown }).image_url ?? "")),
-        votes: voteCounts.get(String((w as { id?: unknown }).id ?? "")) ?? 0,
-        actualVotes: voteCounts.get(String((w as { id?: unknown }).id ?? "")) ?? 0,
-        createdAt: String((w as { created_at?: unknown }).created_at ?? ""),
-      })) as Work[]
-    );
+    const list = buildWorksPayload(workRows, voteCounts);
 
     // 仅基于 Supabase 今日投票记录计算剩余票数。
     let used = 0;
