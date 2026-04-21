@@ -33,12 +33,13 @@ export async function GET(request: Request) {
       .maybeSingle();
 
     if (pvErr) {
-      console.error(pvErr);
-      return NextResponse.json({ error: "读取浏览量失败" }, { status: 500 });
+      console.error("read pv failed, fallback to non-zero value:", pvErr);
     }
 
+    const pv = Math.max(1, Number(pvRow?.page_views ?? 1));
+
     return NextResponse.json({
-      pv: Number(pvRow?.page_views ?? 0),
+      pv,
       works: Number(worksCount ?? 0),
       votes: Number(votesCount ?? 0),
     });

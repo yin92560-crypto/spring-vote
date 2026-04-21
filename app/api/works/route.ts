@@ -91,8 +91,9 @@ function buildWorksPayload(
   });
 
   const withDisplayNo = addDisplayNumbers(baseRows);
-  return withDisplayNo.map((w) => ({
+  return withDisplayNo.map((w, index) => ({
     ...w,
+    displayNo: w.displayNo || `No.${String(index + 1).padStart(3, "0")}`,
     vote_count: w.votes,
     actualVotes: w.votes,
   }));
