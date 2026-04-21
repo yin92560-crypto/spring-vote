@@ -70,9 +70,16 @@ export async function GET(request: Request) {
       })),
     ) as Work[];
 
-    const redis = getVoteRedis();
+    let redis: ReturnType<typeof getVoteRedis> | null = null;
+    try {
+      redis = getVoteRedis();
+    } catch (redisInitErr) {
+      console.error("init vote redis failed in search route:", redisInitErr);
+    }
     const userKey = voterId || voteUserKey(ip, ua);
-    const usedRedis = Number((await redis.get<number>(keyDailyUserVotes(today, userKey))) ?? 0);
+    const usedRedis = redis
+      ? Number((await redis.get<number>(keyDailyUserVotes(today, userKey))) ?? 0)
+      : 0;
     let used = usedRedis;
     let votedWorkIds: string[] = [];
     if (voterId) {

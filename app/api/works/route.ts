@@ -66,7 +66,12 @@ export async function GET(request: Request) {
       day: "2-digit",
     }).format(new Date());
 
-    const redis = getVoteRedis();
+    let redis: ReturnType<typeof getVoteRedis> | null = null;
+    try {
+      redis = getVoteRedis();
+    } catch (redisInitErr) {
+      console.error("init vote redis failed, degrade to db-only:", redisInitErr);
+    }
     // 搜索接口：作品名 + 作者双维度匹配，限制返回前 20。
     if (searchKeyword.length >= 2) {
       const safeKeyword = searchKeyword.slice(0, 40).replace(/[%_]/g, "");
@@ -101,7 +106,9 @@ export async function GET(request: Request) {
       );
 
       const userKey = voterId || voteUserKey(ip, ua);
-      const usedRedis = Number((await redis.get<number>(keyDailyUserVotes(today, userKey))) ?? 0);
+      const usedRedis = redis
+        ? Number((await redis.get<number>(keyDailyUserVotes(today, userKey))) ?? 0)
+        : 0;
       let used = usedRedis;
       let votedWorkIds: string[] = [];
       if (voterId) {
@@ -120,9 +127,11 @@ export async function GET(request: Request) {
     }
     let list: WorksCacheItem[] | null = null;
     try {
-      const cached = await redis.get<string>(WORKS_LIST_CACHE_KEY);
-      if (typeof cached === "string" && cached) {
-        list = withNormalizedImageUrls(JSON.parse(cached) as WorksCacheItem[]);
+      if (redis) {
+        const cached = await redis.get<string>(WORKS_LIST_CACHE_KEY);
+        if (typeof cached === "string" && cached) {
+          list = withNormalizedImageUrls(JSON.parse(cached) as WorksCacheItem[]);
+        }
       }
     } catch (cacheErr) {
       console.error("read works cache failed:", cacheErr);
@@ -154,25 +163,29 @@ export async function GET(request: Request) {
           createdAt: w.created_at as string,
         }))
       );
-      try {
-        await redis.set(WORKS_LIST_CACHE_KEY, JSON.stringify(list), { ex: 60 });
-      } catch (cacheErr) {
-        console.error("write works cache failed:", cacheErr);
+      if (redis) {
+        try {
+          await redis.set(WORKS_LIST_CACHE_KEY, JSON.stringify(list), { ex: 60 });
+        } catch (cacheErr) {
+          console.error("write works cache failed:", cacheErr);
+        }
       }
     }
 
     // 叠加 Redis 中尚未回写到 Supabase 的票数，保证前台实时展示。
     try {
-      const dirtyMembers = (await redis.smembers<string[]>(keyDirtyWorkDays())) ?? [];
-      for (const member of dirtyMembers) {
-        const parsed = parseWorkDayMember(member);
-        if (!parsed) continue;
-        const n = Number(
-          (await redis.get<number>(keyWorkDayVotes(parsed.day, parsed.workId))) ?? 0
-        );
-        if (n > 0) {
-          const target = list.find((w) => w.id === parsed.workId);
-          if (target) target.votes += n;
+      if (redis) {
+        const dirtyMembers = (await redis.smembers<string[]>(keyDirtyWorkDays())) ?? [];
+        for (const member of dirtyMembers) {
+          const parsed = parseWorkDayMember(member);
+          if (!parsed) continue;
+          const n = Number(
+            (await redis.get<number>(keyWorkDayVotes(parsed.day, parsed.workId))) ?? 0
+          );
+          if (n > 0) {
+            const target = list.find((w) => w.id === parsed.workId);
+            if (target) target.votes += n;
+          }
         }
       }
     } catch (redisErr) {
@@ -181,7 +194,9 @@ export async function GET(request: Request) {
 
     // 优先用浏览器持久 voterId + 数据库今日投票记录计算剩余票数（与 Redis 取较大已用值，避免漏计）。
     const userKey = voterId || voteUserKey(ip, ua);
-    const usedRedis = Number((await redis.get<number>(keyDailyUserVotes(today, userKey))) ?? 0);
+    const usedRedis = redis
+      ? Number((await redis.get<number>(keyDailyUserVotes(today, userKey))) ?? 0)
+      : 0;
     let used = usedRedis;
     let votedWorkIds: string[] = [];
     if (voterId) {
