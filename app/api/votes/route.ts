@@ -20,25 +20,6 @@ type VoteBody = {
   p_voter_ip?: string;
 };
 
-function normalizeRpcResult(data: unknown): CastVoteResult | null {
-  if (data === null || data === undefined) return null;
-  if (typeof data === "string") {
-    try {
-      const parsed = JSON.parse(data) as unknown;
-      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-        return parsed as CastVoteResult;
-      }
-    } catch {
-      return null;
-    }
-    return null;
-  }
-  if (typeof data === "object" && data !== null && !Array.isArray(data)) {
-    return data as CastVoteResult;
-  }
-  return null;
-}
-
 export async function POST(request: Request) {
   try {
     let body: VoteBody;
@@ -71,58 +52,110 @@ export async function POST(request: Request) {
         ? headerIp.trim()
         : null) ?? "unknown";
 
-    try {
-      const supabase = createAdminClient();
-      /**
-       * 与数据库函数参数名一致；对象键顺序固定，避免部分环境绑定错位。
-       * cast_vote(…, p_voter_id, p_voter_ip, p_work_id) — 以名称匹配为准。
-       */
-      const { data, error } = await supabase.rpc("cast_vote", {
-        p_voter_id,
-        p_voter_ip,
-        p_work_id,
-      });
+    const today = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Shanghai",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    }).format(new Date());
 
-      if (error) {
-        console.error("cast_vote RPC failed:", error);
-        const msg = String((error as { message?: string }).message ?? "");
-        const code = String((error as { code?: string }).code ?? "");
-        if (/limit_reached/i.test(msg) || /limit_reached/i.test(code)) {
-          return NextResponse.json(
-            { ok: false, reason: "limit_reached" },
-            { status: 200 }
-          );
-        }
-        if (/今日投票次数已达上限|已为该作品投过票|次数已达上限/.test(msg)) {
-          return NextResponse.json({ ok: false, reason: msg }, { status: 200 });
-        }
-        return NextResponse.json(
-          {
-            ok: false,
-            reason: "rpc_error",
-            error: msg || "投票失败，请稍后重试",
-          },
-          { status: 200 }
-        );
-      }
+    const supabase = createAdminClient();
 
-      const rpcData = normalizeRpcResult(data);
-      if (!rpcData?.ok) {
-        const rawReason =
-          typeof rpcData?.reason === "string" ? rpcData.reason : "投票失败";
-        const reason =
-          /limit_reached/i.test(rawReason) ? "limit_reached" : rawReason;
-        return NextResponse.json({ ok: false, reason }, { status: 200 });
-      }
-
-      return NextResponse.json({ ok: true });
-    } catch (rpcErr) {
-      console.error("cast_vote RPC exception:", rpcErr);
-      return NextResponse.json(
-        { ok: false, reason: "exception", error: "投票失败，请稍后重试" },
-        { status: 200 }
-      );
+    // 1) 校验作品存在
+    const { data: workRow, error: workErr } = await supabase
+      .from("works")
+      .select("id")
+      .eq("id", p_work_id)
+      .maybeSingle();
+    if (workErr) {
+      console.error("votes.route work check failed:", workErr);
+      return NextResponse.json({ error: "投票失败，请稍后重试" }, { status: 500 });
     }
+    if (!workRow) {
+      return NextResponse.json({ ok: false, reason: "作品不存在" }, { status: 200 });
+    }
+
+    // 2) 今日查票（优先 voter_client_id，兼容按 voter_ip 记 UUID 的历史数据）
+    const byClientPromise = p_voter_id
+      ? supabase
+          .from("votes")
+          .select("work_id")
+          .eq("vote_date", today)
+          .eq("voter_client_id", p_voter_id)
+      : Promise.resolve({ data: [], error: null } as {
+          data: Array<{ work_id: string }> | null;
+          error: null;
+        });
+
+    const byIpPromise = p_voter_id
+      ? supabase
+          .from("votes")
+          .select("work_id")
+          .eq("vote_date", today)
+          .eq("voter_ip", p_voter_id)
+      : Promise.resolve({ data: [], error: null } as {
+          data: Array<{ work_id: string }> | null;
+          error: null;
+        });
+
+    const [byClient, byIp] = await Promise.all([byClientPromise, byIpPromise]);
+    if (byClient.error && byIp.error) {
+      console.error("votes.route today query failed:", byClient.error, byIp.error);
+      return NextResponse.json({ error: "投票失败，请稍后重试" }, { status: 500 });
+    }
+
+    const votedToday = new Set<string>();
+    for (const row of [...(byClient.data ?? []), ...(byIp.data ?? [])]) {
+      if (row?.work_id) votedToday.add(row.work_id);
+    }
+
+    // 3) 同作品同日不可重复
+    if (votedToday.has(p_work_id)) {
+      return NextResponse.json({ ok: false, reason: "今日已为该作品投过票" }, { status: 200 });
+    }
+
+    // 4) 每日 3 票上限
+    if (votedToday.size >= 3) {
+      return NextResponse.json({ ok: false, reason: "limit_reached" }, { status: 200 });
+    }
+
+    // 5) 直接写 votes 表（不依赖 cast_vote 函数）
+    const { error: insErr } = await supabase.from("votes").insert({
+      work_id: p_work_id,
+      voter_ip: p_voter_ip,
+      voter_client_id: p_voter_id || null,
+      vote_date: today,
+    });
+    if (insErr) {
+      console.error("votes.route insert failed:", insErr);
+      return NextResponse.json({ error: "投票失败，请稍后重试" }, { status: 500 });
+    }
+
+    // 6) 回写作品总票数（兼容 works.votes_count / works.votes）
+    const { count: totalCount, error: cntErr } = await supabase
+      .from("votes")
+      .select("*", { count: "exact", head: true })
+      .eq("work_id", p_work_id);
+    if (!cntErr && typeof totalCount === "number") {
+      const nextVotes = Number(totalCount ?? 0);
+      const { error: upCountErr } = await supabase
+        .from("works")
+        .update({ votes_count: nextVotes })
+        .eq("id", p_work_id);
+      if (upCountErr) {
+        const { error: upLegacyErr } = await supabase
+          .from("works")
+          .update({ votes: nextVotes } as never)
+          .eq("id", p_work_id);
+        if (upLegacyErr) {
+          console.error("votes.route update tally failed:", upCountErr, upLegacyErr);
+        }
+      }
+    } else if (cntErr) {
+      console.error("votes.route recount failed:", cntErr);
+    }
+
+    return NextResponse.json({ ok: true } as CastVoteResult);
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "服务器错误" }, { status: 500 });
