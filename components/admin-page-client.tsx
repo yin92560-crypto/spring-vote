@@ -120,7 +120,7 @@ export function AdminPageClient({ onLogout }: AdminPageClientProps) {
     mutate: mutateStats,
   } = useSWR<AdminStats, Error>(["/api/admin/stats", adminSecret], statsFetcher, {
     dedupingInterval: 300000,
-    refreshInterval: 300000,
+    refreshInterval: 30000,
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
   });
