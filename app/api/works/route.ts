@@ -14,20 +14,47 @@ export const dynamic = "force-dynamic";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+async function fetchAllVoteWorkIds(
+  supabase: ReturnType<typeof createAdminClient>
+): Promise<string[]> {
+  const pageSize = 1000;
+  let from = 0;
+  const all: string[] = [];
+  while (true) {
+    const to = from + pageSize - 1;
+    const { data, error } = await supabase
+      .from("votes")
+      .select("work_id")
+      .range(from, to);
+    if (error) {
+      throw error;
+    }
+    const rows = data ?? [];
+    for (const row of rows) {
+      const workId = String((row as { work_id?: unknown }).work_id ?? "");
+      if (workId) all.push(workId);
+    }
+    if (rows.length < pageSize) break;
+    from += pageSize;
+  }
+  return all;
+}
+
 async function fetchVoteCountsMap(
   supabase: ReturnType<typeof createAdminClient>,
   validWorkIds: Set<string>
 ): Promise<Map<string, number>> {
-  const { data: votesRows, error } = await supabase.from("votes").select("work_id");
-  if (error) {
+  let voteWorkIds: string[] = [];
+  try {
+    voteWorkIds = await fetchAllVoteWorkIds(supabase);
+  } catch (error) {
     console.error("fetch votes for count failed:", error);
     return new Map();
   }
   const counts = new Map<string, number>();
   let invalidWorkIdCount = 0;
-  for (const row of votesRows ?? []) {
-    const workId = String((row as { work_id?: unknown }).work_id ?? "");
-    if (!workId || !validWorkIds.has(workId)) {
+  for (const workId of voteWorkIds) {
+    if (!validWorkIds.has(workId)) {
       invalidWorkIdCount += 1;
       continue;
     }
@@ -94,6 +121,7 @@ export async function GET(request: Request) {
           authorName: String((w as { author_name?: unknown }).author_name ?? ""),
           imageUrl: normalizeWorkImageUrl(String((w as { image_url?: unknown }).image_url ?? "")),
           votes: voteCounts.get(String((w as { id?: unknown }).id ?? "")) ?? 0,
+          actualVotes: voteCounts.get(String((w as { id?: unknown }).id ?? "")) ?? 0,
           createdAt: String((w as { created_at?: unknown }).created_at ?? ""),
         })) as Work[]
       );
@@ -137,6 +165,7 @@ export async function GET(request: Request) {
         authorName: String((w as { author_name?: unknown }).author_name ?? ""),
         imageUrl: normalizeWorkImageUrl(String((w as { image_url?: unknown }).image_url ?? "")),
         votes: voteCounts.get(String((w as { id?: unknown }).id ?? "")) ?? 0,
+        actualVotes: voteCounts.get(String((w as { id?: unknown }).id ?? "")) ?? 0,
         createdAt: String((w as { created_at?: unknown }).created_at ?? ""),
       })) as Work[]
     );
