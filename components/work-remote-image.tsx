@@ -8,6 +8,10 @@ function cx(...parts: (string | false | undefined | null)[]) {
 }
 
 const ASSETS_PUBLIC_ORIGIN = "https://assets.huaqintp.top";
+const LEGACY_IMAGE_ORIGINS = [
+  "https://pub-c32b84ede21d4770b966e9e4718d0a0d.r2.dev",
+  ASSETS_PUBLIC_ORIGIN,
+];
 
 function toAssetsPublicUrl(raw: string | null | undefined): string {
   const t = (raw ?? "").trim();
@@ -25,6 +29,24 @@ function toAssetsPublicUrl(raw: string | null | undefined): string {
     return `${ASSETS_PUBLIC_ORIGIN}/${path}`;
   } catch {
     return t;
+  }
+}
+
+function buildFallbackCandidates(primaryUrl: string): string[] {
+  if (!primaryUrl) return [];
+  try {
+    const u = new URL(primaryUrl);
+    const candidates = [u.toString()];
+    const pathAndQuery = `${u.pathname}${u.search}`;
+    for (const origin of LEGACY_IMAGE_ORIGINS) {
+      const normalized = `${origin.replace(/\/+$/, "")}${pathAndQuery}`;
+      if (!candidates.includes(normalized)) {
+        candidates.push(normalized);
+      }
+    }
+    return candidates;
+  } catch {
+    return [primaryUrl];
   }
 }
 
@@ -64,15 +86,18 @@ export function WorkRemoteImage({
   sizes = DEFAULT_FILL_SIZES,
 }: Props) {
   const primaryUrl = toAssetsPublicUrl(src);
+  const candidateUrls = buildFallbackCandidates(primaryUrl);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [loaded, setLoaded] = useState(false);
   const [showSlowHint, setShowSlowHint] = useState(false);
 
   useEffect(() => {
+    setCurrentIndex(0);
     setLoaded(false);
     setShowSlowHint(false);
   }, [primaryUrl]);
 
-  const displaySrc = primaryUrl.length > 0 ? primaryUrl : "";
+  const displaySrc = candidateUrls[currentIndex] ?? "";
   const prioritized = typeof index === "number" && index < 4;
   const effectiveLoading: "lazy" | "eager" = prioritized ? "eager" : loading;
 
@@ -85,8 +110,12 @@ export function WorkRemoteImage({
   }, [displaySrc, loaded]);
 
   const onImgError = useCallback(() => {
-    // 保持同一 URL，不做任何域名切换；继续停留在骨架屏。
-  }, []);
+    setLoaded(false);
+    setCurrentIndex((prev) => {
+      if (prev + 1 < candidateUrls.length) return prev + 1;
+      return prev;
+    });
+  }, [candidateUrls.length]);
 
   const showPlaceholder = Boolean(primaryUrl) && !loaded;
   const fill = layout === "fill";

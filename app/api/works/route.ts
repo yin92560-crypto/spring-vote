@@ -14,6 +14,31 @@ export const dynamic = "force-dynamic";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
+async function fetchVoteCountsMap(
+  supabase: ReturnType<typeof createAdminClient>,
+  validWorkIds: Set<string>
+): Promise<Map<string, number>> {
+  const { data: votesRows, error } = await supabase.from("votes").select("work_id");
+  if (error) {
+    console.error("fetch votes for count failed:", error);
+    return new Map();
+  }
+  const counts = new Map<string, number>();
+  let invalidWorkIdCount = 0;
+  for (const row of votesRows ?? []) {
+    const workId = String((row as { work_id?: unknown }).work_id ?? "");
+    if (!workId || !validWorkIds.has(workId)) {
+      invalidWorkIdCount += 1;
+      continue;
+    }
+    counts.set(workId, (counts.get(workId) ?? 0) + 1);
+  }
+  if (invalidWorkIdCount > 0) {
+    console.warn("votes rows without matching works.id:", invalidWorkIdCount);
+  }
+  return counts;
+}
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
@@ -50,6 +75,10 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: "搜索失败，请稍后重试" }, { status: 500 });
       }
       const rows = Array.isArray(allRows) ? allRows : [];
+      const voteCounts = await fetchVoteCountsMap(
+        supabase,
+        new Set(rows.map((w) => String((w as { id?: unknown }).id ?? "")))
+      );
       const safeKeyword = searchKeyword.slice(0, 40).toLowerCase();
       const filtered = rows.filter((w) => {
         const title = String((w as { work_title?: unknown; title?: unknown }).work_title ?? (w as { title?: unknown }).title ?? "").toLowerCase();
@@ -64,7 +93,7 @@ export async function GET(request: Request) {
           workTitle: String((w as { work_title?: unknown; title?: unknown }).work_title ?? (w as { title?: unknown }).title ?? ""),
           authorName: String((w as { author_name?: unknown }).author_name ?? ""),
           imageUrl: normalizeWorkImageUrl(String((w as { image_url?: unknown }).image_url ?? "")),
-          votes: Number((w as { votes_count?: unknown; votes?: unknown }).votes_count ?? (w as { votes?: unknown }).votes ?? 0),
+          votes: voteCounts.get(String((w as { id?: unknown }).id ?? "")) ?? 0,
           createdAt: String((w as { created_at?: unknown }).created_at ?? ""),
         })) as Work[]
       );
@@ -96,6 +125,10 @@ export async function GET(request: Request) {
     }
     const workRows = Array.isArray(data) ? data : [];
     console.log("Final Data Count:", workRows.length);
+    const voteCounts = await fetchVoteCountsMap(
+      supabase,
+      new Set(workRows.map((w) => String((w as { id?: unknown }).id ?? "")))
+    );
     const list = addDisplayNumbers(
       workRows.map((w) => ({
         id: String((w as { id?: unknown }).id ?? ""),
@@ -103,7 +136,7 @@ export async function GET(request: Request) {
         workTitle: String((w as { work_title?: unknown; title?: unknown }).work_title ?? (w as { title?: unknown }).title ?? ""),
         authorName: String((w as { author_name?: unknown }).author_name ?? ""),
         imageUrl: normalizeWorkImageUrl(String((w as { image_url?: unknown }).image_url ?? "")),
-        votes: Number((w as { votes_count?: unknown; votes?: unknown }).votes_count ?? (w as { votes?: unknown }).votes ?? 0),
+        votes: voteCounts.get(String((w as { id?: unknown }).id ?? "")) ?? 0,
         createdAt: String((w as { created_at?: unknown }).created_at ?? ""),
       })) as Work[]
     );
