@@ -1,16 +1,8 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import {
-  getVoteRedis,
-  keyDirtyWorkDays,
-  keyFlushLock,
-  keyWorkDayVotes,
-  parseWorkDayMember,
-} from "@/lib/vote-redis";
 
 export const dynamic = "force-dynamic";
-const WORKS_LIST_CACHE_KEY = "works:list:v1";
-const RANK_LIST_CACHE_KEY = "rank:list:v1";
+// Redis 同步已禁用：该路由保留为 no-op，避免任何 Upstash 请求。
 
 /** 汇总票数写在 public.works 上（标准列 votes_count；历史库可能为 votes），与 lib/supabase-works-columns 探测顺序一致 */
 
@@ -41,78 +33,11 @@ async function runFlush(request: Request): Promise<NextResponse<FlushResult>> {
       }
     }
 
-    const redis = getVoteRedis();
-    const lock = await redis.set(keyFlushLock(), Date.now(), { nx: true, ex: 25 });
-    if (lock !== "OK") {
-      return NextResponse.json({ ok: true, skipped: true, details: "已有 flush 正在执行" });
-    }
-
-    const dirtyMembers = (await redis.smembers<string[]>(keyDirtyWorkDays())) ?? [];
-    if (dirtyMembers.length === 0) {
-      await redis.del(keyFlushLock());
-      return NextResponse.json({ ok: true, flushed: 0, details: "没有待回写投票" });
-    }
-
-    const supabase = createAdminClient();
-    let flushed = 0;
-    const perWorkErrors: Array<{ member: string; reason: string }> = [];
-
-    for (const member of dirtyMembers) {
-      try {
-        const parsed = parseWorkDayMember(member);
-        if (!parsed) {
-          perWorkErrors.push({ member, reason: "dirty member 格式非法" });
-          continue;
-        }
-        const counterKey = keyWorkDayVotes(parsed.day, parsed.workId);
-        const count = Number((await redis.get<number>(counterKey)) ?? 0);
-        if (count <= 0) {
-          await redis.srem(keyDirtyWorkDays(), member);
-          continue;
-        }
-
-        const supabaseUrlPreview = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? "").slice(0, 15);
-        console.log("[votes.flush] SUPABASE_URL preview:", supabaseUrlPreview);
-        const { data: flushResult, error } = await supabase.rpc("apply_redis_vote_flush", {
-          p_work_id: parsed.workId,
-          p_vote_date: parsed.day,
-          p_count: count,
-        });
-        if (error) {
-          const msg = typeof error.message === "string" ? error.message : "rpc failed";
-          console.error("flush votes failed:", parsed.workId, parsed.day, error);
-          perWorkErrors.push({ member, reason: msg });
-          continue;
-        }
-        const fr = flushResult as { ok?: boolean; reason?: string } | null;
-        if (!fr?.ok) {
-          const reason = typeof fr?.reason === "string" ? fr.reason : "apply_redis_vote_flush rejected";
-          console.error("flush votes rpc not ok:", parsed.workId, parsed.day, flushResult);
-          perWorkErrors.push({ member, reason });
-          continue;
-        }
-
-        flushed += count;
-        await redis.del(counterKey);
-        await redis.srem(keyDirtyWorkDays(), member);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error("flush votes unexpected member error:", member, err);
-        perWorkErrors.push({ member, reason: msg });
-      }
-    }
-
-    await redis.del(WORKS_LIST_CACHE_KEY);
-    await redis.del(RANK_LIST_CACHE_KEY);
-    await redis.del(keyFlushLock());
+    void createAdminClient();
     return NextResponse.json({
       ok: true,
-      flushed,
-      details: {
-        totalMembers: dirtyMembers.length,
-        failedMembers: perWorkErrors.length,
-        errors: perWorkErrors,
-      },
+      skipped: true,
+      details: "redis disabled; flush route is no-op",
     });
   } catch (e) {
     console.error(e);

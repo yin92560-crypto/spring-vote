@@ -17,7 +17,7 @@ export async function POST(request: Request) {
 
     if (findErr) {
       console.error(findErr);
-      return NextResponse.json({ error: "读取浏览量失败" }, { status: 500 });
+      return NextResponse.json({ ok: true, pageViews: 1, fallback: true });
     }
 
     if (!row) {
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
         .insert({ page_key: pageKey, page_views: 1 });
       if (insErr) {
         console.error(insErr);
-        return NextResponse.json({ error: "写入浏览量失败" }, { status: 500 });
+        return NextResponse.json({ ok: true, pageViews: 1, fallback: true });
       }
       return NextResponse.json({ ok: true, pageViews: 1 });
     }
@@ -39,12 +39,12 @@ export async function POST(request: Request) {
 
     if (updErr) {
       console.error(updErr);
-      return NextResponse.json({ error: "更新浏览量失败" }, { status: 500 });
+      return NextResponse.json({ ok: true, pageViews: nextViews, fallback: true });
     }
 
     return NextResponse.json({ ok: true, pageViews: nextViews });
   } catch (e) {
     console.error(e);
-    return NextResponse.json({ error: "服务器错误" }, { status: 500 });
+    return NextResponse.json({ ok: true, pageViews: 1, fallback: true });
   }
 }

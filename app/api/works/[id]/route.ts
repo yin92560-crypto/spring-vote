@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getVoteRedis } from "@/lib/vote-redis";
 
 export const dynamic = "force-dynamic";
-const WORKS_LIST_CACHE_KEY = "works:list:v1";
-const RANK_LIST_CACHE_KEY = "rank:list:v1";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -47,14 +44,6 @@ export async function PATCH(request: Request, context: Params) {
       console.error(error);
       return NextResponse.json({ error: "更新作品失败" }, { status: 500 });
     }
-    try {
-      const redis = getVoteRedis();
-      await redis.del(WORKS_LIST_CACHE_KEY);
-      await redis.del(RANK_LIST_CACHE_KEY);
-    } catch (cacheErr) {
-      console.error("invalidate works cache failed:", cacheErr);
-    }
-
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error(e);
@@ -100,14 +89,6 @@ export async function DELETE(request: Request, context: Params) {
       console.error(dErr);
       return NextResponse.json({ error: "删除作品失败" }, { status: 500 });
     }
-    try {
-      const redis = getVoteRedis();
-      await redis.del(WORKS_LIST_CACHE_KEY);
-      await redis.del(RANK_LIST_CACHE_KEY);
-    } catch (cacheErr) {
-      console.error("invalidate works cache failed:", cacheErr);
-    }
-
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error(e);

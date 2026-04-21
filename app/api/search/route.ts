@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { getClientIp } from "@/lib/get-client-ip";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { addDisplayNumbers } from "@/lib/work-display";
-import { keyDailyUserVotes, getVoteRedis, voteUserKey } from "@/lib/vote-redis";
 import { normalizeWorkImageUrl } from "@/lib/work-image-url";
 import {
   fetchWorksTableWithOr,
@@ -28,8 +26,6 @@ export async function GET(request: Request) {
     const limit = Math.min(Math.max(Number(url.searchParams.get("limit") ?? 20) || 20, 1), 20);
     const safeKeyword = keyword.slice(0, 40).replace(/[%_]/g, "");
 
-    const ip = getClientIp(request.headers);
-    const ua = request.headers.get("user-agent") ?? "";
     const headerVoterId = request.headers.get("x-voter-id")?.trim() ?? "";
     const voterId = UUID_RE.test(headerVoterId) ? headerVoterId : "";
     const today = new Intl.DateTimeFormat("en-CA", {
@@ -70,22 +66,12 @@ export async function GET(request: Request) {
       })),
     ) as Work[];
 
-    let redis: ReturnType<typeof getVoteRedis> | null = null;
-    try {
-      redis = getVoteRedis();
-    } catch (redisInitErr) {
-      console.error("init vote redis failed in search route:", redisInitErr);
-    }
-    const userKey = voterId || voteUserKey(ip, ua);
-    const usedRedis = redis
-      ? Number((await redis.get<number>(keyDailyUserVotes(today, userKey))) ?? 0)
-      : 0;
-    let used = usedRedis;
+    let used = 0;
     let votedWorkIds: string[] = [];
     if (voterId) {
       const db = await fetchTodayVoterUsageFromDb(supabase, voterId, today);
       votedWorkIds = db.votedWorkIds;
-      used = Math.max(usedRedis, db.usedDistinctWorks);
+      used = db.usedDistinctWorks;
     }
     const remaining = Math.max(0, DAILY_VOTE_LIMIT - used);
 
