@@ -198,14 +198,21 @@ export async function GET(request: Request) {
       dailyVoteLimit: DAILY_VOTE_LIMIT,
       votedWorkIds,
     });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    if (/relation .*works.* does not exist/i.test(msg)) {
-      console.error("[works.route] relation works missing:", msg);
-    } else {
-      console.error("[works.route] unexpected error:", e);
-    }
-    return NextResponse.json({ error: "服务器错误" }, { status: 500 });
+  } catch (error) {
+    console.error("Full Error Detail:", error);
+    const errObj = error as {
+      message?: string;
+      code?: string;
+      hint?: string;
+    };
+    return NextResponse.json(
+      {
+        msg: errObj?.message ?? String(error),
+        code: errObj?.code ?? null,
+        hint: errObj?.hint ?? null,
+      },
+      { status: 500 }
+    );
   }
 }
 
