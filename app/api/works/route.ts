@@ -10,7 +10,6 @@ import {
 import {
   fetchWorksTableAll,
   fetchWorksTableWithOr,
-  votesFromRow,
 } from "@/lib/supabase-works-columns";
 import { DAILY_VOTE_LIMIT } from "@/lib/vote-config";
 import { fetchTodayVoterUsageFromDb } from "@/lib/today-voter-usage";
@@ -18,6 +17,43 @@ import { fetchTodayVoterUsageFromDb } from "@/lib/today-voter-usage";
 export const dynamic = "force-dynamic";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+async function attachRealtimeVotesFromVotesTable(
+  supabase: ReturnType<typeof createAdminClient>,
+  rows: Array<{
+    id: string;
+    title: string;
+    work_title?: string | null;
+    author_name?: string | null;
+    image_url: string;
+    created_at: string;
+  }>
+) {
+  const mapped = rows.map((w) => ({
+    id: w.id as string,
+    title: w.title as string,
+    workTitle: (w.work_title as string | null) ?? (w.title as string),
+    authorName: (w.author_name as string | null) ?? "",
+    imageUrl: normalizeWorkImageUrl(w.image_url as string),
+    votes: 0,
+    createdAt: w.created_at as string,
+  }));
+
+  // 实时票数：每个作品直接从 votes 表 count(*)，不读取 works 汇总列。
+  for (const w of mapped) {
+    const { count, error } = await supabase
+      .from("votes")
+      .select("*", { count: "exact", head: true })
+      .eq("work_id", w.id);
+    if (error) {
+      console.error("realtime votes count failed:", w.id, error);
+      w.votes = 0;
+    } else {
+      w.votes = Number(count ?? 0);
+    }
+  }
+  return mapped;
+}
 
 export async function GET(request: Request) {
   try {
@@ -65,15 +101,10 @@ export async function GET(request: Request) {
       const limited = workRows.length > searchLimit;
 
       const list = addDisplayNumbers(
-        workRows.slice(0, searchLimit).map((w) => ({
-          id: w.id as string,
-          title: w.title as string,
-          workTitle: (w.work_title as string | null) ?? (w.title as string),
-          authorName: (w.author_name as string | null) ?? "",
-          imageUrl: normalizeWorkImageUrl(w.image_url as string),
-          votes: votesFromRow(w, tallyColumn),
-          createdAt: w.created_at as string,
-        })),
+        await attachRealtimeVotesFromVotesTable(
+          supabase,
+          workRows.slice(0, searchLimit)
+        ),
       );
 
       let used = 0;
@@ -105,15 +136,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: message, detail: wErr }, { status: 500 });
     }
     const list = addDisplayNumbers(
-      workRows.map((w) => ({
-        id: w.id as string,
-        title: w.title as string,
-        workTitle: (w.work_title as string | null) ?? (w.title as string),
-        authorName: (w.author_name as string | null) ?? "",
-        imageUrl: normalizeWorkImageUrl(w.image_url as string),
-        votes: votesFromRow(w, tallyColumn),
-        createdAt: w.created_at as string,
-      }))
+      await attachRealtimeVotesFromVotesTable(supabase, workRows)
     );
 
     // 仅基于 Supabase 今日投票记录计算剩余票数。
