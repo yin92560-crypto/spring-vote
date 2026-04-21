@@ -1,5 +1,4 @@
 import { getR2PublicOrigin } from "@/lib/r2";
-const NEW_SUPABASE_HOST = "br-holy-fawn-06727103.supabase.aidap-global.cn-beijing.volces.com";
 
 /** @deprecated 使用 {@link getR2PublicOrigin}；保留别名供旧代码引用 */
 export function getR2PublicBaseUrl(): string {
@@ -34,15 +33,6 @@ function applyVolcImageCompression(u: URL): void {
   u.searchParams.set("x-tos-process", "image/resize,w_500/quality,q_75");
 }
 
-function forceReplaceLegacySupabaseHost(u: URL): void {
-  if (!/supabase\.co$/i.test(u.hostname)) return;
-  const before = u.href;
-  u.hostname = NEW_SUPABASE_HOST;
-  u.port = "";
-  // 临时排查：确认前端最终渲染地址
-  console.log("[work-image-url] remap legacy url:", before, "=>", u.href);
-}
-
 /**
  * 将数据库中的 `image_url` 规范为可请求的绝对 https 地址。
  * - 已是 `http(s)://` 的经 `URL` 校验后返回 `href`
@@ -60,7 +50,6 @@ export function normalizeWorkImageUrl(raw: string | null | undefined): string {
       u.hash = "";
       u.pathname = collapseDuplicateWorksPath(u.pathname);
       ensureHttpsUrl(u);
-      forceReplaceLegacySupabaseHost(u);
       applyVolcImageCompression(u);
       return u.href;
     } catch {
@@ -73,7 +62,6 @@ export function normalizeWorkImageUrl(raw: string | null | undefined): string {
       const u = new URL(`https:${t}`);
       u.pathname = collapseDuplicateWorksPath(u.pathname);
       ensureHttpsUrl(u);
-      forceReplaceLegacySupabaseHost(u);
       applyVolcImageCompression(u);
       return u.href;
     } catch {

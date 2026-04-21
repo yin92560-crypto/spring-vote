@@ -13,18 +13,6 @@ type LegacyWork = {
   votes?: number | null;
 };
 
-function remapImageUrlToNewDomain(raw: string, newBaseUrl: string): string {
-  const t = raw.trim();
-  if (!t) return t;
-  try {
-    const src = new URL(t);
-    const base = new URL(newBaseUrl);
-    return `${base.origin}${src.pathname}${src.search}`;
-  } catch {
-    return t;
-  }
-}
-
 function loadEnv(filePath: string) {
   const raw = readFileSync(filePath, "utf8");
   for (const line of raw.split(/\r?\n/)) {
@@ -96,6 +84,7 @@ async function run() {
     console.log("No legacy works found.");
     return;
   }
+  console.log("First legacy image_url:", allWorks[0]?.image_url ?? "");
 
   let migrated = 0;
   const batchSize = 200;
@@ -104,10 +93,8 @@ async function run() {
       id: w.id,
       title: (w.work_title ?? w.title ?? "").trim() || "未命名作品",
       author: (w.author_name ?? w.author ?? "").trim(),
-      image_url: remapImageUrlToNewDomain(
-        (w.image_url ?? "").trim(),
-        newUrl
-      ),
+      // 保留 Cloudflare 原始图片链接，不做域名替换。
+      image_url: (w.image_url ?? "").trim(),
       votes_count: keepOldVotes ? Number(w.votes_count ?? w.votes ?? 0) : 0,
     }));
 
