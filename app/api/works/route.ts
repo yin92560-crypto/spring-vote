@@ -10,6 +10,8 @@ import {
 import {
   fetchWorksTableAll,
   fetchWorksTableWithOr,
+  type WorksListRow,
+  type WorksTallyColumn,
 } from "@/lib/supabase-works-columns";
 import { DAILY_VOTE_LIMIT } from "@/lib/vote-config";
 import { fetchTodayVoterUsageFromDb } from "@/lib/today-voter-usage";
@@ -123,8 +125,8 @@ export async function GET(request: Request) {
         votedWorkIds,
       });
     }
-    let workRows;
-    let tallyColumn;
+    let workRows: WorksListRow[] = [];
+    let tallyColumn: WorksTallyColumn | null = null;
     try {
       const r = await fetchWorksTableAll(supabase);
       workRows = r.rows;
