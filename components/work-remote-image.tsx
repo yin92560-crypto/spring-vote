@@ -53,7 +53,7 @@ function buildFallbackCandidates(primaryUrl: string): string[] {
 type Props = {
   src: string | null | undefined;
   alt: string;
-  /** 列表索引：前 4 张使用 priority 优先加载 */
+  /** 兼容保留：不再用于首屏预加载策略 */
   index?: number;
   /** 外层容器，默认铺满父级（父级需为 `relative` 且给出高度） */
   className?: string;
@@ -98,8 +98,8 @@ export function WorkRemoteImage({
   }, [primaryUrl]);
 
   const displaySrc = candidateUrls[currentIndex] ?? "";
-  const prioritized = typeof index === "number" && index < 4;
-  const effectiveLoading: "lazy" | "eager" = prioritized ? "eager" : loading;
+  void index;
+  const effectiveLoading: "lazy" | "eager" = "lazy";
 
   useEffect(() => {
     if (!displaySrc || loaded) return;
@@ -161,7 +161,7 @@ export function WorkRemoteImage({
           alt={alt}
           fill
           unoptimized
-          priority={prioritized}
+          priority={false}
           loading={effectiveLoading}
           sizes={sizes}
           className={cx(
@@ -183,7 +183,7 @@ export function WorkRemoteImage({
           width={2400}
           height={1800}
           unoptimized
-          priority={prioritized}
+          priority={false}
           loading={effectiveLoading}
           sizes="(max-width: 768px) 100vw, min(1400px, 100vw)"
           className={cx(
