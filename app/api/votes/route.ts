@@ -75,13 +75,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, reason: "作品不存在" }, { status: 200 });
     }
 
-    // 2) 今日查票（优先 voter_client_id，兼容按 voter_ip 记 UUID 的历史数据）
+    // 2) 今日查票（兼容 voter_client_id / voter_id / voter_ip 三种库结构）
     const byClientPromise = p_voter_id
       ? supabase
           .from("votes")
           .select("work_id")
           .eq("vote_date", today)
           .eq("voter_client_id", p_voter_id)
+      : Promise.resolve({ data: [], error: null } as {
+          data: Array<{ work_id: string }> | null;
+          error: null;
+        });
+
+    const byUserIdPromise = p_voter_id
+      ? supabase
+          .from("votes")
+          .select("work_id")
+          .eq("vote_date", today)
+          .eq("voter_id", p_voter_id)
       : Promise.resolve({ data: [], error: null } as {
           data: Array<{ work_id: string }> | null;
           error: null;
@@ -98,14 +109,27 @@ export async function POST(request: Request) {
           error: null;
         });
 
-    const [byClient, byIp] = await Promise.all([byClientPromise, byIpPromise]);
-    if (byClient.error && byIp.error) {
-      console.error("votes.route today query failed:", byClient.error, byIp.error);
+    const [byClient, byUserId, byIp] = await Promise.all([
+      byClientPromise,
+      byUserIdPromise,
+      byIpPromise,
+    ]);
+    if (byClient.error && byUserId.error && byIp.error) {
+      console.error(
+        "votes.route today query failed:",
+        byClient.error,
+        byUserId.error,
+        byIp.error
+      );
       return NextResponse.json({ error: "投票失败，请稍后重试" }, { status: 500 });
     }
 
     const votedToday = new Set<string>();
-    for (const row of [...(byClient.data ?? []), ...(byIp.data ?? [])]) {
+    for (const row of [
+      ...(byClient.data ?? []),
+      ...(byUserId.data ?? []),
+      ...(byIp.data ?? []),
+    ]) {
       if (row?.work_id) votedToday.add(row.work_id);
     }
 
@@ -119,15 +143,38 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, reason: "limit_reached" }, { status: 200 });
     }
 
-    // 5) 直接写 votes 表（不依赖 cast_vote 函数）
-    const { error: insErr } = await supabase.from("votes").insert({
-      work_id: p_work_id,
-      voter_ip: p_voter_ip,
-      voter_client_id: p_voter_id || null,
-      vote_date: today,
-    });
-    if (insErr) {
-      console.error("votes.route insert failed:", insErr);
+    // 5) 直接写 votes 表（按不同库结构顺序重试）
+    const insertPayloads = [
+      {
+        work_id: p_work_id,
+        voter_ip: p_voter_ip,
+        voter_client_id: p_voter_id || null,
+        vote_date: today,
+      },
+      {
+        work_id: p_work_id,
+        voter_id: p_voter_id || p_voter_ip,
+        vote_date: today,
+      },
+      {
+        work_id: p_work_id,
+        voter_ip: p_voter_id || p_voter_ip,
+        vote_date: today,
+      },
+    ] as const;
+
+    let insertOk = false;
+    let lastInsertErr: unknown = null;
+    for (const payload of insertPayloads) {
+      const { error: insErr } = await supabase.from("votes").insert(payload as never);
+      if (!insErr) {
+        insertOk = true;
+        break;
+      }
+      lastInsertErr = insErr;
+    }
+    if (!insertOk) {
+      console.error("votes.route insert failed:", lastInsertErr);
       return NextResponse.json({ error: "投票失败，请稍后重试" }, { status: 500 });
     }
 

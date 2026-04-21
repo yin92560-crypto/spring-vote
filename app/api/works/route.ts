@@ -197,7 +197,12 @@ export async function GET(request: Request) {
       votedWorkIds,
     });
   } catch (e) {
-    console.error(e);
+    const msg = e instanceof Error ? e.message : String(e);
+    if (/relation .*works.* does not exist/i.test(msg)) {
+      console.error("[works.route] relation works missing:", msg);
+    } else {
+      console.error("[works.route] unexpected error:", e);
+    }
     return NextResponse.json({ error: "服务器错误" }, { status: 500 });
   }
 }
