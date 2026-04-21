@@ -27,6 +27,12 @@ function ensureHttpsUrl(u: URL): void {
   }
 }
 
+function applyVolcImageCompression(u: URL): void {
+  if (!/\.volces\.com$/i.test(u.hostname)) return;
+  if (u.searchParams.has("x-tos-process")) return;
+  u.searchParams.set("x-tos-process", "image/resize,w_500/quality,q_75");
+}
+
 /**
  * 将数据库中的 `image_url` 规范为可请求的绝对 https 地址。
  * - 已是 `http(s)://` 的经 `URL` 校验后返回 `href`
@@ -44,6 +50,7 @@ export function normalizeWorkImageUrl(raw: string | null | undefined): string {
       u.hash = "";
       u.pathname = collapseDuplicateWorksPath(u.pathname);
       ensureHttpsUrl(u);
+      applyVolcImageCompression(u);
       return u.href;
     } catch {
       return "";
@@ -55,6 +62,7 @@ export function normalizeWorkImageUrl(raw: string | null | undefined): string {
       const u = new URL(`https:${t}`);
       u.pathname = collapseDuplicateWorksPath(u.pathname);
       ensureHttpsUrl(u);
+      applyVolcImageCompression(u);
       return u.href;
     } catch {
       return "";
@@ -66,6 +74,7 @@ export function normalizeWorkImageUrl(raw: string | null | undefined): string {
   try {
     const u = new URL(path, base);
     ensureHttpsUrl(u);
+    applyVolcImageCompression(u);
     return u.href;
   } catch {
     return "";
