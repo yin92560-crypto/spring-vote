@@ -348,15 +348,6 @@ function HomePageContent() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    void fetch("/api/stats/pv", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ pageKey: "home" }),
-    });
-  }, []);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
     const timer = window.setInterval(() => {
       // 静默触发：不展示任何 UI 提示，失败仅吞掉
       void fetch("/api/votes/flush").catch(() => {

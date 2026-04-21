@@ -14,17 +14,17 @@ function toAssetsPublicUrl(raw: string | null | undefined): string {
   if (!t) return "";
   try {
     if (/^https?:\/\//i.test(t)) {
+      // 远程 URL 直接使用原地址，避免错误域名改写导致图片加载失败。
       const u = new URL(t);
-      return `${ASSETS_PUBLIC_ORIGIN}${u.pathname}${u.search}`;
+      return u.toString();
     }
     if (t.startsWith("//")) {
-      const u = new URL(`https:${t}`);
-      return `${ASSETS_PUBLIC_ORIGIN}${u.pathname}${u.search}`;
+      return `https:${t}`;
     }
     const path = t.replace(/^\/+/, "");
     return `${ASSETS_PUBLIC_ORIGIN}/${path}`;
   } catch {
-    return "";
+    return t;
   }
 }
 
