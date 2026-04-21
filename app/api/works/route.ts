@@ -138,7 +138,9 @@ export async function GET(request: Request) {
         tallyColumn = r.tallyColumn;
       } catch (wErr) {
         console.error(wErr);
-        return NextResponse.json({ error: "读取作品失败" }, { status: 500 });
+        const message =
+          wErr instanceof Error ? wErr.message : String(wErr ?? "读取作品失败");
+        return NextResponse.json({ error: message, detail: wErr }, { status: 500 });
       }
 
       list = addDisplayNumbers(
