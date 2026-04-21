@@ -135,6 +135,22 @@ export async function GET(request: Request) {
         wErr instanceof Error ? wErr.message : String(wErr ?? "读取作品失败");
       return NextResponse.json({ error: message, detail: wErr }, { status: 500 });
     }
+    if (!Array.isArray(workRows)) {
+      workRows = [];
+    }
+    if (workRows.length === 0) {
+      const { data: rawRows, error: rawErr } = await supabase
+        .from("works")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (rawErr) {
+        console.error("fallback select(*) failed:", rawErr);
+      } else if (Array.isArray(rawRows) && rawRows.length > 0) {
+        workRows = rawRows as typeof workRows;
+      }
+    }
+    console.log("Total works found:", workRows.length);
+
     const list = addDisplayNumbers(
       await attachRealtimeVotesFromVotesTable(supabase, workRows)
     );
