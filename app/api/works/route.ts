@@ -91,12 +91,19 @@ function buildWorksPayload(
   });
 
   const withDisplayNo = addDisplayNumbers(baseRows);
-  return withDisplayNo.map((w, index) => ({
+  const withFields = withDisplayNo.map((w, index) => ({
     ...w,
     displayNo: w.displayNo || `No.${String(index + 1).padStart(3, "0")}`,
     vote_count: w.votes,
     actualVotes: w.votes,
   }));
+  // 首页排序：编号越大越靠前（如 No.700+ 在最前）。
+  return withFields.sort((a, b) => {
+    const aNo = Number(String(a.displayNo).replace(/\D/g, "")) || 0;
+    const bNo = Number(String(b.displayNo).replace(/\D/g, "")) || 0;
+    if (bNo !== aNo) return bNo - aNo;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 }
 
 export async function GET(request: Request) {
