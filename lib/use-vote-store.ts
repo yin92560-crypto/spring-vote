@@ -32,10 +32,13 @@ export function useVoteHomeState(): {
   const refresh = useCallback(async () => {
     const voterId = getOrCreateClientVoterId();
     for (let attempt = 1; attempt <= 3; attempt += 1) {
+      const controller = new AbortController();
+      const timeoutId = window.setTimeout(() => controller.abort(), 8000);
       try {
         const r = await fetch("/api/works", {
           cache: "no-store",
           headers: voterId ? { "x-voter-id": voterId } : undefined,
+          signal: controller.signal,
         });
         if (!r.ok) {
           throw new Error(`HTTP ${r.status} ${r.statusText}`);
@@ -58,10 +61,14 @@ export function useVoteHomeState(): {
             ? j.votedWorkIds.filter((id) => typeof id === "string")
             : []
         );
+        window.clearTimeout(timeoutId);
         return;
       } catch (err) {
+        window.clearTimeout(timeoutId);
         if (attempt >= 3) {
           console.error("useVoteHomeState: /api/works failed after retries", err);
+          setWorks([]);
+          setVotedWorkIdsFromApi([]);
           return;
         }
         await sleep(350 * attempt);
@@ -73,8 +80,11 @@ export function useVoteHomeState(): {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      await refresh();
-      if (!cancelled) setLoading(false);
+      try {
+        await refresh();
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     const on = () => {
       void refresh();
@@ -110,24 +120,38 @@ export function useWorksList(): {
 
   const refresh = useCallback(async () => {
     const voterId = getOrCreateClientVoterId();
-    const r = await fetch("/api/works", {
-      cache: "no-store",
-      headers: voterId ? { "x-voter-id": voterId } : undefined,
-    });
-    if (!r.ok) {
-      console.error("useWorksList: /api/works failed", r.status, r.statusText);
-      return;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+    try {
+      const r = await fetch("/api/works", {
+        cache: "no-store",
+        headers: voterId ? { "x-voter-id": voterId } : undefined,
+        signal: controller.signal,
+      });
+      if (!r.ok) {
+        console.error("useWorksList: /api/works failed", r.status, r.statusText);
+        setWorks([]);
+        return;
+      }
+      const j = (await r.json()) as { works: Work[] };
+      if (Array.isArray(j.works)) setWorks(j.works);
+    } catch (err) {
+      console.error("useWorksList: /api/works request failed", err);
+      setWorks([]);
+    } finally {
+      window.clearTimeout(timeoutId);
     }
-    const j = (await r.json()) as { works: Work[] };
-    if (Array.isArray(j.works)) setWorks(j.works);
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      await refresh();
-      if (!cancelled) setLoading(false);
+      try {
+        await refresh();
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     })();
     const on = () => {
       void refresh();

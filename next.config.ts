@@ -26,6 +26,8 @@ for (const key of [
   if (h) r2Hosts.add(h);
 }
 r2Hosts.add("assets.huaqintp.top");
+r2Hosts.add("pub-c32b84ede21d4770b966e9e4718d0a0d.r2.dev");
+r2Hosts.add("br-holy-fawn-06727103.supabase.aidap-global.cn-beijing.volces.com");
 
 const nextConfig: NextConfig = {
   images: {
