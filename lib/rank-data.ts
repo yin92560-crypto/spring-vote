@@ -6,6 +6,32 @@ import type { Work } from "@/lib/types";
 /** 排行榜默认展示名次数量（减轻传输与前端渲染） */
 export const RANK_LEADERBOARD_LIMIT = 61;
 
+async function fetchAllVoteWorkIds(
+  supabase: ReturnType<typeof createAdminClient>
+): Promise<string[]> {
+  const pageSize = 1000;
+  let from = 0;
+  const all: string[] = [];
+  while (true) {
+    const to = from + pageSize - 1;
+    const { data, error } = await supabase
+      .from("votes")
+      .select("work_id")
+      .range(from, to);
+    if (error) {
+      throw error;
+    }
+    const rows = data ?? [];
+    for (const row of rows) {
+      const workId = String((row as { work_id?: unknown }).work_id ?? "");
+      if (workId) all.push(workId);
+    }
+    if (rows.length < pageSize) break;
+    from += pageSize;
+  }
+  return all;
+}
+
 export async function fetchWorksRankedByVotes(): Promise<Work[]> {
   const supabase = createAdminClient();
   const { data: worksRows, error: worksErr } = await supabase
@@ -19,19 +45,18 @@ export async function fetchWorksRankedByVotes(): Promise<Work[]> {
   const works = Array.isArray(worksRows) ? worksRows : [];
 
   // 实时票数聚合（等价于 SELECT work_id, COUNT(*) FROM votes GROUP BY work_id）。
-  const { data: votesRows, error: votesErr } = await supabase
-    .from("votes")
-    .select("work_id");
-  if (votesErr) {
+  let voteWorkIds: string[] = [];
+  try {
+    voteWorkIds = await fetchAllVoteWorkIds(supabase);
+  } catch (votesErr) {
     console.error(votesErr);
     throw new Error("读取投票失败");
   }
   const validIds = new Set(works.map((w) => String((w as { id?: unknown }).id ?? "")));
   const voteCounts = new Map<string, number>();
   let unmatchedVoteRows = 0;
-  for (const row of votesRows ?? []) {
-    const workId = String((row as { work_id?: unknown }).work_id ?? "");
-    if (!workId || !validIds.has(workId)) {
+  for (const workId of voteWorkIds) {
+    if (!validIds.has(workId)) {
       unmatchedVoteRows += 1;
       continue;
     }
