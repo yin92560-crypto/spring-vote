@@ -7,53 +7,12 @@ import {
   isAcceptableWorksImagePath,
   normalizeWorkImageUrl,
 } from "@/lib/work-image-url";
-import {
-  fetchWorksTableAll,
-  fetchWorksTableWithOr,
-} from "@/lib/supabase-works-columns";
 import { DAILY_VOTE_LIMIT } from "@/lib/vote-config";
 import { fetchTodayVoterUsageFromDb } from "@/lib/today-voter-usage";
 
 export const dynamic = "force-dynamic";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-async function attachRealtimeVotesFromVotesTable(
-  supabase: ReturnType<typeof createAdminClient>,
-  rows: Array<{
-    id: string;
-    title: string;
-    work_title?: string | null;
-    author_name?: string | null;
-    image_url: string;
-    created_at: string;
-  }>
-) {
-  const mapped = rows.map((w) => ({
-    id: w.id as string,
-    title: w.title as string,
-    workTitle: (w.work_title as string | null) ?? (w.title as string),
-    authorName: (w.author_name as string | null) ?? "",
-    imageUrl: normalizeWorkImageUrl(w.image_url as string),
-    votes: 0,
-    createdAt: w.created_at as string,
-  }));
-
-  // 实时票数：每个作品直接从 votes 表 count(*)，不读取 works 汇总列。
-  for (const w of mapped) {
-    const { count, error } = await supabase
-      .from("votes")
-      .select("*", { count: "exact", head: true })
-      .eq("work_id", w.id);
-    if (error) {
-      console.error("realtime votes count failed:", w.id, error);
-      w.votes = 0;
-    } else {
-      w.votes = Number(count ?? 0);
-    }
-  }
-  return mapped;
-}
 
 export async function GET(request: Request) {
   try {
@@ -82,29 +41,32 @@ export async function GET(request: Request) {
     const supabase = createAdminClient();
     // 搜索接口：作品名 + 作者双维度匹配，限制返回前 20。
     if (searchKeyword.length >= 2) {
-      const safeKeyword = searchKeyword.slice(0, 40).replace(/[%_]/g, "");
-      let workRows;
-      let tallyColumn;
-      try {
-        const r = await fetchWorksTableWithOr(
-          supabase,
-          `work_title.ilike.%${safeKeyword}%,author_name.ilike.%${safeKeyword}%`,
-          { limit: searchLimit + 1 }
-        );
-        workRows = r.rows;
-        tallyColumn = r.tallyColumn;
-      } catch (wErr) {
-        console.error(wErr);
+      const { data: allRows, error: allErr } = await supabase
+        .from("works")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (allErr) {
+        console.error(allErr);
         return NextResponse.json({ error: "搜索失败，请稍后重试" }, { status: 500 });
       }
-
-      const limited = workRows.length > searchLimit;
-
+      const rows = Array.isArray(allRows) ? allRows : [];
+      const safeKeyword = searchKeyword.slice(0, 40).toLowerCase();
+      const filtered = rows.filter((w) => {
+        const title = String((w as { work_title?: unknown; title?: unknown }).work_title ?? (w as { title?: unknown }).title ?? "").toLowerCase();
+        const author = String((w as { author_name?: unknown }).author_name ?? "").toLowerCase();
+        return title.includes(safeKeyword) || author.includes(safeKeyword);
+      });
+      const limited = filtered.length > searchLimit;
       const list = addDisplayNumbers(
-        await attachRealtimeVotesFromVotesTable(
-          supabase,
-          workRows.slice(0, searchLimit)
-        ),
+        filtered.slice(0, searchLimit).map((w) => ({
+          id: String((w as { id?: unknown }).id ?? ""),
+          title: String((w as { title?: unknown }).title ?? ""),
+          workTitle: String((w as { work_title?: unknown; title?: unknown }).work_title ?? (w as { title?: unknown }).title ?? ""),
+          authorName: String((w as { author_name?: unknown }).author_name ?? ""),
+          imageUrl: normalizeWorkImageUrl(String((w as { image_url?: unknown }).image_url ?? "")),
+          votes: Number((w as { votes_count?: unknown; votes?: unknown }).votes_count ?? (w as { votes?: unknown }).votes ?? 0),
+          createdAt: String((w as { created_at?: unknown }).created_at ?? ""),
+        })) as Work[]
       );
 
       let used = 0;
@@ -123,36 +85,27 @@ export async function GET(request: Request) {
         votedWorkIds,
       });
     }
-    let workRows: any[] = [];
-    let tallyColumn: any = null;
-    try {
-      const r = await fetchWorksTableAll(supabase);
-      workRows = r.rows;
-      tallyColumn = r.tallyColumn;
-    } catch (wErr) {
-      console.error(wErr);
-      const message =
-        wErr instanceof Error ? wErr.message : String(wErr ?? "读取作品失败");
-      return NextResponse.json({ error: message, detail: wErr }, { status: 500 });
+    const { data, error: listErr } = await supabase
+      .from("works")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (listErr) {
+      console.error(listErr);
+      const message = listErr.message || "读取作品失败";
+      return NextResponse.json({ error: message, detail: listErr }, { status: 500 });
     }
-    if (!Array.isArray(workRows)) {
-      workRows = [];
-    }
-    if (workRows.length === 0) {
-      const { data: rawRows, error: rawErr } = await supabase
-        .from("works")
-        .select("*")
-        .order("created_at", { ascending: false });
-      if (rawErr) {
-        console.error("fallback select(*) failed:", rawErr);
-      } else if (Array.isArray(rawRows) && rawRows.length > 0) {
-        workRows = rawRows as typeof workRows;
-      }
-    }
-    console.log("Total works found:", workRows.length);
-
+    const workRows = Array.isArray(data) ? data : [];
+    console.log("Final Data Count:", workRows.length);
     const list = addDisplayNumbers(
-      await attachRealtimeVotesFromVotesTable(supabase, workRows)
+      workRows.map((w) => ({
+        id: String((w as { id?: unknown }).id ?? ""),
+        title: String((w as { title?: unknown }).title ?? ""),
+        workTitle: String((w as { work_title?: unknown; title?: unknown }).work_title ?? (w as { title?: unknown }).title ?? ""),
+        authorName: String((w as { author_name?: unknown }).author_name ?? ""),
+        imageUrl: normalizeWorkImageUrl(String((w as { image_url?: unknown }).image_url ?? "")),
+        votes: Number((w as { votes_count?: unknown; votes?: unknown }).votes_count ?? (w as { votes?: unknown }).votes ?? 0),
+        createdAt: String((w as { created_at?: unknown }).created_at ?? ""),
+      })) as Work[]
     );
 
     // 仅基于 Supabase 今日投票记录计算剩余票数。
