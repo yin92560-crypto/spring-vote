@@ -45,20 +45,20 @@ function normalizeWorks(list: unknown[]): Work[] {
 
 export function useVoteHomeState(): {
   works: Work[] | undefined;
-  hasMore: boolean;
-  loadingMore: boolean;
+  page: number;
+  totalCount: number;
+  totalPages: number;
   loadError: string | null;
   remaining: number;
   dailyVoteLimit: number;
   votedWorkIdsFromApi: string[];
   loading: boolean;
   refresh: () => Promise<void>;
-  loadMore: () => Promise<void>;
+  setPage: (page: number) => void;
 } {
   const [works, setWorks] = useState<Work[] | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [remaining, setRemaining] = useState(DAILY_VOTE_LIMIT);
   const [dailyVoteLimit, setDailyVoteLimit] = useState(DAILY_VOTE_LIMIT);
@@ -70,7 +70,7 @@ export function useVoteHomeState(): {
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 30000);
     try {
-      const r = await fetch("/api/works?page=1&pageSize=24", {
+      const r = await fetch(`/api/works?page=${currentPage}&limit=24`, {
         cache: "no-store",
         headers: voterId ? { "x-voter-id": voterId } : undefined,
         signal: controller.signal,
@@ -79,21 +79,24 @@ export function useVoteHomeState(): {
         throw new Error(`HTTP ${r.status} ${r.statusText}`);
       }
       const j = (await r.json()) as {
-        works: Work[];
-        hasMore?: boolean;
-        remaining: number;
+        data?: unknown[];
+        works?: unknown[];
+        totalCount?: number;
+        remaining?: number;
         dailyVoteLimit?: number;
         votedWorkIds?: string[];
       };
-      if (Array.isArray(j.works)) setWorks(normalizeWorks(j.works));
+      const rows = Array.isArray(j.data)
+        ? j.data
+        : Array.isArray(j.works)
+          ? j.works
+          : [];
+      setWorks(normalizeWorks(rows));
+      setTotalCount(Math.max(0, Number(j.totalCount ?? 0)));
       setLoadError(null);
-      setCurrentPage(1);
-      setHasMore(Boolean(j.hasMore));
       if (typeof j.remaining === "number") setRemaining(j.remaining);
       if (typeof j.dailyVoteLimit === "number" && j.dailyVoteLimit > 0) {
         setDailyVoteLimit(j.dailyVoteLimit);
-      } else {
-        setDailyVoteLimit(DAILY_VOTE_LIMIT);
       }
       setVotedWorkIdsFromApi(
         Array.isArray(j.votedWorkIds)
@@ -108,57 +111,12 @@ export function useVoteHomeState(): {
     } finally {
       window.clearTimeout(timeoutId);
     }
-  }, []);
-
-  const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore) return;
-    const nextPage = currentPage + 1;
-    const voterId = getOrCreateClientVoterId();
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 30000);
-    setLoadingMore(true);
-    try {
-      const r = await fetch(`/api/works?page=${nextPage}&pageSize=24`, {
-        cache: "no-store",
-        headers: voterId ? { "x-voter-id": voterId } : undefined,
-        signal: controller.signal,
-      });
-      if (!r.ok) {
-        throw new Error(`HTTP ${r.status} ${r.statusText}`);
-      }
-      const j = (await r.json()) as { works?: unknown[]; hasMore?: boolean };
-      const nextWorks = Array.isArray(j.works) ? j.works : [];
-      if (nextWorks.length > 0) {
-        const normalized = normalizeWorks(nextWorks);
-        setWorks((prev) => {
-          const prevList = prev ?? [];
-          const seen = new Set(prevList.map((w) => w.id));
-          const merged = [...prevList];
-          for (const item of normalized) {
-            if (!seen.has(item.id)) {
-              merged.push(item);
-              seen.add(item.id);
-            }
-          }
-          return merged;
-        });
-      }
-      setLoadError(null);
-      setCurrentPage(nextPage);
-      setHasMore(Boolean(j.hasMore));
-    } catch (err) {
-      console.error("useVoteHomeState: load more failed", err);
-      setLoadError("网络超时，请重试");
-    } finally {
-      window.clearTimeout(timeoutId);
-      setLoadingMore(false);
-    }
-  }, [currentPage, hasMore, loadingMore]);
+  }, [currentPage]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      setLoading(true);
+      setLoading(works === undefined);
       try {
         await refresh();
       } finally {
@@ -173,19 +131,20 @@ export function useVoteHomeState(): {
       cancelled = true;
       window.removeEventListener(VOTE_DATA_CHANGED_EVENT, on);
     };
-  }, [refresh]);
+  }, [refresh, works]);
 
   return {
     works,
-    hasMore,
-    loadingMore,
+    page: currentPage,
+    totalCount,
+    totalPages: Math.max(1, Math.ceil(totalCount / 24)),
     loadError,
     remaining,
     dailyVoteLimit,
     votedWorkIdsFromApi,
     loading,
     refresh,
-    loadMore,
+    setPage: (page: number) => setCurrentPage(Math.max(1, page)),
   };
 }
 
@@ -202,7 +161,7 @@ export function useWorksList(): {
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 30000);
     try {
-      const r = await fetch("/api/works?page=1&pageSize=24", {
+      const r = await fetch("/api/works?all=1", {
         cache: "no-store",
         headers: voterId ? { "x-voter-id": voterId } : undefined,
         signal: controller.signal,
@@ -212,8 +171,13 @@ export function useWorksList(): {
         setWorks([]);
         return;
       }
-      const j = (await r.json()) as { works?: unknown[] };
-      if (Array.isArray(j.works)) setWorks(normalizeWorks(j.works));
+      const j = (await r.json()) as { data?: unknown[]; works?: unknown[] };
+      const rows = Array.isArray(j.data)
+        ? j.data
+        : Array.isArray(j.works)
+          ? j.works
+          : [];
+      setWorks(normalizeWorks(rows));
     } catch (err) {
       console.error("useWorksList: /api/works request failed", err);
       setWorks([]);

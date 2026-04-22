@@ -188,11 +188,11 @@ function HomePageContent() {
 
   const {
     works,
+    page,
+    totalPages,
     loading,
     refresh,
-    hasMore,
-    loadingMore,
-    loadMore,
+    setPage,
     loadError,
     remaining: apiRemaining,
     dailyVoteLimit,
@@ -212,7 +212,7 @@ function HomePageContent() {
   /** 避免「先 setState 再 replaceQuery」时 effect 因 id 尚未写入而误关弹窗 */
   const skipUrlSyncOnceRef = useRef(false);
   const voteCooldownUntilRef = useRef<Map<string, number>>(new Map());
-  const bottomLoadRef = useRef<HTMLDivElement | null>(null);
+  const [jumpPage, setJumpPage] = useState("");
 
   const normalizedSearch = searchQuery.trim();
 
@@ -331,25 +331,6 @@ function HomePageContent() {
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    if (normalizedSearch) return;
-    if (!hasMore) return;
-    const node = bottomLoadRef.current;
-    if (!node) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (!entry?.isIntersecting) return;
-        if (!loadingMore) {
-          void loadMore();
-        }
-      },
-      { root: null, rootMargin: "400px 0px", threshold: 0.01 }
-    );
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, [hasMore, loadingMore, loadMore, normalizedSearch]);
 
   /** 接口返回的今日已投作品 id 与本地合并，保证与数据库一致 */
   useEffect(() => {
@@ -581,6 +562,15 @@ function HomePageContent() {
   const voteFromModal = async () => {
     if (!detailWork) return;
     await submitVote(detailWork.id);
+  };
+
+  const goToPage = (target: number) => {
+    if (Number.isNaN(target)) return;
+    const next = Math.min(Math.max(1, target), totalPages);
+    setPage(next);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   const titleToneClass =
@@ -839,15 +829,64 @@ function HomePageContent() {
                     ))}
                   </ul>
                   {!normalizedSearch && (
-                    <div ref={bottomLoadRef} className="mt-8 flex justify-center">
-                      {loadingMore && (
-                        <span className="rounded-full border border-emerald-200/70 bg-white/75 px-5 py-2 text-sm font-semibold text-[#4a2f22]">
-                          加载中...
-                        </span>
-                      )}
-                      {!hasMore && works.length > 0 && (
-                        <span className="text-xs text-stone-700/70">已加载全部作品</span>
-                      )}
+                    <div className="glass-panel mt-8 flex flex-wrap items-center justify-center gap-2 rounded-2xl px-4 py-4 text-sm">
+                      <button
+                        type="button"
+                        onClick={() => goToPage(page - 1)}
+                        disabled={page <= 1}
+                        className="rounded-full border border-emerald-200/70 bg-white/70 px-3 py-1.5 font-medium text-[#4a2f22] disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        上一页
+                      </button>
+                      {Array.from(
+                        { length: Math.min(5, totalPages) },
+                        (_, i) => Math.max(1, Math.min(totalPages - 4, page - 2)) + i
+                      )
+                        .filter((n, i, arr) => n >= 1 && n <= totalPages && arr.indexOf(n) === i)
+                        .map((n) => (
+                          <button
+                            key={n}
+                            type="button"
+                            onClick={() => goToPage(n)}
+                            className={`rounded-full border px-3 py-1.5 font-semibold ${
+                              n === page
+                                ? "border-amber-200 bg-amber-100/80 text-[#4a2f22]"
+                                : "border-emerald-200/70 bg-white/70 text-[#4a2f22]"
+                            }`}
+                          >
+                            {n}
+                          </button>
+                        ))}
+                      <button
+                        type="button"
+                        onClick={() => goToPage(page + 1)}
+                        disabled={page >= totalPages}
+                        className="rounded-full border border-emerald-200/70 bg-white/70 px-3 py-1.5 font-medium text-[#4a2f22] disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        下一页
+                      </button>
+                      <div className="ml-1 inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-white/70 px-2 py-1">
+                        <span className="text-xs font-medium text-[#4a2f22]">跳转到第</span>
+                        <input
+                          type="number"
+                          min={1}
+                          max={totalPages}
+                          value={jumpPage}
+                          onChange={(e) => setJumpPage(e.target.value)}
+                          className="w-14 rounded-md border border-emerald-200 bg-white/50 px-2 py-1 text-center text-xs font-semibold text-[#4a2f22] outline-none"
+                        />
+                        <span className="text-xs font-medium text-[#4a2f22]">页</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const n = Number.parseInt(jumpPage, 10);
+                            if (!Number.isNaN(n)) goToPage(n);
+                          }}
+                          className="rounded-full border border-emerald-200/80 bg-emerald-50/80 px-3 py-1 text-xs font-semibold text-[#4a2f22]"
+                        >
+                          确认
+                        </button>
+                      </div>
                     </div>
                   )}
                 </>

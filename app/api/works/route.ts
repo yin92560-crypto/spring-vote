@@ -140,8 +140,9 @@ export async function GET(request: Request) {
       url.searchParams.get("keyword") ??
       url.searchParams.get("search");
     const searchKeyword = (rawSearchParam ?? "").trim();
+    const fetchAll = url.searchParams.get("all") === "1";
     const page = Math.max(1, Number(url.searchParams.get("page") ?? 1) || 1);
-    const pageSize = Math.max(1, Number(url.searchParams.get("limit") ?? PAGE_SIZE) || PAGE_SIZE);
+    const pageSize = fetchAll ? 1000 : PAGE_SIZE;
 
     const ip = getClientIp(request.headers);
     const ua = request.headers.get("user-agent") ?? "";
@@ -181,11 +182,13 @@ export async function GET(request: Request) {
       }
       const remaining = Math.max(0, DAILY_VOTE_LIMIT - used);
       return NextResponse.json({
+        data: list,
         works: list,
+        totalCount: total,
         remaining,
         limited: hasMore,
         page,
-        pageSize,
+        limit: pageSize,
         total,
         hasMore,
         dailyVoteLimit: DAILY_VOTE_LIMIT,
@@ -218,10 +221,12 @@ export async function GET(request: Request) {
     const remaining = Math.max(0, DAILY_VOTE_LIMIT - used);
 
     return NextResponse.json({
+      data: list,
       works: list,
+      totalCount: total,
       remaining,
       page,
-      pageSize,
+      limit: pageSize,
       total,
       hasMore,
       dailyVoteLimit: DAILY_VOTE_LIMIT,
