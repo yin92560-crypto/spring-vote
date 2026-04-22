@@ -86,10 +86,7 @@ export async function GET(request: Request) {
       const safeKeyword = searchKeyword.slice(0, 40);
       const { data: pageRows, error: listErr, count } = await supabase
         .from("works")
-        .select(
-          "id, title, work_title, image_url, display_no, vote_count, votes_count",
-          { count: "exact" }
-        )
+        .select("*", { count: "exact" })
         .or(`work_title.ilike.%${safeKeyword}%,title.ilike.%${safeKeyword}%`)
         .order("created_at", { ascending: false })
         .range(from, to);
@@ -124,10 +121,7 @@ export async function GET(request: Request) {
     }
     const { data, error: listErr, count } = await supabase
       .from("works")
-      .select(
-        "id, title, work_title, image_url, display_no, vote_count, votes_count",
-        { count: "exact" }
-      )
+      .select("*", { count: "exact" })
       .order("created_at", { ascending: false })
       .range(from, to);
     if (listErr) {
