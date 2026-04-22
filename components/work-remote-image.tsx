@@ -50,6 +50,24 @@ function buildFallbackCandidates(primaryUrl: string): string[] {
   }
 }
 
+function toThumbnailUrl(rawUrl: string, layout: "fill" | "intrinsic"): string {
+  if (!rawUrl || layout !== "fill") return rawUrl;
+  try {
+    const u = new URL(rawUrl);
+    // 列表缩略图：优先走服务端图像处理，限制宽度并转 webp。
+    if (/\.volces\.com$/i.test(u.hostname)) {
+      u.searchParams.set("x-tos-process", "image/resize,w_400/format,webp/quality,q_75");
+      return u.toString();
+    }
+    // 兼容 R2/静态域名的常见缩略参数（若源站不支持会忽略）。
+    u.searchParams.set("width", "400");
+    u.searchParams.set("format", "webp");
+    return u.toString();
+  } catch {
+    return rawUrl;
+  }
+}
+
 type Props = {
   src: string | null | undefined;
   alt: string;
@@ -97,7 +115,7 @@ export function WorkRemoteImage({
     setShowSlowHint(false);
   }, [primaryUrl]);
 
-  const displaySrc = candidateUrls[currentIndex] ?? "";
+  const displaySrc = toThumbnailUrl(candidateUrls[currentIndex] ?? "", layout);
   void index;
   const effectiveLoading: "lazy" | "eager" = "lazy";
 

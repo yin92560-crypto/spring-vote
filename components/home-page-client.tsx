@@ -190,14 +190,15 @@ function HomePageContent() {
     works,
     loading,
     refresh,
+    hasMore,
+    loadingMore,
+    loadMore,
     remaining: apiRemaining,
     dailyVoteLimit,
     votedWorkIdsFromApi,
   } = useVoteHomeState();
   const [toast, setToast] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [page, setPage] = useState(1);
-  const [jumpPage, setJumpPage] = useState("");
   const [detailWork, setDetailWork] = useState<Work | null>(null);
   const [votePendingWorkId, setVotePendingWorkId] = useState<string | null>(null);
   const [localUsedVotes, setLocalUsedVotes] = useState(0);
@@ -243,17 +244,7 @@ function HomePageContent() {
     if (!normalizedSearch) return worksWithVoteFlags;
     return filterWorksBySearch(worksWithVoteFlags, normalizedSearch);
   }, [worksWithVoteFlags, normalizedSearch]);
-  const pageSize = 18;
-  const totalPages = Math.max(1, Math.ceil(filteredWorks.length / pageSize));
-  const pagedWorks = useMemo(() => {
-    const start = (page - 1) * pageSize;
-    return filteredWorks.slice(start, start + pageSize);
-  }, [filteredWorks, page]);
-  const pageNumbers = useMemo(() => {
-    const start = Math.max(1, page - 2);
-    const end = Math.min(totalPages, page + 2);
-    return Array.from({ length: end - start + 1 }, (_, i) => start + i);
-  }, [page, totalPages]);
+  const pagedWorks = filteredWorks;
 
   const shareUrl = useMemo(() => {
     if (!detailWork) return "";
@@ -356,15 +347,6 @@ function HomePageContent() {
     }, 300000);
     return () => window.clearInterval(timer);
   }, []);
-
-  useEffect(() => {
-    setPage(1);
-    setJumpPage("");
-  }, [searchQuery]);
-
-  useEffect(() => {
-    setPage((prev) => Math.min(Math.max(prev, 1), totalPages));
-  }, [totalPages]);
 
   const requestVoteOnce = async (workId: string) => {
     const voterId = getOrCreateClientVoterId();
@@ -578,11 +560,6 @@ function HomePageContent() {
   const voteFromModal = async () => {
     if (!detailWork) return;
     await submitVote(detailWork.id);
-  };
-
-  const goToPage = (target: number) => {
-    if (Number.isNaN(target)) return;
-    setPage(Math.min(totalPages, Math.max(1, target)));
   };
 
   const titleToneClass =
@@ -819,62 +796,18 @@ function HomePageContent() {
                       </li>
                     ))}
                   </ul>
-                  <div className="glass-panel mt-8 flex flex-wrap items-center justify-center gap-2 rounded-2xl px-4 py-4 text-sm">
-                  <button
-                    type="button"
-                    onClick={() => goToPage(page - 1)}
-                    disabled={page <= 1}
-                    className="rounded-full border border-emerald-200/70 bg-white/70 px-3 py-1.5 font-medium text-[#4a2f22] disabled:cursor-not-allowed disabled:opacity-45"
-                  >
-                    上一页
-                  </button>
-                  {pageNumbers.map((n) => (
-                    <button
-                      key={n}
-                      type="button"
-                      onClick={() => goToPage(n)}
-                      className={`rounded-full border px-3 py-1.5 font-semibold ${
-                        n === page
-                          ? "border-amber-200 bg-amber-100/80 text-[#4a2f22]"
-                          : "border-emerald-200/70 bg-white/70 text-[#4a2f22]"
-                      }`}
-                    >
-                      {n}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => goToPage(page + 1)}
-                    disabled={page >= totalPages}
-                    className="rounded-full border border-emerald-200/70 bg-white/70 px-3 py-1.5 font-medium text-[#4a2f22] disabled:cursor-not-allowed disabled:opacity-45"
-                  >
-                    下一页
-                  </button>
-                  <div className="ml-1 inline-flex items-center gap-2 rounded-full border border-emerald-200/70 bg-white/70 px-2 py-1">
-                    <span className="text-xs font-medium text-[#4a2f22]">
-                      跳转到第
-                    </span>
-                    <input
-                      type="number"
-                      min={1}
-                      max={totalPages}
-                      value={jumpPage}
-                      onChange={(e) => setJumpPage(e.target.value)}
-                      className="w-14 rounded-md border border-emerald-200 bg-white/50 px-2 py-1 text-center text-xs font-semibold text-[#4a2f22] outline-none"
-                    />
-                    <span className="text-xs font-medium text-[#4a2f22]">页</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const n = Number.parseInt(jumpPage, 10);
-                        if (!Number.isNaN(n)) goToPage(n);
-                      }}
-                      className="rounded-full border border-emerald-200/80 bg-emerald-50/80 px-3 py-1 text-xs font-semibold text-[#4a2f22]"
-                    >
-                      确认
-                    </button>
-                  </div>
-                  </div>
+                  {hasMore && !normalizedSearch && (
+                    <div className="mt-8 flex justify-center">
+                      <button
+                        type="button"
+                        onClick={() => void loadMore()}
+                        disabled={loadingMore}
+                        className="rounded-full border border-emerald-200/80 bg-white/75 px-5 py-2 text-sm font-semibold text-[#4a2f22] disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        {loadingMore ? "加载中..." : "加载更多"}
+                      </button>
+                    </div>
+                  )}
                 </>
               )}
             </>

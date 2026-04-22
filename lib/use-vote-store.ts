@@ -15,13 +15,19 @@ export function emitVoteRefresh(): void {
 
 export function useVoteHomeState(): {
   works: Work[] | undefined;
+  hasMore: boolean;
+  loadingMore: boolean;
   remaining: number;
   dailyVoteLimit: number;
   votedWorkIdsFromApi: string[];
   loading: boolean;
   refresh: () => Promise<void>;
+  loadMore: () => Promise<void>;
 } {
   const [works, setWorks] = useState<Work[] | undefined>(undefined);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [remaining, setRemaining] = useState(DAILY_VOTE_LIMIT);
   const [dailyVoteLimit, setDailyVoteLimit] = useState(DAILY_VOTE_LIMIT);
   const [votedWorkIdsFromApi, setVotedWorkIdsFromApi] = useState<string[]>([]);
@@ -35,7 +41,7 @@ export function useVoteHomeState(): {
       const controller = new AbortController();
       const timeoutId = window.setTimeout(() => controller.abort(), 8000);
       try {
-        const r = await fetch("/api/works", {
+        const r = await fetch("/api/works?page=1&pageSize=24", {
           cache: "no-store",
           headers: voterId ? { "x-voter-id": voterId } : undefined,
           signal: controller.signal,
@@ -45,11 +51,14 @@ export function useVoteHomeState(): {
         }
         const j = (await r.json()) as {
           works: Work[];
+          hasMore?: boolean;
           remaining: number;
           dailyVoteLimit?: number;
           votedWorkIds?: string[];
         };
         if (Array.isArray(j.works)) setWorks(j.works);
+        setCurrentPage(1);
+        setHasMore(Boolean(j.hasMore));
         if (typeof j.remaining === "number") setRemaining(j.remaining);
         if (typeof j.dailyVoteLimit === "number" && j.dailyVoteLimit > 0) {
           setDailyVoteLimit(j.dailyVoteLimit);
@@ -67,7 +76,7 @@ export function useVoteHomeState(): {
         window.clearTimeout(timeoutId);
         if (attempt >= 3) {
           console.error("useVoteHomeState: /api/works failed after retries", err);
-          setWorks([]);
+          setWorks((prev) => prev ?? []);
           setVotedWorkIdsFromApi([]);
           return;
         }
@@ -75,6 +84,48 @@ export function useVoteHomeState(): {
       }
     }
   }, []);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore) return;
+    const nextPage = currentPage + 1;
+    const voterId = getOrCreateClientVoterId();
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+    setLoadingMore(true);
+    try {
+      const r = await fetch(`/api/works?page=${nextPage}&pageSize=24`, {
+        cache: "no-store",
+        headers: voterId ? { "x-voter-id": voterId } : undefined,
+        signal: controller.signal,
+      });
+      if (!r.ok) {
+        throw new Error(`HTTP ${r.status} ${r.statusText}`);
+      }
+      const j = (await r.json()) as { works?: Work[]; hasMore?: boolean };
+      const nextWorks = Array.isArray(j.works) ? j.works : [];
+      if (nextWorks.length > 0) {
+        setWorks((prev) => {
+          const prevList = prev ?? [];
+          const seen = new Set(prevList.map((w) => w.id));
+          const merged = [...prevList];
+          for (const item of nextWorks) {
+            if (!seen.has(item.id)) {
+              merged.push(item);
+              seen.add(item.id);
+            }
+          }
+          return merged;
+        });
+      }
+      setCurrentPage(nextPage);
+      setHasMore(Boolean(j.hasMore));
+    } catch (err) {
+      console.error("useVoteHomeState: load more failed", err);
+    } finally {
+      window.clearTimeout(timeoutId);
+      setLoadingMore(false);
+    }
+  }, [currentPage, hasMore, loadingMore]);
 
   useEffect(() => {
     let cancelled = false;
@@ -102,11 +153,14 @@ export function useVoteHomeState(): {
 
   return {
     works,
+    hasMore,
+    loadingMore,
     remaining,
     dailyVoteLimit,
     votedWorkIdsFromApi,
     loading,
     refresh,
+    loadMore,
   };
 }
 
