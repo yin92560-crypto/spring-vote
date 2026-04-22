@@ -52,6 +52,61 @@ function buildWorksPayload(rows: unknown[], page: number): WorksApiItem[] {
   }));
 }
 
+async function fetchWorksPageWithFallback(
+  supabase: ReturnType<typeof createAdminClient>,
+  options: {
+    from: number;
+    to: number;
+    withCount?: boolean;
+    searchKeyword?: string;
+  }
+): Promise<{
+  data: unknown[] | null;
+  count: number | null;
+  error: { message?: string } | null;
+}> {
+  const { from, to, withCount = true, searchKeyword } = options;
+  const selectOpts = withCount ? ({ count: "exact" } as const) : undefined;
+
+  const buildBase = () => {
+    let q = supabase.from("works").select("*", selectOpts);
+    if (searchKeyword) {
+      q = q.or(`work_title.ilike.%${searchKeyword}%,title.ilike.%${searchKeyword}%`);
+    }
+    return q.range(from, to);
+  };
+
+  // 优先按 display_no 排序；若线上缺列则降级 created_at。
+  let first = await buildBase()
+    .order("display_no", { ascending: false, nullsFirst: false })
+    .order("created_at", { ascending: false });
+
+  if (!first.error) {
+    return {
+      data: first.data as unknown[] | null,
+      count: (first as { count?: number | null }).count ?? null,
+      error: null,
+    };
+  }
+
+  const msg = String(first.error.message ?? "").toLowerCase();
+  const displayNoMissing = msg.includes("display_no") && msg.includes("does not exist");
+  if (!displayNoMissing) {
+    return {
+      data: first.data as unknown[] | null,
+      count: (first as { count?: number | null }).count ?? null,
+      error: first.error as { message?: string },
+    };
+  }
+
+  const fallback = await buildBase().order("created_at", { ascending: false });
+  return {
+    data: fallback.data as unknown[] | null,
+    count: (fallback as { count?: number | null }).count ?? null,
+    error: fallback.error as { message?: string } | null,
+  };
+}
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
@@ -84,13 +139,10 @@ export async function GET(request: Request) {
     // 搜索接口：作品名 + 作者双维度匹配，限制返回前 20。
     if (searchKeyword.length >= 2) {
       const safeKeyword = searchKeyword.slice(0, 40);
-      const { data: pageRows, error: listErr, count } = await supabase
-        .from("works")
-        .select("*", { count: "exact" })
-        .or(`work_title.ilike.%${safeKeyword}%,title.ilike.%${safeKeyword}%`)
-        .order("display_no", { ascending: false, nullsFirst: false })
-        .order("created_at", { ascending: false })
-        .range(from, to);
+      const { data: pageRows, error: listErr, count } = await fetchWorksPageWithFallback(
+        supabase,
+        { from, to, withCount: true, searchKeyword: safeKeyword }
+      );
       if (listErr) {
         console.error(listErr);
         return NextResponse.json({ error: "搜索失败，请稍后重试" }, { status: 500 });
@@ -120,12 +172,11 @@ export async function GET(request: Request) {
         votedWorkIds,
       });
     }
-    const { data, error: listErr, count } = await supabase
-      .from("works")
-      .select("*", { count: "exact" })
-      .order("display_no", { ascending: false, nullsFirst: false })
-      .order("created_at", { ascending: false })
-      .range(from, to);
+    const { data, error: listErr, count } = await fetchWorksPageWithFallback(supabase, {
+      from,
+      to,
+      withCount: true,
+    });
     if (listErr) {
       console.error(listErr);
       const message = listErr.message || "读取作品失败";
