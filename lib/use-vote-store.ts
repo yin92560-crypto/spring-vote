@@ -116,7 +116,7 @@ export function useVoteHomeState(): {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      setLoading(works === undefined);
+      setLoading(true);
       try {
         await refresh();
       } finally {
@@ -131,7 +131,7 @@ export function useVoteHomeState(): {
       cancelled = true;
       window.removeEventListener(VOTE_DATA_CHANGED_EVENT, on);
     };
-  }, [refresh, works]);
+  }, [refresh]);
 
   return {
     works,
