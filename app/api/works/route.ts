@@ -10,7 +10,7 @@ import {
 import { DAILY_VOTE_LIMIT } from "@/lib/vote-config";
 import { fetchTodayVoterUsageFromDb } from "@/lib/today-voter-usage";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
