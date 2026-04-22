@@ -17,16 +17,20 @@ type WorksApiItem = {
   id: string;
   displayNo: string;
   title: string;
+  workTitle: string;
+  authorName: string;
   vote_count: number;
+  votes: number;
   imageUrl: string;
 };
 
 function toDisplayNo(raw: unknown, indexWithinPage: number, page: number): string {
+  void indexWithinPage;
+  void page;
   const text = String(raw ?? "").trim();
   const digits = text.replace(/\D/g, "");
   if (digits) return String(Number(digits)).padStart(3, "0");
-  const seq = (page - 1) * PAGE_SIZE + indexWithinPage + 1;
-  return String(seq).padStart(3, "0");
+  return "000";
 }
 
 function buildWorksPayload(rows: unknown[], page: number): WorksApiItem[] {
@@ -43,13 +47,33 @@ function buildWorksPayload(rows: unknown[], page: number): WorksApiItem[] {
         (w as { title?: unknown }).title ??
         ""
     ),
+    workTitle: String(
+      (w as { work_title?: unknown; title?: unknown }).work_title ??
+        (w as { title?: unknown }).title ??
+        ""
+    ),
+    authorName: String(
+      (w as { author_name?: unknown; author?: unknown; username?: unknown }).author_name ??
+        (w as { author?: unknown }).author ??
+        (w as { username?: unknown }).username ??
+        ""
+    ),
     vote_count: Number(
       (w as { vote_count?: unknown; votes_count?: unknown }).vote_count ??
         (w as { votes_count?: unknown }).votes_count ??
         0
     ),
+    votes: Number(
+      (w as { vote_count?: unknown; votes_count?: unknown }).vote_count ??
+        (w as { votes_count?: unknown }).votes_count ??
+        0
+    ),
     imageUrl: normalizeWorkImageUrl(String((w as { image_url?: unknown }).image_url ?? "")),
-  }));
+  })).sort((a, b) => {
+    const aNo = Number(a.displayNo) || 0;
+    const bNo = Number(b.displayNo) || 0;
+    return bNo - aNo;
+  });
 }
 
 async function fetchWorksPageWithFallback(
@@ -117,11 +141,7 @@ export async function GET(request: Request) {
       url.searchParams.get("search");
     const searchKeyword = (rawSearchParam ?? "").trim();
     const page = Math.max(1, Number(url.searchParams.get("page") ?? 1) || 1);
-    const pageSize = PAGE_SIZE;
-    const searchLimit = Math.min(
-      Math.max(Number(url.searchParams.get("limit") ?? 20) || 20, 1),
-      20,
-    );
+    const pageSize = Math.max(1, Number(url.searchParams.get("limit") ?? PAGE_SIZE) || PAGE_SIZE);
 
     const ip = getClientIp(request.headers);
     const ua = request.headers.get("user-agent") ?? "";
@@ -148,7 +168,7 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: "搜索失败，请稍后重试" }, { status: 500 });
       }
       const rows = Array.isArray(pageRows) ? pageRows : [];
-      const list = buildWorksPayload(rows.slice(0, searchLimit), page);
+      const list = buildWorksPayload(rows, page);
       const total = Number(count ?? list.length);
       const hasMore = page * pageSize < total;
 
