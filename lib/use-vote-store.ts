@@ -13,6 +13,31 @@ export function emitVoteRefresh(): void {
   window.dispatchEvent(new Event(VOTE_DATA_CHANGED_EVENT));
 }
 
+function normalizeWorks(list: unknown[]): Work[] {
+  return list.map((item) => {
+    const row = item as {
+      id?: unknown;
+      displayNo?: unknown;
+      title?: unknown;
+      workTitle?: unknown;
+      authorName?: unknown;
+      imageUrl?: unknown;
+      vote_count?: unknown;
+      votes?: unknown;
+    };
+    return {
+      id: String(row.id ?? ""),
+      displayNo: String(row.displayNo ?? ""),
+      title: String(row.title ?? ""),
+      workTitle: String(row.workTitle ?? row.title ?? ""),
+      authorName: String(row.authorName ?? ""),
+      imageUrl: String(row.imageUrl ?? ""),
+      votes: Number(row.vote_count ?? row.votes ?? 0),
+      createdAt: "",
+    };
+  });
+}
+
 export function useVoteHomeState(): {
   works: Work[] | undefined;
   hasMore: boolean;
@@ -35,57 +60,48 @@ export function useVoteHomeState(): {
   const [votedWorkIdsFromApi, setVotedWorkIdsFromApi] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
   const refresh = useCallback(async () => {
     const voterId = getOrCreateClientVoterId();
-    for (let attempt = 1; attempt <= 3; attempt += 1) {
-      const controller = new AbortController();
-      const timeoutId = window.setTimeout(() => controller.abort(), 8000);
-      try {
-        const r = await fetch("/api/works?page=1&pageSize=24", {
-          cache: "no-store",
-          headers: voterId ? { "x-voter-id": voterId } : undefined,
-          signal: controller.signal,
-        });
-        if (!r.ok) {
-          throw new Error(`HTTP ${r.status} ${r.statusText}`);
-        }
-        const j = (await r.json()) as {
-          works: Work[];
-          hasMore?: boolean;
-          remaining: number;
-          dailyVoteLimit?: number;
-          votedWorkIds?: string[];
-        };
-        if (Array.isArray(j.works)) setWorks(j.works);
-        setLoadError(null);
-        setCurrentPage(1);
-        setHasMore(Boolean(j.hasMore));
-        if (typeof j.remaining === "number") setRemaining(j.remaining);
-        if (typeof j.dailyVoteLimit === "number" && j.dailyVoteLimit > 0) {
-          setDailyVoteLimit(j.dailyVoteLimit);
-        } else {
-          setDailyVoteLimit(DAILY_VOTE_LIMIT);
-        }
-        setVotedWorkIdsFromApi(
-          Array.isArray(j.votedWorkIds)
-            ? j.votedWorkIds.filter((id) => typeof id === "string")
-            : []
-        );
-        window.clearTimeout(timeoutId);
-        return;
-      } catch (err) {
-        window.clearTimeout(timeoutId);
-        if (attempt >= 3) {
-          console.error("useVoteHomeState: /api/works failed after retries", err);
-          setWorks((prev) => prev);
-          setLoadError("网络卡顿，请点击重试");
-          setVotedWorkIdsFromApi([]);
-          return;
-        }
-        await sleep(350 * attempt);
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 30000);
+    try {
+      const r = await fetch("/api/works?page=1&pageSize=24", {
+        cache: "no-store",
+        headers: voterId ? { "x-voter-id": voterId } : undefined,
+        signal: controller.signal,
+      });
+      if (!r.ok) {
+        throw new Error(`HTTP ${r.status} ${r.statusText}`);
       }
+      const j = (await r.json()) as {
+        works: Work[];
+        hasMore?: boolean;
+        remaining: number;
+        dailyVoteLimit?: number;
+        votedWorkIds?: string[];
+      };
+      if (Array.isArray(j.works)) setWorks(normalizeWorks(j.works));
+      setLoadError(null);
+      setCurrentPage(1);
+      setHasMore(Boolean(j.hasMore));
+      if (typeof j.remaining === "number") setRemaining(j.remaining);
+      if (typeof j.dailyVoteLimit === "number" && j.dailyVoteLimit > 0) {
+        setDailyVoteLimit(j.dailyVoteLimit);
+      } else {
+        setDailyVoteLimit(DAILY_VOTE_LIMIT);
+      }
+      setVotedWorkIdsFromApi(
+        Array.isArray(j.votedWorkIds)
+          ? j.votedWorkIds.filter((id) => typeof id === "string")
+          : []
+      );
+    } catch (err) {
+      console.error("useVoteHomeState: /api/works failed", err);
+      setWorks((prev) => prev);
+      setLoadError("网络超时，请重试");
+      setVotedWorkIdsFromApi([]);
+    } finally {
+      window.clearTimeout(timeoutId);
     }
   }, []);
 
@@ -94,7 +110,7 @@ export function useVoteHomeState(): {
     const nextPage = currentPage + 1;
     const voterId = getOrCreateClientVoterId();
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+    const timeoutId = window.setTimeout(() => controller.abort(), 30000);
     setLoadingMore(true);
     try {
       const r = await fetch(`/api/works?page=${nextPage}&pageSize=24`, {
@@ -105,14 +121,15 @@ export function useVoteHomeState(): {
       if (!r.ok) {
         throw new Error(`HTTP ${r.status} ${r.statusText}`);
       }
-      const j = (await r.json()) as { works?: Work[]; hasMore?: boolean };
+      const j = (await r.json()) as { works?: unknown[]; hasMore?: boolean };
       const nextWorks = Array.isArray(j.works) ? j.works : [];
       if (nextWorks.length > 0) {
+        const normalized = normalizeWorks(nextWorks);
         setWorks((prev) => {
           const prevList = prev ?? [];
           const seen = new Set(prevList.map((w) => w.id));
           const merged = [...prevList];
-          for (const item of nextWorks) {
+          for (const item of normalized) {
             if (!seen.has(item.id)) {
               merged.push(item);
               seen.add(item.id);
@@ -126,7 +143,7 @@ export function useVoteHomeState(): {
       setHasMore(Boolean(j.hasMore));
     } catch (err) {
       console.error("useVoteHomeState: load more failed", err);
-      setLoadError("网络卡顿，请点击重试");
+      setLoadError("网络超时，请重试");
     } finally {
       window.clearTimeout(timeoutId);
       setLoadingMore(false);
@@ -147,13 +164,9 @@ export function useVoteHomeState(): {
       void refresh();
     };
     window.addEventListener(VOTE_DATA_CHANGED_EVENT, on);
-    const timer = window.setInterval(() => {
-      void refresh();
-    }, 300000);
     return () => {
       cancelled = true;
       window.removeEventListener(VOTE_DATA_CHANGED_EVENT, on);
-      window.clearInterval(timer);
     };
   }, [refresh]);
 
@@ -182,9 +195,9 @@ export function useWorksList(): {
   const refresh = useCallback(async () => {
     const voterId = getOrCreateClientVoterId();
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+    const timeoutId = window.setTimeout(() => controller.abort(), 30000);
     try {
-      const r = await fetch("/api/works?all=1", {
+      const r = await fetch("/api/works?page=1&pageSize=24", {
         cache: "no-store",
         headers: voterId ? { "x-voter-id": voterId } : undefined,
         signal: controller.signal,
@@ -194,8 +207,8 @@ export function useWorksList(): {
         setWorks([]);
         return;
       }
-      const j = (await r.json()) as { works: Work[] };
-      if (Array.isArray(j.works)) setWorks(j.works);
+      const j = (await r.json()) as { works?: unknown[] };
+      if (Array.isArray(j.works)) setWorks(normalizeWorks(j.works));
     } catch (err) {
       console.error("useWorksList: /api/works request failed", err);
       setWorks([]);
