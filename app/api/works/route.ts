@@ -24,36 +24,21 @@ type WorksApiItem = {
   imageUrl: string;
 };
 
-function toDisplayNo(
-  raw: unknown,
-  indexWithinPage: number,
-  page: number,
-  pageSize: number,
-  totalCount: number
-): string {
+function toDisplayNo(raw: unknown): string {
   const text = String(raw ?? "").trim();
   const digits = text.replace(/\D/g, "");
-  if (digits) return String(Number(digits)).padStart(3, "0");
-  // 兜底：按全量倒序编号，保证首屏首卡可显示如 766。
-  const seq = Math.max(1, totalCount - ((page - 1) * pageSize + indexWithinPage));
-  return String(seq).padStart(3, "0");
+  if (!digits) return "";
+  return String(Number(digits));
 }
 
 function buildWorksPayload(
   rows: unknown[],
-  page: number,
-  pageSize: number,
-  totalCount: number
 ): WorksApiItem[] {
-  return rows.map((w, idx) => ({
+  return rows.map((w) => ({
     id: String((w as { id?: unknown }).id ?? ""),
     displayNo: toDisplayNo(
       (w as { displayNo?: unknown; display_no?: unknown }).displayNo ??
-        (w as { display_no?: unknown }).display_no,
-      idx,
-      page,
-      pageSize,
-      totalCount
+        (w as { display_no?: unknown }).display_no
     ),
     title: String(
       (w as { work_title?: unknown; title?: unknown }).work_title ??
@@ -82,66 +67,7 @@ function buildWorksPayload(
         0
     ),
     imageUrl: normalizeWorkImageUrl(String((w as { image_url?: unknown }).image_url ?? "")),
-  })).sort((a, b) => {
-    const aNo = Number(a.displayNo) || 0;
-    const bNo = Number(b.displayNo) || 0;
-    return bNo - aNo;
-  });
-}
-
-async function fetchWorksPageWithFallback(
-  supabase: ReturnType<typeof createAdminClient>,
-  options: {
-    from: number;
-    to: number;
-    withCount?: boolean;
-    searchKeyword?: string;
-  }
-): Promise<{
-  data: unknown[] | null;
-  count: number | null;
-  error: { message?: string } | null;
-}> {
-  const { from, to, withCount = true, searchKeyword } = options;
-  const selectOpts = withCount ? ({ count: "exact" } as const) : undefined;
-
-  const buildBase = () => {
-    let q = supabase.from("works").select("*", selectOpts);
-    if (searchKeyword) {
-      q = q.or(`work_title.ilike.%${searchKeyword}%,title.ilike.%${searchKeyword}%`);
-    }
-    return q.range(from, to);
-  };
-
-  // 优先按 display_no 排序；若线上缺列则降级 created_at。
-  let first = await buildBase()
-    .order("display_no", { ascending: false, nullsFirst: false })
-    .order("created_at", { ascending: false });
-
-  if (!first.error) {
-    return {
-      data: first.data as unknown[] | null,
-      count: (first as { count?: number | null }).count ?? null,
-      error: null,
-    };
-  }
-
-  const msg = String(first.error.message ?? "").toLowerCase();
-  const displayNoMissing = msg.includes("display_no") && msg.includes("does not exist");
-  if (!displayNoMissing) {
-    return {
-      data: first.data as unknown[] | null,
-      count: (first as { count?: number | null }).count ?? null,
-      error: first.error as { message?: string },
-    };
-  }
-
-  const fallback = await buildBase().order("created_at", { ascending: false });
-  return {
-    data: fallback.data as unknown[] | null,
-    count: (fallback as { count?: number | null }).count ?? null,
-    error: fallback.error as { message?: string } | null,
-  };
+  }));
 }
 
 export async function GET(request: Request) {
@@ -173,17 +99,19 @@ export async function GET(request: Request) {
     // 搜索接口：作品名 + 作者双维度匹配，限制返回前 20。
     if (searchKeyword.length >= 2) {
       const safeKeyword = searchKeyword.slice(0, 40);
-      const { data: pageRows, error: listErr, count } = await fetchWorksPageWithFallback(
-        supabase,
-        { from, to, withCount: true, searchKeyword: safeKeyword }
-      );
+      const { data: pageRows, error: listErr, count } = await supabase
+        .from("works")
+        .select("*", { count: "exact" })
+        .or(`work_title.ilike.%${safeKeyword}%,title.ilike.%${safeKeyword}%`)
+        .order("display_no", { ascending: false, nullsFirst: false })
+        .range(from, to);
       if (listErr) {
         console.error(listErr);
         return NextResponse.json({ error: "搜索失败，请稍后重试" }, { status: 500 });
       }
       const rows = Array.isArray(pageRows) ? pageRows : [];
       const total = Number(count ?? 0);
-      const list = buildWorksPayload(rows, page, pageSize, total);
+      const list = buildWorksPayload(rows);
       const hasMore = page * pageSize < total;
 
       let used = 0;
@@ -208,11 +136,11 @@ export async function GET(request: Request) {
         votedWorkIds,
       });
     }
-    const { data, error: listErr, count } = await fetchWorksPageWithFallback(supabase, {
-      from,
-      to,
-      withCount: true,
-    });
+    const { data, error: listErr, count } = await supabase
+      .from("works")
+      .select("*", { count: "exact" })
+      .order("display_no", { ascending: false, nullsFirst: false })
+      .range(from, to);
     if (listErr) {
       console.error(listErr);
       const message = listErr.message || "读取作品失败";
@@ -220,7 +148,7 @@ export async function GET(request: Request) {
     }
     const workRows = Array.isArray(data) ? data : [];
     const total = Number(count ?? 0);
-    const list = buildWorksPayload(workRows, page, pageSize, total);
+    const list = buildWorksPayload(workRows);
     const hasMore = page * pageSize < total;
 
     // 仅基于 Supabase 今日投票记录计算剩余票数。
