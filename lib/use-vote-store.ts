@@ -105,7 +105,7 @@ export function useVoteHomeState(): {
       );
     } catch (err) {
       console.error("useVoteHomeState: /api/works failed", err);
-      setWorks((prev) => prev);
+      setWorks((prev) => prev ?? []);
       setLoadError("网络超时，请重试");
       setVotedWorkIdsFromApi([]);
     } finally {
