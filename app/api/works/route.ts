@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getClientIp } from "@/lib/get-client-ip";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { addDisplayNumbers } from "@/lib/work-display";
+import { addDisplayNumbersPreferExisting } from "@/lib/work-display";
 import type { Work } from "@/lib/types";
 import {
   isAcceptableWorksImagePath,
@@ -70,7 +70,7 @@ function buildWorksPayload(
   rows: unknown[],
   voteCounts: Map<string, number>
 ): Array<Work & { vote_count: number; actualVotes: number }> {
-  const baseRows: Array<Omit<Work, "displayNo">> = rows.map((w) => {
+  const baseRows: Array<Omit<Work, "displayNo"> & { displayNo?: string | null }> = rows.map((w) => {
     const id = String((w as { id?: unknown }).id ?? "");
     const votes = voteCounts.get(id) ?? 0;
     return {
@@ -87,10 +87,16 @@ function buildWorksPayload(
       ),
       votes,
       createdAt: String((w as { created_at?: unknown }).created_at ?? ""),
+      displayNo:
+        String(
+          (w as { displayNo?: unknown; display_no?: unknown }).displayNo ??
+            (w as { display_no?: unknown }).display_no ??
+            ""
+        ) || undefined,
     };
   });
 
-  const withDisplayNo = addDisplayNumbers(baseRows);
+  const withDisplayNo = addDisplayNumbersPreferExisting(baseRows);
   const withFields = withDisplayNo.map((w, index) => ({
     ...w,
     displayNo: w.displayNo || `No.${String(index + 1).padStart(3, "0")}`,

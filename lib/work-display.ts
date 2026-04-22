@@ -1,8 +1,27 @@
 import type { Work } from "./types";
 
+type WorkWithOptionalDisplayNo = Omit<Work, "displayNo"> & {
+  displayNo?: string | null;
+};
+
+function toCanonicalDisplayNo(raw: string | null | undefined): string | null {
+  const t = String(raw ?? "").trim();
+  if (!t) return null;
+  const digits = t.replace(/\D/g, "");
+  if (!digits) return null;
+  return String(Number(digits)).padStart(3, "0");
+}
+
 /** 按创建时间升序分配编号：最早提交为 001，依次递增 */
 export function addDisplayNumbers(
   rows: Omit<Work, "displayNo">[]
+): Work[] {
+  return addDisplayNumbersPreferExisting(rows);
+}
+
+/** 优先使用已有编号（如数据库 displayNo / display_no），缺失时按创建时间补号 */
+export function addDisplayNumbersPreferExisting(
+  rows: WorkWithOptionalDisplayNo[]
 ): Work[] {
   const sorted = [...rows].sort(
     (a, b) =>
@@ -13,7 +32,7 @@ export function addDisplayNumbers(
   );
   return rows.map((w) => ({
     ...w,
-    displayNo: noById.get(w.id) ?? "000",
+    displayNo: toCanonicalDisplayNo(w.displayNo) ?? noById.get(w.id) ?? "000",
   }));
 }
 

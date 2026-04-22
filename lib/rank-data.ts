@@ -1,4 +1,4 @@
-import { addDisplayNumbers } from "@/lib/work-display";
+import { addDisplayNumbersPreferExisting } from "@/lib/work-display";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizeWorkImageUrl } from "@/lib/work-image-url";
 import type { Work } from "@/lib/types";
@@ -66,7 +66,7 @@ export async function fetchWorksRankedByVotes(): Promise<Work[]> {
     console.warn("rank votes without matching works.id:", unmatchedVoteRows);
   }
 
-  const list = addDisplayNumbers(
+  const list = addDisplayNumbersPreferExisting(
     works.map((w) => ({
       id: String((w as { id?: unknown }).id ?? ""),
       title: String((w as { title?: unknown }).title ?? ""),
@@ -75,6 +75,12 @@ export async function fetchWorksRankedByVotes(): Promise<Work[]> {
       imageUrl: normalizeWorkImageUrl(String((w as { image_url?: unknown }).image_url ?? "")),
       votes: voteCounts.get(String((w as { id?: unknown }).id ?? "")) ?? 0,
       createdAt: String((w as { created_at?: unknown }).created_at ?? ""),
+      displayNo:
+        String(
+          (w as { displayNo?: unknown; display_no?: unknown }).displayNo ??
+            (w as { display_no?: unknown }).display_no ??
+            ""
+        ) || undefined,
     }))
   );
 
