@@ -121,11 +121,9 @@ export async function GET(request: Request) {
       url.searchParams.get("keyword") ??
       url.searchParams.get("search");
     const searchKeyword = (rawSearchParam ?? "").trim();
+    const fetchAll = url.searchParams.get("all") === "1";
     const page = Math.max(1, Number(url.searchParams.get("page") ?? 1) || 1);
-    const pageSize = Math.min(
-      30,
-      Math.max(20, Number(url.searchParams.get("pageSize") ?? 24) || 24)
-    );
+    const pageSize = 24;
     const searchLimit = Math.min(
       Math.max(Number(url.searchParams.get("limit") ?? 20) || 20, 1),
       20,
@@ -165,10 +163,10 @@ export async function GET(request: Request) {
       });
       const limited = filtered.length > searchLimit;
       const list = buildWorksPayload(filtered.slice(0, searchLimit), voteCounts);
-      const start = (page - 1) * pageSize;
-      const end = start + pageSize;
+      const start = fetchAll ? 0 : (page - 1) * pageSize;
+      const end = fetchAll ? list.length : start + pageSize;
       const pageWorks = list.slice(start, end);
-      const hasMore = end < list.length;
+      const hasMore = !fetchAll && end < list.length;
 
       let used = 0;
       let votedWorkIds: string[] = [];
@@ -206,10 +204,10 @@ export async function GET(request: Request) {
       new Set(workRows.map((w) => String((w as { id?: unknown }).id ?? "")))
     );
     const list = buildWorksPayload(workRows, voteCounts);
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
+    const start = fetchAll ? 0 : (page - 1) * pageSize;
+    const end = fetchAll ? list.length : start + pageSize;
     const pageWorks = list.slice(start, end);
-    const hasMore = end < list.length;
+    const hasMore = !fetchAll && end < list.length;
 
     // 仅基于 Supabase 今日投票记录计算剩余票数。
     let used = 0;

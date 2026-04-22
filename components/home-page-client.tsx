@@ -193,6 +193,7 @@ function HomePageContent() {
     hasMore,
     loadingMore,
     loadMore,
+    loadError,
     remaining: apiRemaining,
     dailyVoteLimit,
     votedWorkIdsFromApi,
@@ -211,6 +212,7 @@ function HomePageContent() {
   /** 避免「先 setState 再 replaceQuery」时 effect 因 id 尚未写入而误关弹窗 */
   const skipUrlSyncOnceRef = useRef(false);
   const voteCooldownUntilRef = useRef<Map<string, number>>(new Map());
+  const bottomLoadRef = useRef<HTMLDivElement | null>(null);
 
   const normalizedSearch = searchQuery.trim();
 
@@ -329,6 +331,25 @@ function HomePageContent() {
       cancelled = true;
     };
   }, []);
+
+  useEffect(() => {
+    if (normalizedSearch) return;
+    if (!hasMore) return;
+    const node = bottomLoadRef.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (!entry?.isIntersecting) return;
+        if (!loadingMore) {
+          void loadMore();
+        }
+      },
+      { root: null, rootMargin: "400px 0px", threshold: 0.01 }
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loadMore, normalizedSearch]);
 
   /** 接口返回的今日已投作品 id 与本地合并，保证与数据库一致 */
   useEffect(() => {
@@ -589,6 +610,27 @@ function HomePageContent() {
     );
   }
 
+  if (loadError && works.length === 0) {
+    return (
+      <div className="flex w-full flex-1 flex-col">
+        <HomeSiteNav />
+        <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-4 pb-10 pt-[calc(var(--nav-safe)+1.15rem)] sm:px-6 sm:pt-[calc(var(--nav-safe)+1.25rem)]">
+          <div className="glass-panel mt-8 rounded-3xl px-8 py-14 text-center">
+            <p className="text-base font-semibold text-stone-800/90">{loadError}</p>
+            <button
+              type="button"
+              onClick={() => void refresh()}
+              className="mt-5 rounded-full border border-emerald-200/80 bg-white/75 px-5 py-2 text-sm font-semibold text-[#4a2f22]"
+            >
+              点击重试
+            </button>
+          </div>
+        </div>
+        <SpringFooter />
+      </div>
+    );
+  }
+
   return (
     <div className="flex w-full flex-1 flex-col">
       <HomeSiteNav />
@@ -796,16 +838,16 @@ function HomePageContent() {
                       </li>
                     ))}
                   </ul>
-                  {hasMore && !normalizedSearch && (
-                    <div className="mt-8 flex justify-center">
-                      <button
-                        type="button"
-                        onClick={() => void loadMore()}
-                        disabled={loadingMore}
-                        className="rounded-full border border-emerald-200/80 bg-white/75 px-5 py-2 text-sm font-semibold text-[#4a2f22] disabled:cursor-not-allowed disabled:opacity-45"
-                      >
-                        {loadingMore ? "加载中..." : "加载更多"}
-                      </button>
+                  {!normalizedSearch && (
+                    <div ref={bottomLoadRef} className="mt-8 flex justify-center">
+                      {loadingMore && (
+                        <span className="rounded-full border border-emerald-200/70 bg-white/75 px-5 py-2 text-sm font-semibold text-[#4a2f22]">
+                          加载中...
+                        </span>
+                      )}
+                      {!hasMore && works.length > 0 && (
+                        <span className="text-xs text-stone-700/70">已加载全部作品</span>
+                      )}
                     </div>
                   )}
                 </>

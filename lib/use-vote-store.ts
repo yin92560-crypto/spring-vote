@@ -17,6 +17,7 @@ export function useVoteHomeState(): {
   works: Work[] | undefined;
   hasMore: boolean;
   loadingMore: boolean;
+  loadError: string | null;
   remaining: number;
   dailyVoteLimit: number;
   votedWorkIdsFromApi: string[];
@@ -28,6 +29,7 @@ export function useVoteHomeState(): {
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [remaining, setRemaining] = useState(DAILY_VOTE_LIMIT);
   const [dailyVoteLimit, setDailyVoteLimit] = useState(DAILY_VOTE_LIMIT);
   const [votedWorkIdsFromApi, setVotedWorkIdsFromApi] = useState<string[]>([]);
@@ -57,6 +59,7 @@ export function useVoteHomeState(): {
           votedWorkIds?: string[];
         };
         if (Array.isArray(j.works)) setWorks(j.works);
+        setLoadError(null);
         setCurrentPage(1);
         setHasMore(Boolean(j.hasMore));
         if (typeof j.remaining === "number") setRemaining(j.remaining);
@@ -76,7 +79,8 @@ export function useVoteHomeState(): {
         window.clearTimeout(timeoutId);
         if (attempt >= 3) {
           console.error("useVoteHomeState: /api/works failed after retries", err);
-          setWorks((prev) => prev ?? []);
+          setWorks((prev) => prev);
+          setLoadError("网络卡顿，请点击重试");
           setVotedWorkIdsFromApi([]);
           return;
         }
@@ -117,10 +121,12 @@ export function useVoteHomeState(): {
           return merged;
         });
       }
+      setLoadError(null);
       setCurrentPage(nextPage);
       setHasMore(Boolean(j.hasMore));
     } catch (err) {
       console.error("useVoteHomeState: load more failed", err);
+      setLoadError("网络卡顿，请点击重试");
     } finally {
       window.clearTimeout(timeoutId);
       setLoadingMore(false);
@@ -155,6 +161,7 @@ export function useVoteHomeState(): {
     works,
     hasMore,
     loadingMore,
+    loadError,
     remaining,
     dailyVoteLimit,
     votedWorkIdsFromApi,
@@ -177,7 +184,7 @@ export function useWorksList(): {
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 8000);
     try {
-      const r = await fetch("/api/works", {
+      const r = await fetch("/api/works?all=1", {
         cache: "no-store",
         headers: voterId ? { "x-voter-id": voterId } : undefined,
         signal: controller.signal,
