@@ -24,9 +24,9 @@ type WorksApiItem = {
 function toDisplayNo(raw: unknown, indexWithinPage: number, page: number): string {
   const text = String(raw ?? "").trim();
   const digits = text.replace(/\D/g, "");
-  if (digits) return `No.${String(Number(digits)).padStart(3, "0")}`;
+  if (digits) return String(Number(digits)).padStart(3, "0");
   const seq = (page - 1) * PAGE_SIZE + indexWithinPage + 1;
-  return `No.${String(seq).padStart(3, "0")}`;
+  return String(seq).padStart(3, "0");
 }
 
 function buildWorksPayload(rows: unknown[], page: number): WorksApiItem[] {
@@ -88,6 +88,7 @@ export async function GET(request: Request) {
         .from("works")
         .select("*", { count: "exact" })
         .or(`work_title.ilike.%${safeKeyword}%,title.ilike.%${safeKeyword}%`)
+        .order("display_no", { ascending: false, nullsFirst: false })
         .order("created_at", { ascending: false })
         .range(from, to);
       if (listErr) {
@@ -122,6 +123,7 @@ export async function GET(request: Request) {
     const { data, error: listErr, count } = await supabase
       .from("works")
       .select("*", { count: "exact" })
+      .order("display_no", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false })
       .range(from, to);
     if (listErr) {

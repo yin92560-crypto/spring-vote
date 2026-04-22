@@ -14,6 +14,11 @@ export function emitVoteRefresh(): void {
 }
 
 function normalizeWorks(list: unknown[]): Work[] {
+  const toDisplayNo = (raw: unknown): string => {
+    const digits = String(raw ?? "").replace(/\D/g, "");
+    if (!digits) return "";
+    return String(Number(digits)).padStart(3, "0");
+  };
   return list.map((item) => {
     const row = item as {
       id?: unknown;
@@ -27,7 +32,7 @@ function normalizeWorks(list: unknown[]): Work[] {
     };
     return {
       id: String(row.id ?? ""),
-      displayNo: String(row.displayNo ?? ""),
+      displayNo: toDisplayNo(row.displayNo),
       title: String(row.title ?? ""),
       workTitle: String(row.workTitle ?? row.title ?? ""),
       authorName: String(row.authorName ?? ""),
