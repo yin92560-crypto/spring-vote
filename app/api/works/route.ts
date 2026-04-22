@@ -33,41 +33,50 @@ function toDisplayNo(raw: unknown): string {
 
 function buildWorksPayload(
   rows: unknown[],
+  page: number,
+  pageSize: number,
+  totalCount: number
 ): WorksApiItem[] {
-  return rows.map((w) => ({
-    id: String((w as { id?: unknown }).id ?? ""),
-    displayNo: toDisplayNo(
-      (w as { displayNo?: unknown; display_no?: unknown }).displayNo ??
-        (w as { display_no?: unknown }).display_no
-    ),
-    title: String(
-      (w as { work_title?: unknown; title?: unknown }).work_title ??
-        (w as { title?: unknown }).title ??
-        ""
-    ),
-    workTitle: String(
-      (w as { work_title?: unknown; title?: unknown }).work_title ??
-        (w as { title?: unknown }).title ??
-        ""
-    ),
-    authorName: String(
-      (w as { author_name?: unknown; author?: unknown; username?: unknown }).author_name ??
-        (w as { author?: unknown }).author ??
-        (w as { username?: unknown }).username ??
-        ""
-    ),
-    vote_count: Number(
-      (w as { vote_count?: unknown; votes_count?: unknown }).vote_count ??
-        (w as { votes_count?: unknown }).votes_count ??
-        0
-    ),
-    votes: Number(
-      (w as { vote_count?: unknown; votes_count?: unknown }).vote_count ??
-        (w as { votes_count?: unknown }).votes_count ??
-        0
-    ),
-    imageUrl: normalizeWorkImageUrl(String((w as { image_url?: unknown }).image_url ?? "")),
-  }));
+  return rows.map((w, idx) => {
+    const fallbackNo = Math.max(1, totalCount - (page - 1) * pageSize - idx);
+    const rawNo = toDisplayNo(
+      (w as { displayNo?: unknown; display_no?: unknown; displayno?: unknown })
+        .displayNo ??
+        (w as { display_no?: unknown }).display_no ??
+        (w as { displayno?: unknown }).displayno
+    );
+    return {
+      id: String((w as { id?: unknown }).id ?? ""),
+      displayNo: rawNo || String(fallbackNo),
+      title: String(
+        (w as { work_title?: unknown; title?: unknown }).work_title ??
+          (w as { title?: unknown }).title ??
+          ""
+      ),
+      workTitle: String(
+        (w as { work_title?: unknown; title?: unknown }).work_title ??
+          (w as { title?: unknown }).title ??
+          ""
+      ),
+      authorName: String(
+        (w as { author_name?: unknown; author?: unknown; username?: unknown }).author_name ??
+          (w as { author?: unknown }).author ??
+          (w as { username?: unknown }).username ??
+          ""
+      ),
+      vote_count: Number(
+        (w as { vote_count?: unknown; votes_count?: unknown }).vote_count ??
+          (w as { votes_count?: unknown }).votes_count ??
+          0
+      ),
+      votes: Number(
+        (w as { vote_count?: unknown; votes_count?: unknown }).vote_count ??
+          (w as { votes_count?: unknown }).votes_count ??
+          0
+      ),
+      imageUrl: normalizeWorkImageUrl(String((w as { image_url?: unknown }).image_url ?? "")),
+    };
+  });
 }
 
 async function fetchWorksPageWithFallback(
@@ -162,7 +171,7 @@ export async function GET(request: Request) {
       }
       const rows = Array.isArray(pageRows) ? pageRows : [];
       const total = Number(count ?? 0);
-      const list = buildWorksPayload(rows);
+      const list = buildWorksPayload(rows, page, pageSize, total);
       const hasMore = page * pageSize < total;
 
       let used = 0;
@@ -198,7 +207,7 @@ export async function GET(request: Request) {
     }
     const workRows = Array.isArray(data) ? data : [];
     const total = Number(count ?? 0);
-    const list = buildWorksPayload(workRows);
+    const list = buildWorksPayload(workRows, page, pageSize, total);
     const hasMore = page * pageSize < total;
 
     // 仅基于 Supabase 今日投票记录计算剩余票数。
