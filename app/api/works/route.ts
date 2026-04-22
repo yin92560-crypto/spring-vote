@@ -24,23 +24,36 @@ type WorksApiItem = {
   imageUrl: string;
 };
 
-function toDisplayNo(raw: unknown, indexWithinPage: number, page: number): string {
-  void indexWithinPage;
-  void page;
+function toDisplayNo(
+  raw: unknown,
+  indexWithinPage: number,
+  page: number,
+  pageSize: number,
+  totalCount: number
+): string {
   const text = String(raw ?? "").trim();
   const digits = text.replace(/\D/g, "");
   if (digits) return String(Number(digits)).padStart(3, "0");
-  return "000";
+  // 兜底：按全量倒序编号，保证首屏首卡可显示如 766。
+  const seq = Math.max(1, totalCount - ((page - 1) * pageSize + indexWithinPage));
+  return String(seq).padStart(3, "0");
 }
 
-function buildWorksPayload(rows: unknown[], page: number): WorksApiItem[] {
+function buildWorksPayload(
+  rows: unknown[],
+  page: number,
+  pageSize: number,
+  totalCount: number
+): WorksApiItem[] {
   return rows.map((w, idx) => ({
     id: String((w as { id?: unknown }).id ?? ""),
     displayNo: toDisplayNo(
       (w as { displayNo?: unknown; display_no?: unknown }).displayNo ??
         (w as { display_no?: unknown }).display_no,
       idx,
-      page
+      page,
+      pageSize,
+      totalCount
     ),
     title: String(
       (w as { work_title?: unknown; title?: unknown }).work_title ??
@@ -169,8 +182,8 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: "搜索失败，请稍后重试" }, { status: 500 });
       }
       const rows = Array.isArray(pageRows) ? pageRows : [];
-      const list = buildWorksPayload(rows, page);
-      const total = Number(count ?? list.length);
+      const total = Number(count ?? 0);
+      const list = buildWorksPayload(rows, page, pageSize, total);
       const hasMore = page * pageSize < total;
 
       let used = 0;
@@ -206,8 +219,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: message, detail: listErr }, { status: 500 });
     }
     const workRows = Array.isArray(data) ? data : [];
-    const list = buildWorksPayload(workRows, page);
-    const total = Number(count ?? list.length);
+    const total = Number(count ?? 0);
+    const list = buildWorksPayload(workRows, page, pageSize, total);
     const hasMore = page * pageSize < total;
 
     // 仅基于 Supabase 今日投票记录计算剩余票数。
