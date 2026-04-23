@@ -214,7 +214,38 @@ function HomePageContent() {
   /** 避免「先 setState 再 replaceQuery」时 effect 因 id 尚未写入而误关弹窗 */
   const skipUrlSyncOnceRef = useRef(false);
   const voteCooldownUntilRef = useRef<Map<string, number>>(new Map());
+  const deepLinkFetchIdRef = useRef<string | null>(null);
   const [jumpPage, setJumpPage] = useState("");
+  const toDisplayNo = (raw: unknown): string => {
+    const digits = String(raw ?? "").replace(/\D/g, "");
+    if (!digits) return "";
+    return String(Number(digits)).padStart(3, "0");
+  };
+
+  const mapApiWorkToWork = (item: unknown): Work => {
+    const row = item as {
+      id?: unknown;
+      displayNo?: unknown;
+      title?: unknown;
+      workTitle?: unknown;
+      authorName?: unknown;
+      imageUrl?: unknown;
+      vote_count?: unknown;
+      votes?: unknown;
+    };
+    return {
+      id: String(row.id ?? ""),
+      displayNo: toDisplayNo(row.displayNo),
+      title: String(row.title ?? ""),
+      workTitle: String(row.workTitle ?? row.title ?? ""),
+      authorName: String(row.authorName ?? ""),
+      imageUrl: String(row.imageUrl ?? ""),
+      votes: Number(row.vote_count ?? row.votes ?? 0),
+      createdAt: "",
+      isVoted: false,
+    };
+  };
+
 
   const normalizedSearch = searchQuery.trim();
 
@@ -296,8 +327,40 @@ function HomePageContent() {
       return;
     }
     const w = findWorkByDisplayQuery(worksWithVoteFlags, idParam);
-    setDetailWork(w ?? null);
-  }, [searchParams, worksWithVoteFlags]);
+    if (w) {
+      deepLinkFetchIdRef.current = null;
+      setDetailWork(w);
+      return;
+    }
+    if (deepLinkFetchIdRef.current === idParam) return;
+    deepLinkFetchIdRef.current = idParam;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const r = await fetch(`/api/works?id=${encodeURIComponent(idParam)}`, {
+          cache: "no-store",
+        });
+        if (!r.ok || cancelled) {
+          setDetailWork(null);
+          return;
+        }
+        const j = (await r.json()) as { data?: unknown[]; work?: unknown };
+        const item = Array.isArray(j.data) && j.data.length > 0 ? j.data[0] : j.work;
+        if (!item) {
+          setDetailWork(null);
+          return;
+        }
+        const remoteWork = mapApiWorkToWork(item);
+        remoteWork.isVoted = votedWorkIdsToday.includes(remoteWork.id);
+        setDetailWork(remoteWork);
+      } catch {
+        setDetailWork(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [searchParams, worksWithVoteFlags, votedWorkIdsToday]);
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;

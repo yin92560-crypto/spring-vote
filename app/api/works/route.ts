@@ -148,6 +148,7 @@ async function fetchWorksPageWithFallback(
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
+    const rawIdParam = url.searchParams.get("id")?.trim() ?? "";
     const rawSearchParam =
       url.searchParams.get("search") ??
       url.searchParams.get("q") ??
@@ -172,6 +173,36 @@ export async function GET(request: Request) {
     const supabase = createAdminClient();
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
+
+    // 分享直达：按 display_no 或 UUID 查询单条作品（不受当前分页限制）
+    if (rawIdParam) {
+      const isUuidId = UUID_RE.test(rawIdParam);
+      const normalizedDigits = rawIdParam.replace(/\D/g, "");
+      let singleQuery = supabase.from("works").select("*").limit(1);
+      if (isUuidId) {
+        singleQuery = singleQuery.eq("id", rawIdParam);
+      } else if (normalizedDigits) {
+        singleQuery = singleQuery.eq("display_no", String(Number(normalizedDigits)));
+      } else {
+        singleQuery = singleQuery.eq("display_no", rawIdParam);
+      }
+      const { data: oneRows, error: oneErr } = await singleQuery;
+      if (oneErr) {
+        console.error(oneErr);
+        return NextResponse.json({ error: "读取作品失败", detail: oneErr }, { status: 500 });
+      }
+      const rows = Array.isArray(oneRows) ? oneRows : [];
+      const list = buildWorksPayload(rows, 1, 1, rows.length);
+      return NextResponse.json({
+        data: list,
+        work: list[0] ?? null,
+        totalCount: list.length,
+        page: 1,
+        limit: 1,
+        total: list.length,
+        hasMore: false,
+      });
+    }
     // 搜索接口：全库匹配（display_no 精确 + 标题模糊），并支持分页联动。
     if (searchKeyword.length > 0) {
       const safeKeyword = searchKeyword.slice(0, 40);
