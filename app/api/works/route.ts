@@ -176,15 +176,21 @@ export async function GET(request: NextRequest) {
     // 分享直达：id 参数走独立单条查询（不受分页影响）
     if (rawIdParam) {
       try {
-        const { data: row, error: byIdErr } = await supabase
-          .from("works")
-          .select("*")
-          .eq("id", rawIdParam)
-          .single();
+        const compactId = rawIdParam.trim();
+        const digitsOnly = compactId.replace(/\D/g, "");
+        const isShortDisplayNo = compactId.length < 10 && /^\d+$/.test(compactId);
+        const isUuidLike = UUID_RE.test(compactId) || (compactId.length >= 10 && compactId.includes("-"));
+
+        const query = supabase.from("works").select("*");
+        const { data: row, error: byIdErr } = isShortDisplayNo
+          ? await query.eq("display_no", String(Number(digitsOnly || "0"))).single()
+          : isUuidLike
+            ? await query.eq("id", compactId).single()
+            : await query.eq("display_no", String(Number(digitsOnly || "0"))).single();
+
         if (byIdErr) {
           const msg = String(byIdErr.message ?? "").toLowerCase();
-          const isNotFound =
-            msg.includes("0 rows") || msg.includes("no rows") || msg.includes("json object requested");
+          const isNotFound = msg.includes("0 rows") || msg.includes("no rows");
           if (isNotFound) {
             return NextResponse.json({ error: "作品不存在" }, { status: 404 });
           }
