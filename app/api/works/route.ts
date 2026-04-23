@@ -93,7 +93,15 @@ async function fetchWorksPageWithFallback(
   const buildBase = () => {
     let q = supabase.from("works").select("*", selectOpts);
     if (searchKeyword) {
-      q = q.or(`work_title.ilike.%${searchKeyword}%,title.ilike.%${searchKeyword}%`);
+      const normalizedDigits = searchKeyword.replace(/\D/g, "");
+      const orParts = [
+        `work_title.ilike.%${searchKeyword}%`,
+        `title.ilike.%${searchKeyword}%`,
+      ];
+      if (normalizedDigits) {
+        orParts.push(`display_no.eq.${normalizedDigits}`);
+      }
+      q = q.or(orParts.join(","));
     }
     return q.range(from, to);
   };
@@ -131,6 +139,7 @@ export async function GET(request: Request) {
   try {
     const url = new URL(request.url);
     const rawSearchParam =
+      url.searchParams.get("search") ??
       url.searchParams.get("q") ??
       url.searchParams.get("query") ??
       url.searchParams.get("keyword") ??
@@ -153,8 +162,8 @@ export async function GET(request: Request) {
     const supabase = createAdminClient();
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
-    // 搜索接口：作品名 + 作者双维度匹配，限制返回前 20。
-    if (searchKeyword.length >= 2) {
+    // 搜索接口：全库匹配（display_no 精确 + 标题模糊），并支持分页联动。
+    if (searchKeyword.length > 0) {
       const safeKeyword = searchKeyword.slice(0, 40);
       const { data: pageRows, error: listErr, count } = await fetchWorksPageWithFallback(
         supabase,
@@ -186,6 +195,7 @@ export async function GET(request: Request) {
         data: list,
         works: list,
         totalCount: total,
+        search: safeKeyword,
         remaining,
         limited: hasMore,
         page,

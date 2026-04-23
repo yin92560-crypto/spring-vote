@@ -43,7 +43,7 @@ function normalizeWorks(list: unknown[]): Work[] {
   });
 }
 
-export function useVoteHomeState(): {
+export function useVoteHomeState(searchKeyword?: string): {
   works: Work[] | undefined;
   page: number;
   totalCount: number;
@@ -64,13 +64,21 @@ export function useVoteHomeState(): {
   const [dailyVoteLimit, setDailyVoteLimit] = useState(DAILY_VOTE_LIMIT);
   const [votedWorkIdsFromApi, setVotedWorkIdsFromApi] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const setPage = useCallback((page: number) => {
+    setCurrentPage(Math.max(1, page));
+  }, []);
 
   const refresh = useCallback(async () => {
     const voterId = getOrCreateClientVoterId();
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 30000);
     try {
-      const r = await fetch(`/api/works?page=${currentPage}&limit=24`, {
+      const p = new URLSearchParams();
+      p.set("page", String(currentPage));
+      p.set("limit", "24");
+      const keyword = String(searchKeyword ?? "").trim();
+      if (keyword) p.set("search", keyword);
+      const r = await fetch(`/api/works?${p.toString()}`, {
         cache: "no-store",
         headers: voterId ? { "x-voter-id": voterId } : undefined,
         signal: controller.signal,
@@ -111,7 +119,7 @@ export function useVoteHomeState(): {
     } finally {
       window.clearTimeout(timeoutId);
     }
-  }, [currentPage]);
+  }, [currentPage, searchKeyword]);
 
   useEffect(() => {
     let cancelled = false;
@@ -144,7 +152,7 @@ export function useVoteHomeState(): {
     votedWorkIdsFromApi,
     loading,
     refresh,
-    setPage: (page: number) => setCurrentPage(Math.max(1, page)),
+    setPage,
   };
 }
 

@@ -15,7 +15,6 @@ import {
 } from "react";
 import { WorkDetailModal } from "@/components/work-detail-modal";
 import { WorkRemoteImage } from "@/components/work-remote-image";
-import { filterWorksBySearch } from "@/lib/work-display";
 import { findWorkByDisplayQuery } from "@/lib/work-query-id";
 import type { Work } from "@/lib/types";
 import { LanguageSwitcher } from "@/components/language-switcher";
@@ -185,10 +184,13 @@ function HomePageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeSearchQuery, setActiveSearchQuery] = useState("");
 
   const {
     works,
     page,
+    totalCount,
     totalPages,
     loading,
     refresh,
@@ -197,9 +199,8 @@ function HomePageContent() {
     remaining: apiRemaining,
     dailyVoteLimit,
     votedWorkIdsFromApi,
-  } = useVoteHomeState();
+  } = useVoteHomeState(activeSearchQuery);
   const [toast, setToast] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [detailWork, setDetailWork] = useState<Work | null>(null);
   const [votePendingWorkId, setVotePendingWorkId] = useState<string | null>(null);
   const [localUsedVotes, setLocalUsedVotes] = useState(0);
@@ -215,6 +216,15 @@ function HomePageContent() {
   const [jumpPage, setJumpPage] = useState("");
 
   const normalizedSearch = searchQuery.trim();
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const next = normalizedSearch;
+      setPage(1);
+      setActiveSearchQuery(next);
+    }, 350);
+    return () => window.clearTimeout(timer);
+  }, [normalizedSearch, setPage]);
 
   /** 本地、/api/works、votes 表取「已用票数」较大值，与数据库真实投票一致 */
   const effectiveUsedVotes = useMemo(() => {
@@ -241,11 +251,8 @@ function HomePageContent() {
       })),
     [worksList, votedWorkIdsToday]
   );
-  /** 全量作品来自 /api/works；搜索仅用本地过滤，避免「等接口时整页空白」 */
-  const filteredWorks = useMemo(() => {
-    if (!normalizedSearch) return worksWithVoteFlags;
-    return filterWorksBySearch(worksWithVoteFlags, normalizedSearch);
-  }, [worksWithVoteFlags, normalizedSearch]);
+  /** 搜索结果由后端 /api/works?search= 返回，前端不再做本地 24 条过滤 */
+  const filteredWorks = worksWithVoteFlags;
   const pagedWorks = filteredWorks;
 
   const shareUrl = useMemo(() => {
@@ -743,15 +750,22 @@ function HomePageContent() {
                     type="search"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const next = e.currentTarget.value.trim();
+                        setPage(1);
+                        setActiveSearchQuery(next);
+                      }
+                    }}
                     placeholder={t("searchPlaceholder")}
                     className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-emerald-950 placeholder:text-emerald-900/55 outline-none transition-all duration-300 ease-out"
                     autoComplete="off"
                   />
                 </div>
                 <p className="mt-2 text-center text-xs text-stone-800/55">
-                  {t("worksTotal", { count: works.length })}
-                  {normalizedSearch
-                    ? t("worksFiltered", { count: filteredWorks.length })
+                  {t("worksTotal", { count: totalCount })}
+                  {activeSearchQuery
+                    ? t("worksFiltered", { count: totalCount })
                     : null}
                 </p>
               </div>
@@ -828,8 +842,7 @@ function HomePageContent() {
                       </li>
                     ))}
                   </ul>
-                  {!normalizedSearch && (
-                    <div className="glass-panel mt-8 flex flex-wrap items-center justify-center gap-2 rounded-2xl px-4 py-4 text-sm">
+                  <div className="glass-panel mt-8 flex flex-wrap items-center justify-center gap-2 rounded-2xl px-4 py-4 text-sm">
                       <button
                         type="button"
                         onClick={() => goToPage(page - 1)}
@@ -887,8 +900,7 @@ function HomePageContent() {
                           确认
                         </button>
                       </div>
-                    </div>
-                  )}
+                  </div>
                 </>
               )}
             </>
