@@ -288,6 +288,12 @@ function HomePageContent() {
   /** 搜索结果由后端 /api/works?search= 返回，前端不再做本地 24 条过滤 */
   const filteredWorks = worksWithVoteFlags;
   const pagedWorks = filteredWorks;
+  const detailWorkWithLiveVotes = useMemo(() => {
+    if (!detailWork) return null;
+    const nextVotes = optimisticVotes[detailWork.id];
+    if (typeof nextVotes !== "number") return detailWork;
+    return { ...detailWork, votes: nextVotes };
+  }, [detailWork, optimisticVotes]);
 
   const getCurrentVotesById = (workId: string): number => {
     if (typeof optimisticVotes[workId] === "number") return optimisticVotes[workId];
@@ -545,6 +551,25 @@ function HomePageContent() {
     void refresh();
   };
 
+  const refetchDetailWork = async (displayNo: string) => {
+    try {
+      const r = await fetch(`/api/works?id=${encodeURIComponent(displayNo)}`, {
+        cache: "no-store",
+      });
+      if (!r.ok) return;
+      const j = (await r.json()) as { data?: unknown[]; work?: unknown };
+      const item = Array.isArray(j.data) && j.data.length > 0 ? j.data[0] : j.work;
+      if (!item) return;
+      const latest = mapApiWorkToWork(item);
+      if (!latest.id) return;
+      latest.isVoted = votedWorkIdsToday.includes(latest.id);
+      setDetailWork((prev) => (prev && prev.id === latest.id ? latest : prev));
+      setOptimisticVotes((prev) => ({ ...prev, [latest.id]: latest.votes }));
+    } catch {
+      // ignore detail revalidate failure
+    }
+  };
+
   const shouldRetryVote = (res: Response | null, errMsg?: string): boolean => {
     if (res && (res.status === 500 || res.status === 502 || res.status === 503 || res.status === 504)) {
       return true;
@@ -682,6 +707,9 @@ function HomePageContent() {
       }
       // 成功后做一次轻量同步：刷新当前页与剩余票数（不重载整页）。
       void refresh();
+      if (detailWork?.id === workId && detailWork.displayNo) {
+        void refetchDetailWork(detailWork.displayNo);
+      }
     } finally {
       setVotePendingWorkId(null);
       setTimeout(() => setToast(null), 2400);
@@ -835,7 +863,7 @@ function HomePageContent() {
         )}
 
         <WorkDetailModal
-          work={detailWork}
+          work={detailWorkWithLiveVotes}
           navigableWorks={filteredWorks}
           onNavigateTo={openDetail}
           shareUrl={shareUrl}
