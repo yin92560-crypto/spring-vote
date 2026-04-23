@@ -72,7 +72,7 @@ export async function POST(request: Request) {
     }
     if (!rpcErr) {
       const payload = (Array.isArray(rpcData) ? rpcData[0] : rpcData) as
-        | { ok?: boolean; reason?: string; votes?: number; vote_count?: number }
+        | { ok?: boolean; reason?: string; votes?: number }
         | null;
       // RPC 若无明确结构化返回，视为不可用并回退到直写路径，避免“假成功不落库”。
       if (!payload || typeof payload !== "object" || typeof payload.ok !== "boolean") {
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
           { status: 200 }
         );
       }
-      const directVotes = Number(payload.votes ?? payload.vote_count ?? 0);
+      const directVotes = Number(payload.votes ?? 0);
       if (Number.isFinite(directVotes) && directVotes >= 0) {
         return NextResponse.json({ ok: true, votes: directVotes } as CastVoteResult, { status: 200 });
       }
@@ -218,7 +218,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "投票失败，请稍后重试" }, { status: 500 });
     }
 
-    // 6) 回写作品总票数（兼容 works.votes_count / works.votes）
+    // 6) 回写作品总票数（统一写 works.votes_count）
     const { count: totalCount, error: cntErr } = await supabase
       .from("votes")
       .select("*", { count: "exact", head: true })
@@ -231,13 +231,6 @@ export async function POST(request: Request) {
         .eq("id", p_work_id);
       if (upCountErr) {
         console.error("votes.route update works.votes_count failed:", upCountErr);
-        const { error: upLegacyErr } = await supabase
-          .from("works")
-          .update({ votes: nextVotes } as never)
-          .eq("id", p_work_id);
-        if (upLegacyErr) {
-          console.error("votes.route update tally failed:", upCountErr, upLegacyErr);
-        }
       }
     } else if (cntErr) {
       console.error("votes.route recount failed:", cntErr);

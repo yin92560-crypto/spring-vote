@@ -232,7 +232,7 @@ function HomePageContent() {
       workTitle?: unknown;
       authorName?: unknown;
       imageUrl?: unknown;
-      vote_count?: unknown;
+      votes_count?: unknown;
       votes?: unknown;
     };
     return {
@@ -242,7 +242,7 @@ function HomePageContent() {
       workTitle: String(row.workTitle ?? row.title ?? ""),
       authorName: String(row.authorName ?? ""),
       imageUrl: String(row.imageUrl ?? ""),
-      votes: Number(row.vote_count ?? row.votes ?? 0),
+      votes: Number(row.votes_count ?? row.votes ?? 0),
       createdAt: "",
       isVoted: false,
     };

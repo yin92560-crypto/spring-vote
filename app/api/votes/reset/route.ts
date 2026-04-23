@@ -26,15 +26,12 @@ export async function POST(request: Request) {
     }
 
     const nilId = "00000000-0000-0000-0000-000000000000";
-    let tallyCleared = false;
-    for (const col of ["votes_count", "votes"] as const) {
-      const { error: wcErr } = await supabase
-        .from("works")
-        .update({ [col]: 0 } as Record<string, number>)
-        .neq("id", nilId);
-      if (!wcErr) tallyCleared = true;
-    }
-    if (!tallyCleared) {
+    const { error: wcErr } = await supabase
+      .from("works")
+      .update({ votes_count: 0 })
+      .neq("id", nilId);
+    if (wcErr) {
+      console.error(wcErr);
       return NextResponse.json({ error: "清空作品票数汇总失败" }, { status: 500 });
     }
 

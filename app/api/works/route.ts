@@ -20,7 +20,7 @@ type WorksApiItem = {
   title: string;
   workTitle: string;
   authorName: string;
-  vote_count: number;
+  votes_count: number;
   votes: number;
   imageUrl: string;
 };
@@ -65,16 +65,8 @@ function buildWorksPayload(
           (w as { username?: unknown }).username ??
           ""
       ),
-      vote_count: Number(
-        (w as { vote_count?: unknown; votes_count?: unknown }).vote_count ??
-          (w as { votes_count?: unknown }).votes_count ??
-          0
-      ),
-      votes: Number(
-        (w as { vote_count?: unknown; votes_count?: unknown }).vote_count ??
-          (w as { votes_count?: unknown }).votes_count ??
-          0
-      ),
+      votes_count: Number((w as { votes_count?: unknown }).votes_count ?? 0),
+      votes: Number((w as { votes_count?: unknown }).votes_count ?? 0),
       imageUrl: normalizeWorkImageUrl(String((w as { image_url?: unknown }).image_url ?? "")),
     };
   });
