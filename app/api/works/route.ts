@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getClientIp } from "@/lib/get-client-ip";
 import { createAdminClient } from "@/lib/supabase/admin";
 import {
@@ -145,19 +145,18 @@ async function fetchWorksPageWithFallback(
   return { data: fallback.data, count: fallback.count, error: null };
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
-    const url = new URL(request.url);
-    const rawIdParam = url.searchParams.get("id")?.trim() ?? "";
+    const rawIdParam = request.nextUrl.searchParams.get("id")?.trim() ?? "";
     const rawSearchParam =
-      url.searchParams.get("search") ??
-      url.searchParams.get("q") ??
-      url.searchParams.get("query") ??
-      url.searchParams.get("keyword") ??
-      url.searchParams.get("search");
+      request.nextUrl.searchParams.get("search") ??
+      request.nextUrl.searchParams.get("q") ??
+      request.nextUrl.searchParams.get("query") ??
+      request.nextUrl.searchParams.get("keyword") ??
+      request.nextUrl.searchParams.get("search");
     const searchKeyword = (rawSearchParam ?? "").trim();
-    const fetchAll = url.searchParams.get("all") === "1";
-    const page = Math.max(1, Number(url.searchParams.get("page") ?? 1) || 1);
+    const fetchAll = request.nextUrl.searchParams.get("all") === "1";
+    const page = Math.max(1, Number(request.nextUrl.searchParams.get("page") ?? 1) || 1);
     const pageSize = fetchAll ? 1000 : PAGE_SIZE;
 
     const ip = getClientIp(request.headers);
@@ -176,54 +175,36 @@ export async function GET(request: Request) {
 
     // 分享直达：id 参数走独立单条查询（不受分页影响）
     if (rawIdParam) {
-      // 1) 按用户要求优先按 works.id 精确查询
-      const { data: byId, error: byIdErr } = await supabase
-        .from("works")
-        .select("*")
-        .eq("id", rawIdParam)
-        .single();
-
-      let row: unknown | null = byId ?? null;
-
-      // 2) 非 UUID 的分享参数（如 668）回退按 display_no 查询，兼容旧分享链接
-      if (!row) {
-        const digits = rawIdParam.replace(/\D/g, "");
-        if (digits) {
-          const { data: byDisplayNo, error: byDisplayErr } = await supabase
-            .from("works")
-            .select("*")
-            .eq("display_no", String(Number(digits)))
-            .maybeSingle();
-          if (byDisplayErr) {
-            console.error("works id fallback by display_no failed:", byDisplayErr);
-          } else {
-            row = byDisplayNo ?? null;
+      try {
+        const { data: row, error: byIdErr } = await supabase
+          .from("works")
+          .select("*")
+          .eq("id", rawIdParam)
+          .single();
+        if (byIdErr) {
+          const msg = String(byIdErr.message ?? "").toLowerCase();
+          const isNotFound =
+            msg.includes("0 rows") || msg.includes("no rows") || msg.includes("json object requested");
+          if (isNotFound) {
+            return NextResponse.json({ error: "作品不存在" }, { status: 404 });
           }
-        }
-      }
-
-      // byId 查询只在“非未找到类错误”时才返回 500
-      if (byIdErr) {
-        const msg = String(byIdErr.message ?? "").toLowerCase();
-        const isNotFound =
-          msg.includes("0 rows") || msg.includes("no rows") || msg.includes("json object requested");
-        if (!isNotFound) {
           console.error("works query by id failed:", byIdErr);
           return NextResponse.json({ error: "读取作品失败", detail: byIdErr }, { status: 500 });
         }
+        const list = buildWorksPayload([row], 1, 1, 1);
+        return NextResponse.json({
+          data: list,
+          work: list[0] ?? null,
+          totalCount: 1,
+          page: 1,
+          limit: 1,
+          total: 1,
+          hasMore: false,
+        });
+      } catch (idErr) {
+        console.error("works query by id exception:", idErr);
+        return NextResponse.json({ error: "读取作品失败" }, { status: 500 });
       }
-
-      const rows = row ? [row] : [];
-      const list = buildWorksPayload(rows, 1, 1, rows.length || 1);
-      return NextResponse.json({
-        data: list,
-        work: list[0] ?? null,
-        totalCount: list.length,
-        page: 1,
-        limit: 1,
-        total: list.length,
-        hasMore: false,
-      });
     }
     // 搜索接口：全库匹配（display_no 精确 + 标题模糊），并支持分页联动。
     if (searchKeyword.length > 0) {

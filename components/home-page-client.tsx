@@ -215,6 +215,7 @@ function HomePageContent() {
   const skipUrlSyncOnceRef = useRef(false);
   const voteCooldownUntilRef = useRef<Map<string, number>>(new Map());
   const deepLinkFetchIdRef = useRef<string | null>(null);
+  const [deepLinkLoading, setDeepLinkLoading] = useState(false);
   const [jumpPage, setJumpPage] = useState("");
   const toDisplayNo = (raw: unknown): string => {
     const digits = String(raw ?? "").replace(/\D/g, "");
@@ -329,11 +330,13 @@ function HomePageContent() {
     const w = findWorkByDisplayQuery(worksWithVoteFlags, idParam);
     if (w) {
       deepLinkFetchIdRef.current = null;
+      setDeepLinkLoading(false);
       setDetailWork(w);
       return;
     }
     if (deepLinkFetchIdRef.current === idParam) return;
     deepLinkFetchIdRef.current = idParam;
+    setDeepLinkLoading(true);
     let cancelled = false;
     void (async () => {
       try {
@@ -348,6 +351,11 @@ function HomePageContent() {
             id: idParam,
             body: text,
           });
+          if (!cancelled && r.status >= 500) {
+            setToast("作品信息加载失败");
+            setTimeout(() => setToast(null), 2400);
+          }
+          setDeepLinkLoading(false);
           setDetailWork(null);
           return;
         }
@@ -355,24 +363,33 @@ function HomePageContent() {
         const item = Array.isArray(j.data) && j.data.length > 0 ? j.data[0] : j.work;
         if (!item) {
           console.error("deep-link empty result:", { id: idParam, payload: j });
+          setDeepLinkLoading(false);
           setDetailWork(null);
           return;
         }
         const remoteWork = mapApiWorkToWork(item);
         if (!remoteWork.id) {
           console.error("deep-link invalid work payload:", { id: idParam, item });
+          setDeepLinkLoading(false);
           setDetailWork(null);
           return;
         }
         remoteWork.isVoted = votedWorkIdsToday.includes(remoteWork.id);
+        setDeepLinkLoading(false);
         setDetailWork(remoteWork);
       } catch (err) {
         console.error("deep-link fetch exception:", { id: idParam, err });
+        if (!cancelled) {
+          setToast("作品信息加载失败");
+          setTimeout(() => setToast(null), 2400);
+        }
+        setDeepLinkLoading(false);
         setDetailWork(null);
       }
     })();
     return () => {
       cancelled = true;
+      setDeepLinkLoading(false);
     };
   }, [searchParams, worksWithVoteFlags, votedWorkIdsToday]);
 
@@ -777,6 +794,12 @@ function HomePageContent() {
             className="glass-panel fixed bottom-8 left-1/2 z-[110] -translate-x-1/2 rounded-full px-6 py-2.5 text-sm text-stone-800 shadow-lg transition-all duration-300 ease-out"
           >
             {toast}
+          </div>
+        )}
+        {deepLinkLoading && (
+          <div className="glass-panel mx-auto mt-3 inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm text-stone-800">
+            <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+            正在加载作品信息...
           </div>
         )}
 
