@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Work } from "./types";
 import { getOrCreateClientVoterId } from "./client-voter-id";
 import { DAILY_VOTE_LIMIT } from "./vote-config";
@@ -53,6 +53,7 @@ export function useVoteHomeState(searchKeyword?: string): {
   dailyVoteLimit: number;
   votedWorkIdsFromApi: string[];
   loading: boolean;
+  loadingList: boolean;
   refresh: () => Promise<void>;
   setPage: (page: number) => void;
 } {
@@ -64,6 +65,8 @@ export function useVoteHomeState(searchKeyword?: string): {
   const [dailyVoteLimit, setDailyVoteLimit] = useState(DAILY_VOTE_LIMIT);
   const [votedWorkIdsFromApi, setVotedWorkIdsFromApi] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingList, setLoadingList] = useState(false);
+  const hasLoadedOnceRef = useRef(false);
   const setPage = useCallback((page: number) => {
     setCurrentPage(Math.max(1, page));
   }, []);
@@ -72,6 +75,12 @@ export function useVoteHomeState(searchKeyword?: string): {
     const voterId = getOrCreateClientVoterId();
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 30000);
+    const isFirstLoad = !hasLoadedOnceRef.current;
+    if (isFirstLoad) {
+      setLoading(true);
+    } else {
+      setLoadingList(true);
+    }
     try {
       const p = new URLSearchParams();
       p.set("page", String(currentPage));
@@ -117,18 +126,23 @@ export function useVoteHomeState(searchKeyword?: string): {
       setLoadError("网络超时，请重试");
       setVotedWorkIdsFromApi([]);
     } finally {
+      hasLoadedOnceRef.current = true;
       window.clearTimeout(timeoutId);
+      if (isFirstLoad) {
+        setLoading(false);
+      } else {
+        setLoadingList(false);
+      }
     }
   }, [currentPage, searchKeyword]);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      setLoading(true);
       try {
         await refresh();
       } finally {
-        if (!cancelled) setLoading(false);
+        if (cancelled) return;
       }
     })();
     const on = () => {
@@ -151,6 +165,7 @@ export function useVoteHomeState(searchKeyword?: string): {
     dailyVoteLimit,
     votedWorkIdsFromApi,
     loading,
+    loadingList,
     refresh,
     setPage,
   };

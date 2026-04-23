@@ -93,14 +93,23 @@ async function fetchWorksPageWithFallback(
   const buildBase = () => {
     let q = supabase.from("works").select("*", selectOpts);
     if (searchKeyword) {
-      const normalizedDigits = searchKeyword.replace(/\D/g, "");
-      const orParts = [
-        `work_title.ilike.%${searchKeyword}%`,
-        `title.ilike.%${searchKeyword}%`,
-      ];
-      if (normalizedDigits) {
-        orParts.push(`display_no.eq.${normalizedDigits}`);
-      }
+      const keyword = searchKeyword.trim();
+      const isDigitsOnly = /^\d+$/.test(keyword);
+      const normalizedDigits = keyword.replace(/^0+/, "") || "0";
+      const orParts = isDigitsOnly
+        ? [
+            `display_no.eq.${normalizedDigits}`,
+            `work_title.ilike.%${keyword}%`,
+            `title.ilike.%${keyword}%`,
+            `author_name.ilike.%${keyword}%`,
+            `author.ilike.%${keyword}%`,
+          ]
+        : [
+            `work_title.ilike.%${keyword}%`,
+            `title.ilike.%${keyword}%`,
+            `author_name.ilike.%${keyword}%`,
+            `author.ilike.%${keyword}%`,
+          ];
       q = q.or(orParts.join(","));
     }
     return q.range(from, to);

@@ -193,6 +193,7 @@ function HomePageContent() {
     totalCount,
     totalPages,
     loading,
+    loadingList,
     refresh,
     setPage,
     loadError,
@@ -222,7 +223,7 @@ function HomePageContent() {
       const next = normalizedSearch;
       setPage(1);
       setActiveSearchQuery(next);
-    }, 350);
+    }, 500);
     return () => window.clearTimeout(timer);
   }, [normalizedSearch, setPage]);
 
@@ -772,11 +773,20 @@ function HomePageContent() {
 
               {filteredWorks.length === 0 ? (
                 <div className="glass-panel mt-8 rounded-3xl px-8 py-14 text-center">
-                  <p className="text-stone-800/85">{t("noMatch")}</p>
-                  <p className="mt-2 text-sm text-stone-800/65">{t("noMatchHint")}</p>
+                  <p className="text-stone-800/85">
+                    {activeSearchQuery ? "未找到相关作品，请换个编号试试" : t("noMatch")}
+                  </p>
+                  <p className="mt-2 text-sm text-stone-800/65">
+                    {activeSearchQuery ? `关键词：${activeSearchQuery}` : t("noMatchHint")}
+                  </p>
                 </div>
               ) : (
                 <>
+                  {loadingList && (
+                    <div className="glass-panel mt-6 rounded-2xl px-6 py-4 text-center">
+                      <SpringLoadingIndicator label={t("loadingSpring")} />
+                    </div>
+                  )}
                   <ul className="mt-7 grid gap-5 sm:mt-8 sm:gap-7 sm:grid-cols-2 lg:grid-cols-3">
                     {pagedWorks.map((w, idx) => (
                       <li key={w.id}>
