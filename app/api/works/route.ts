@@ -173,20 +173,23 @@ export async function GET(request: NextRequest) {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // 分享直达：id 参数走独立单条查询（不受分页影响）
+    // 分享直达：id 参数统一按 display_no 查询（数据库已完成编号字段）
     if (rawIdParam) {
       try {
-        const compactId = rawIdParam.trim();
-        const digitsOnly = compactId.replace(/\D/g, "");
-        const isShortDisplayNo = compactId.length < 10 && /^\d+$/.test(compactId);
-        const isUuidLike = UUID_RE.test(compactId) || (compactId.length >= 10 && compactId.includes("-"));
+        const normalized = rawIdParam.replace(/\D/g, "");
+        if (!normalized) {
+          return NextResponse.json({ error: "无效作品编号" }, { status: 400 });
+        }
+        const displayNo = Number(normalized);
+        if (!Number.isFinite(displayNo) || displayNo <= 0) {
+          return NextResponse.json({ error: "无效作品编号" }, { status: 400 });
+        }
 
-        const query = supabase.from("works").select("*");
-        const { data: row, error: byIdErr } = isShortDisplayNo
-          ? await query.eq("display_no", String(Number(digitsOnly || "0"))).single()
-          : isUuidLike
-            ? await query.eq("id", compactId).single()
-            : await query.eq("display_no", String(Number(digitsOnly || "0"))).single();
+        const { data: row, error: byIdErr } = await supabase
+          .from("works")
+          .select("*")
+          .eq("display_no", displayNo)
+          .single();
 
         if (byIdErr) {
           const msg = String(byIdErr.message ?? "").toLowerCase();
