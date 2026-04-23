@@ -204,6 +204,7 @@ function HomePageContent() {
   const [toast, setToast] = useState<string | null>(null);
   const [detailWork, setDetailWork] = useState<Work | null>(null);
   const [votePendingWorkId, setVotePendingWorkId] = useState<string | null>(null);
+  const [optimisticVotes, setOptimisticVotes] = useState<Record<string, number>>({});
   const [localUsedVotes, setLocalUsedVotes] = useState(0);
   /** 仅读 votes 表：今日已投过的不同作品数（/api/votes/today） */
   const [todayUsedFromVotesTable, setTodayUsedFromVotesTable] = useState<number | null>(
@@ -287,6 +288,13 @@ function HomePageContent() {
   /** 搜索结果由后端 /api/works?search= 返回，前端不再做本地 24 条过滤 */
   const filteredWorks = worksWithVoteFlags;
   const pagedWorks = filteredWorks;
+
+  const getCurrentVotesById = (workId: string): number => {
+    if (typeof optimisticVotes[workId] === "number") return optimisticVotes[workId];
+    if (detailWork?.id === workId) return Number(detailWork.votes ?? 0);
+    const row = worksWithVoteFlags.find((w) => w.id === workId);
+    return Number(row?.votes ?? 0);
+  };
 
   const shareUrl = useMemo(() => {
     if (!detailWork) return "";
@@ -498,7 +506,7 @@ function HomePageContent() {
 
   async function readVoteResponseJson(
     res: Response
-  ): Promise<{ ok?: boolean; reason?: string; error?: string }> {
+  ): Promise<{ ok?: boolean; reason?: string; error?: string; votes?: number }> {
     try {
       const text = await res.text();
       if (!text.trim()) return {};
@@ -506,6 +514,7 @@ function HomePageContent() {
         ok?: boolean;
         reason?: string;
         error?: string;
+        votes?: number;
       };
     } catch {
       return {};
@@ -544,9 +553,9 @@ function HomePageContent() {
     return /connection|too many|timeout|temporar/i.test(errMsg);
   };
 
-  const performVote = async (workId: string) => {
+  const performVote = async (workId: string): Promise<{ ok: boolean; votes?: number }> => {
     let res: Response;
-    let j: { ok?: boolean; reason?: string; error?: string };
+    let j: { ok?: boolean; reason?: string; error?: string; votes?: number };
     try {
       res = await requestVoteOnce(workId);
       j = await readVoteResponseJson(res);
@@ -558,14 +567,14 @@ function HomePageContent() {
       } catch {
         setToast(t("toastRequestFail"));
         setTimeout(() => setToast(null), 2400);
-        return false;
+        return { ok: false };
       }
     }
 
     if (voteResponseImpliesDailyLimitExhausted(j)) {
       applyLimitReachedFromServer();
       setTimeout(() => setToast(null), 3200);
-      return false;
+      return { ok: false };
     }
 
     if (!res.ok && shouldRetryVote(res, j.error)) {
@@ -577,12 +586,12 @@ function HomePageContent() {
         if (voteResponseImpliesDailyLimitExhausted(j)) {
           applyLimitReachedFromServer();
           setTimeout(() => setToast(null), 3200);
-          return false;
+          return { ok: false };
         }
       } catch {
         setToast(t("toastRequestFail"));
         setTimeout(() => setToast(null), 2400);
-        return false;
+        return { ok: false };
       }
     }
 
@@ -590,11 +599,11 @@ function HomePageContent() {
       if (voteResponseImpliesDailyLimitExhausted(j)) {
         applyLimitReachedFromServer();
         setTimeout(() => setToast(null), 3200);
-        return false;
+        return { ok: false };
       }
       setToast(mapHttpVoteErrorBody(j.error, j.reason));
       setTimeout(() => setToast(null), 2400);
-      return false;
+      return { ok: false };
     }
     if (j.ok) {
       const nextUsed = incrementClientDailyVoteUsed(workId);
@@ -604,14 +613,12 @@ function HomePageContent() {
       );
       setToast(t("toastVoteOk"));
       notifyVoteDataChanged();
-      router.refresh();
-      await refresh();
-      return true;
+      return { ok: true, votes: Number(j.votes ?? NaN) };
     }
     if (voteResponseImpliesDailyLimitExhausted(j)) {
       applyLimitReachedFromServer();
       setTimeout(() => setToast(null), 3200);
-      return false;
+      return { ok: false };
     }
     const failMsg =
       j.reason === "rpc_error" && j.error
@@ -619,7 +626,7 @@ function HomePageContent() {
         : mapVoteFailureReason(j.reason ?? j.error ?? t("toastVoteFail"));
     setToast(failMsg);
     setTimeout(() => setToast(null), 2400);
-    return false;
+    return { ok: false };
   };
 
   const reserveVoteCooldown = (workId: string): boolean => {
@@ -649,8 +656,30 @@ function HomePageContent() {
     }
 
     setVotePendingWorkId(workId);
+    const beforeVotes = getCurrentVotesById(workId);
+    const optimisticNext = beforeVotes + 1;
+    setOptimisticVotes((prev) => ({ ...prev, [workId]: optimisticNext }));
+    if (detailWork?.id === workId) {
+      setDetailWork((prev) => (prev ? { ...prev, votes: optimisticNext } : prev));
+    }
+    setToast("感谢投票");
     try {
-      await performVote(workId);
+      const result = await performVote(workId);
+      if (!result.ok) {
+        setOptimisticVotes((prev) => ({ ...prev, [workId]: beforeVotes }));
+        if (detailWork?.id === workId) {
+          setDetailWork((prev) => (prev ? { ...prev, votes: beforeVotes } : prev));
+        }
+        return;
+      }
+      if (typeof result.votes === "number" && Number.isFinite(result.votes)) {
+        setOptimisticVotes((prev) => ({ ...prev, [workId]: result.votes as number }));
+        if (detailWork?.id === workId) {
+          setDetailWork((prev) =>
+            prev ? { ...prev, votes: Number(result.votes ?? optimisticNext) } : prev
+          );
+        }
+      }
     } finally {
       setVotePendingWorkId(null);
       setTimeout(() => setToast(null), 2400);
@@ -930,7 +959,11 @@ function HomePageContent() {
                               </p>
                               <p className="mt-1 text-sm text-stone-700/85">
                                 {t("votesLabel")}{" "}
-                                <strong className="text-stone-800">{w.votes}</strong>
+                                <strong className="text-stone-800">
+                                  {typeof optimisticVotes[w.id] === "number"
+                                    ? optimisticVotes[w.id]
+                                    : w.votes}
+                                </strong>
                               </p>
                             </div>
                             <VotePillButton

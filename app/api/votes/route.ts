@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-type CastVoteResult = { ok?: boolean; reason?: string };
+type CastVoteResult = { ok?: boolean; reason?: string; votes?: number };
 
 type VoteBody = {
   p_work_id?: string;
@@ -60,6 +60,36 @@ export async function POST(request: Request) {
     }).format(new Date());
 
     const supabase = createAdminClient();
+
+    // 优先尝试数据库 RPC（原子处理）；若函数不可用则回退到现有逻辑。
+    const { data: rpcData, error: rpcErr } = await supabase.rpc("cast_vote", {
+      p_work_id,
+      p_voter_id: p_voter_id || null,
+      p_voter_ip,
+    });
+    if (!rpcErr) {
+      const payload = (Array.isArray(rpcData) ? rpcData[0] : rpcData) as
+        | { ok?: boolean; reason?: string; votes?: number; vote_count?: number }
+        | null;
+      if (payload && payload.ok === false) {
+        return NextResponse.json(
+          { ok: false, reason: payload.reason ?? "投票失败" } as CastVoteResult,
+          { status: 200 }
+        );
+      }
+      const directVotes = Number(payload?.votes ?? payload?.vote_count ?? 0);
+      if (Number.isFinite(directVotes) && directVotes >= 0) {
+        return NextResponse.json({ ok: true, votes: directVotes } as CastVoteResult, { status: 200 });
+      }
+      const { count: rpcCount } = await supabase
+        .from("votes")
+        .select("*", { count: "exact", head: true })
+        .eq("work_id", p_work_id);
+      return NextResponse.json(
+        { ok: true, votes: Number(rpcCount ?? 0) } as CastVoteResult,
+        { status: 200 }
+      );
+    }
 
     // 1) 校验作品存在
     const { data: workRow, error: workErr } = await supabase
@@ -202,7 +232,7 @@ export async function POST(request: Request) {
       console.error("votes.route recount failed:", cntErr);
     }
 
-    return NextResponse.json({ ok: true } as CastVoteResult);
+    return NextResponse.json({ ok: true, votes: Number(totalCount ?? 0) } as CastVoteResult);
   } catch (e) {
     console.error(e);
     return NextResponse.json({ error: "服务器错误" }, { status: 500 });
