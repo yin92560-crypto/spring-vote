@@ -84,9 +84,12 @@ export function useVoteHomeState(searchKeyword?: string): {
     try {
       const p = new URLSearchParams();
       p.set("page", String(currentPage));
-      p.set("limit", "24");
       const keyword = String(searchKeyword ?? "").trim();
-      if (keyword) p.set("search", keyword);
+      if (keyword) {
+        p.set("search", keyword);
+      } else {
+        p.set("limit", "24");
+      }
       const r = await fetch(`/api/works?${p.toString()}`, {
         cache: "no-store",
         headers: voterId ? { "x-voter-id": voterId } : undefined,

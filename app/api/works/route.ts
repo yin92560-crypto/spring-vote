@@ -12,6 +12,7 @@ export const revalidate = 60;
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const PAGE_SIZE = 24;
+const SEARCH_PAGE_SIZE = 12;
 
 type WorksApiItem = {
   id: string;
@@ -174,11 +175,14 @@ export async function GET(request: Request) {
     // 搜索接口：全库匹配（display_no 精确 + 标题模糊），并支持分页联动。
     if (searchKeyword.length > 0) {
       const safeKeyword = searchKeyword.slice(0, 40);
+      const searchPageSize = SEARCH_PAGE_SIZE;
+      const searchFrom = (page - 1) * searchPageSize;
+      const searchTo = searchFrom + searchPageSize - 1;
       const { data: pageRows, error: listErr, count } = await fetchWorksPageWithFallback(
         supabase,
         {
-          from,
-          to,
+          from: searchFrom,
+          to: searchTo,
           withCount: true,
           searchKeyword: safeKeyword,
         }
@@ -189,8 +193,8 @@ export async function GET(request: Request) {
       }
       const rows = Array.isArray(pageRows) ? pageRows : [];
       const total = Number(count ?? 0);
-      const list = buildWorksPayload(rows, page, pageSize, total);
-      const hasMore = page * pageSize < total;
+      const list = buildWorksPayload(rows, page, searchPageSize, total);
+      const hasMore = page * searchPageSize < total;
 
       let used = 0;
       let votedWorkIds: string[] = [];
@@ -208,7 +212,7 @@ export async function GET(request: Request) {
         remaining,
         limited: hasMore,
         page,
-        limit: pageSize,
+        limit: searchPageSize,
         total,
         hasMore,
         dailyVoteLimit: DAILY_VOTE_LIMIT,

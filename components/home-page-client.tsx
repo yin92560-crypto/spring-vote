@@ -223,7 +223,7 @@ function HomePageContent() {
       const next = normalizedSearch;
       setPage(1);
       setActiveSearchQuery(next);
-    }, 500);
+    }, 800);
     return () => window.clearTimeout(timer);
   }, [normalizedSearch, setPage]);
 
