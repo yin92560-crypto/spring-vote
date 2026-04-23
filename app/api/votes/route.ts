@@ -67,17 +67,24 @@ export async function POST(request: Request) {
       p_voter_id: p_voter_id || null,
       p_voter_ip,
     });
+    if (rpcErr) {
+      console.error("votes.route rpc cast_vote failed:", rpcErr);
+    }
     if (!rpcErr) {
       const payload = (Array.isArray(rpcData) ? rpcData[0] : rpcData) as
         | { ok?: boolean; reason?: string; votes?: number; vote_count?: number }
         | null;
+      // RPC 若无明确结构化返回，视为不可用并回退到直写路径，避免“假成功不落库”。
+      if (!payload || typeof payload !== "object" || typeof payload.ok !== "boolean") {
+        console.error("votes.route rpc cast_vote unexpected payload, fallback to direct insert:", rpcData);
+      } else {
       if (payload && payload.ok === false) {
         return NextResponse.json(
           { ok: false, reason: payload.reason ?? "投票失败" } as CastVoteResult,
           { status: 200 }
         );
       }
-      const directVotes = Number(payload?.votes ?? payload?.vote_count ?? 0);
+      const directVotes = Number(payload.votes ?? payload.vote_count ?? 0);
       if (Number.isFinite(directVotes) && directVotes >= 0) {
         return NextResponse.json({ ok: true, votes: directVotes } as CastVoteResult, { status: 200 });
       }
@@ -89,6 +96,7 @@ export async function POST(request: Request) {
         { ok: true, votes: Number(rpcCount ?? 0) } as CastVoteResult,
         { status: 200 }
       );
+      }
     }
 
     // 1) 校验作品存在
@@ -198,9 +206,11 @@ export async function POST(request: Request) {
     for (const payload of insertPayloads) {
       const { error: insErr } = await supabase.from("votes").insert(payload as never);
       if (!insErr) {
+        console.log("votes.route insert success:", { work_id: p_work_id, vote_date: today, payload_keys: Object.keys(payload) });
         insertOk = true;
         break;
       }
+      console.error("votes.route insert attempt failed:", { payload, error: insErr });
       lastInsertErr = insErr;
     }
     if (!insertOk) {
@@ -220,6 +230,7 @@ export async function POST(request: Request) {
         .update({ votes_count: nextVotes })
         .eq("id", p_work_id);
       if (upCountErr) {
+        console.error("votes.route update works.votes_count failed:", upCountErr);
         const { error: upLegacyErr } = await supabase
           .from("works")
           .update({ votes: nextVotes } as never)

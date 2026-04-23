@@ -680,6 +680,8 @@ function HomePageContent() {
           );
         }
       }
+      // 成功后做一次轻量同步：刷新当前页与剩余票数（不重载整页）。
+      void refresh();
     } finally {
       setVotePendingWorkId(null);
       setTimeout(() => setToast(null), 2400);

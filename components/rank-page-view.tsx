@@ -9,7 +9,7 @@ import { useI18n } from "@/lib/i18n-context";
 import type { Work } from "@/lib/types";
 
 const fetcher = async (url: string): Promise<{ works: Work[] }> => {
-  const res = await fetch(url);
+  const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) throw new Error("加载失败");
   return (await res.json()) as { works: Work[] };
 };
@@ -17,13 +17,13 @@ const fetcher = async (url: string): Promise<{ works: Work[] }> => {
 export function RankPageView() {
   const { t } = useI18n();
   const { data, error, isLoading } = useSWR("/api/rank", fetcher, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-    dedupingInterval: 300_000,
-    refreshInterval: 300_000,
+    revalidateOnFocus: true,
+    revalidateOnReconnect: true,
+    dedupingInterval: 0,
+    refreshInterval: 30_000,
     refreshWhenHidden: false,
     refreshWhenOffline: false,
-    revalidateIfStale: false,
+    revalidateIfStale: true,
   });
   const rankedWorks = (data?.works ?? []).slice().sort((a, b) => {
     if (b.votes !== a.votes) return b.votes - a.votes;
