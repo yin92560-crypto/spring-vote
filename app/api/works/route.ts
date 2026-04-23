@@ -174,25 +174,47 @@ export async function GET(request: Request) {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
-    // 分享直达：按 display_no 或 UUID 查询单条作品（不受当前分页限制）
+    // 分享直达：id 参数走独立单条查询（不受分页影响）
     if (rawIdParam) {
-      const isUuidId = UUID_RE.test(rawIdParam);
-      const normalizedDigits = rawIdParam.replace(/\D/g, "");
-      let singleQuery = supabase.from("works").select("*").limit(1);
-      if (isUuidId) {
-        singleQuery = singleQuery.eq("id", rawIdParam);
-      } else if (normalizedDigits) {
-        singleQuery = singleQuery.eq("display_no", String(Number(normalizedDigits)));
-      } else {
-        singleQuery = singleQuery.eq("display_no", rawIdParam);
+      // 1) 按用户要求优先按 works.id 精确查询
+      const { data: byId, error: byIdErr } = await supabase
+        .from("works")
+        .select("*")
+        .eq("id", rawIdParam)
+        .single();
+
+      let row: unknown | null = byId ?? null;
+
+      // 2) 非 UUID 的分享参数（如 668）回退按 display_no 查询，兼容旧分享链接
+      if (!row) {
+        const digits = rawIdParam.replace(/\D/g, "");
+        if (digits) {
+          const { data: byDisplayNo, error: byDisplayErr } = await supabase
+            .from("works")
+            .select("*")
+            .eq("display_no", String(Number(digits)))
+            .maybeSingle();
+          if (byDisplayErr) {
+            console.error("works id fallback by display_no failed:", byDisplayErr);
+          } else {
+            row = byDisplayNo ?? null;
+          }
+        }
       }
-      const { data: oneRows, error: oneErr } = await singleQuery;
-      if (oneErr) {
-        console.error(oneErr);
-        return NextResponse.json({ error: "读取作品失败", detail: oneErr }, { status: 500 });
+
+      // byId 查询只在“非未找到类错误”时才返回 500
+      if (byIdErr) {
+        const msg = String(byIdErr.message ?? "").toLowerCase();
+        const isNotFound =
+          msg.includes("0 rows") || msg.includes("no rows") || msg.includes("json object requested");
+        if (!isNotFound) {
+          console.error("works query by id failed:", byIdErr);
+          return NextResponse.json({ error: "读取作品失败", detail: byIdErr }, { status: 500 });
+        }
       }
-      const rows = Array.isArray(oneRows) ? oneRows : [];
-      const list = buildWorksPayload(rows, 1, 1, rows.length);
+
+      const rows = row ? [row] : [];
+      const list = buildWorksPayload(rows, 1, 1, rows.length || 1);
       return NextResponse.json({
         data: list,
         work: list[0] ?? null,

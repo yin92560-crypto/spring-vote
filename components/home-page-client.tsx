@@ -341,19 +341,33 @@ function HomePageContent() {
           cache: "no-store",
         });
         if (!r.ok || cancelled) {
+          const text = await r.text().catch(() => "");
+          console.error("deep-link fetch failed:", {
+            status: r.status,
+            statusText: r.statusText,
+            id: idParam,
+            body: text,
+          });
           setDetailWork(null);
           return;
         }
         const j = (await r.json()) as { data?: unknown[]; work?: unknown };
         const item = Array.isArray(j.data) && j.data.length > 0 ? j.data[0] : j.work;
         if (!item) {
+          console.error("deep-link empty result:", { id: idParam, payload: j });
           setDetailWork(null);
           return;
         }
         const remoteWork = mapApiWorkToWork(item);
+        if (!remoteWork.id) {
+          console.error("deep-link invalid work payload:", { id: idParam, item });
+          setDetailWork(null);
+          return;
+        }
         remoteWork.isVoted = votedWorkIdsToday.includes(remoteWork.id);
         setDetailWork(remoteWork);
-      } catch {
+      } catch (err) {
+        console.error("deep-link fetch exception:", { id: idParam, err });
         setDetailWork(null);
       }
     })();
