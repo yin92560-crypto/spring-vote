@@ -4,43 +4,72 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Work } from "./types";
 import { getOrCreateClientVoterId } from "./client-voter-id";
 import { DAILY_VOTE_LIMIT } from "./vote-config";
+import {
+  clearStaticWorksJsonCache,
+  fetchStaticWorksFromJson,
+  filterWorksBySearchKeyword,
+  HOME_PAGE_SIZE,
+  SEARCH_PAGE_SIZE,
+  sortWorksByDisplayNoDesc,
+} from "./static-works-from-json";
 
 /** 与 lib/vote-sync 中广播配合：同窗口内刷新作品列表 */
 export const VOTE_DATA_CHANGED_EVENT = "spring-vote-refresh";
 
-export function emitVoteRefresh(): void {
+/** reloadWorks: false 时仅同步今日剩余票（不调 /data.json），避免覆盖前端乐观票数 */
+export function emitVoteRefresh(options?: { reloadWorks?: boolean }): void {
   if (typeof window === "undefined") return;
-  window.dispatchEvent(new Event(VOTE_DATA_CHANGED_EVENT));
+  const reloadWorks = options?.reloadWorks !== false;
+  window.dispatchEvent(
+    new CustomEvent(VOTE_DATA_CHANGED_EVENT, { detail: { reloadWorks } })
+  );
 }
 
-function normalizeWorks(list: unknown[]): Work[] {
-  const toDisplayNo = (raw: unknown): string => {
-    const digits = String(raw ?? "").replace(/\D/g, "");
-    if (!digits) return "";
-    return String(Number(digits)).padStart(3, "0");
-  };
-  return list.map((item) => {
-    const row = item as {
-      id?: unknown;
-      displayNo?: unknown;
-      title?: unknown;
-      workTitle?: unknown;
-      authorName?: unknown;
-      imageUrl?: unknown;
-      votes_count?: unknown;
-      votes?: unknown;
+function eventReloadWorks(e: Event): boolean {
+  if (
+    e instanceof CustomEvent &&
+    e.detail &&
+    typeof (e.detail as { reloadWorks?: boolean }).reloadWorks === "boolean"
+  ) {
+    return (e.detail as { reloadWorks: boolean }).reloadWorks;
+  }
+  return true;
+}
+
+async function syncTodayVotesFromApi(
+  voterId: string,
+  signal: AbortSignal
+): Promise<{
+  remaining: number;
+  dailyVoteLimit: number;
+  votedWorkIds: string[];
+} | null> {
+  try {
+    const r = await fetch("/api/votes/today", {
+      cache: "no-store",
+      headers: { "x-voter-id": voterId },
+      signal,
+    });
+    if (!r.ok) return null;
+    const j = (await r.json()) as {
+      remaining?: number;
+      dailyVoteLimit?: number;
+      votedWorkIds?: string[];
     };
     return {
-      id: String(row.id ?? ""),
-      displayNo: toDisplayNo(row.displayNo),
-      title: String(row.title ?? ""),
-      workTitle: String(row.workTitle ?? row.title ?? ""),
-      authorName: String(row.authorName ?? ""),
-      imageUrl: String(row.imageUrl ?? ""),
-      votes: Number(row.votes_count ?? row.votes ?? 0),
-      createdAt: "",
+      remaining:
+        typeof j.remaining === "number" ? j.remaining : DAILY_VOTE_LIMIT,
+      dailyVoteLimit:
+        typeof j.dailyVoteLimit === "number" && j.dailyVoteLimit > 0
+          ? j.dailyVoteLimit
+          : DAILY_VOTE_LIMIT,
+      votedWorkIds: Array.isArray(j.votedWorkIds)
+        ? j.votedWorkIds.filter((id) => typeof id === "string")
+        : [],
     };
-  });
+  } catch {
+    return null;
+  }
 }
 
 export function useVoteHomeState(searchKeyword?: string): {
@@ -71,10 +100,27 @@ export function useVoteHomeState(searchKeyword?: string): {
     setCurrentPage(Math.max(1, page));
   }, []);
 
+  const keyword = String(searchKeyword ?? "").trim();
+  const pageSize = keyword ? SEARCH_PAGE_SIZE : HOME_PAGE_SIZE;
+
+  const syncQuotaOnly = useCallback(async () => {
+    const voterId = getOrCreateClientVoterId();
+    if (!voterId) return;
+    const sync = await syncTodayVotesFromApi(
+      voterId,
+      new AbortController().signal
+    );
+    if (sync) {
+      setRemaining(sync.remaining);
+      setDailyVoteLimit(sync.dailyVoteLimit);
+      setVotedWorkIdsFromApi(sync.votedWorkIds);
+    }
+  }, []);
+
   const refresh = useCallback(async () => {
     const voterId = getOrCreateClientVoterId();
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 30000);
+    const timeoutId = window.setTimeout(() => controller.abort(), 60000);
     const isFirstLoad = !hasLoadedOnceRef.current;
     if (isFirstLoad) {
       setLoading(true);
@@ -82,49 +128,28 @@ export function useVoteHomeState(searchKeyword?: string): {
       setLoadingList(true);
     }
     try {
-      const p = new URLSearchParams();
-      p.set("page", String(currentPage));
-      const keyword = String(searchKeyword ?? "").trim();
-      if (keyword) {
-        p.set("search", keyword);
-      } else {
-        p.set("limit", "24");
-      }
-      const r = await fetch(`/api/works?${p.toString()}`, {
-        cache: "no-store",
-        headers: voterId ? { "x-voter-id": voterId } : undefined,
-        signal: controller.signal,
-      });
-      if (!r.ok) {
-        throw new Error(`HTTP ${r.status} ${r.statusText}`);
-      }
-      const j = (await r.json()) as {
-        data?: unknown[];
-        works?: unknown[];
-        totalCount?: number;
-        remaining?: number;
-        dailyVoteLimit?: number;
-        votedWorkIds?: string[];
-      };
-      const rows = Array.isArray(j.data)
-        ? j.data
-        : Array.isArray(j.works)
-          ? j.works
-          : [];
-      setWorks(normalizeWorks(rows));
-      setTotalCount(Math.max(0, Number(j.totalCount ?? 0)));
-      setLoadError(null);
-      if (typeof j.remaining === "number") setRemaining(j.remaining);
-      if (typeof j.dailyVoteLimit === "number" && j.dailyVoteLimit > 0) {
-        setDailyVoteLimit(j.dailyVoteLimit);
-      }
-      setVotedWorkIdsFromApi(
-        Array.isArray(j.votedWorkIds)
-          ? j.votedWorkIds.filter((id) => typeof id === "string")
-          : []
+      const allSorted = sortWorksByDisplayNoDesc(
+        await fetchStaticWorksFromJson(controller.signal)
       );
+      const filtered = filterWorksBySearchKeyword(allSorted, keyword);
+      const total = filtered.length;
+      const start = (currentPage - 1) * pageSize;
+      const slice = filtered.slice(start, start + pageSize);
+      setWorks(slice);
+      setTotalCount(Math.max(0, total));
+      setLoadError(null);
+
+      if (voterId) {
+        const sync = await syncTodayVotesFromApi(voterId, controller.signal);
+        if (sync) {
+          setRemaining(sync.remaining);
+          setDailyVoteLimit(sync.dailyVoteLimit);
+          setVotedWorkIdsFromApi(sync.votedWorkIds);
+        }
+      }
     } catch (err) {
-      console.error("useVoteHomeState: /api/works failed", err);
+      console.error("useVoteHomeState: /data.json failed", err);
+      clearStaticWorksJsonCache();
       setWorks((prev) => prev ?? []);
       setLoadError("网络超时，请重试");
       setVotedWorkIdsFromApi([]);
@@ -137,32 +162,39 @@ export function useVoteHomeState(searchKeyword?: string): {
         setLoadingList(false);
       }
     }
-  }, [currentPage, searchKeyword]);
+  }, [currentPage, keyword, pageSize]);
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         await refresh();
       } finally {
         if (cancelled) return;
       }
     })();
-    const on = () => {
-      void refresh();
+    const on = (e: Event) => {
+      if (eventReloadWorks(e)) {
+        clearStaticWorksJsonCache();
+        void refresh();
+      } else {
+        void syncQuotaOnly();
+      }
     };
     window.addEventListener(VOTE_DATA_CHANGED_EVENT, on);
     return () => {
       cancelled = true;
       window.removeEventListener(VOTE_DATA_CHANGED_EVENT, on);
     };
-  }, [refresh]);
+  }, [refresh, syncQuotaOnly]);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize) || 1);
 
   return {
     works,
     page: currentPage,
     totalCount,
-    totalPages: Math.max(1, Math.ceil(totalCount / 24)),
+    totalPages,
     loadError,
     remaining,
     dailyVoteLimit,
@@ -183,29 +215,16 @@ export function useWorksList(): {
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const voterId = getOrCreateClientVoterId();
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 30000);
+    const timeoutId = window.setTimeout(() => controller.abort(), 60000);
     try {
-      const r = await fetch("/api/works?all=1", {
-        cache: "no-store",
-        headers: voterId ? { "x-voter-id": voterId } : undefined,
-        signal: controller.signal,
-      });
-      if (!r.ok) {
-        console.error("useWorksList: /api/works failed", r.status, r.statusText);
-        setWorks([]);
-        return;
-      }
-      const j = (await r.json()) as { data?: unknown[]; works?: unknown[] };
-      const rows = Array.isArray(j.data)
-        ? j.data
-        : Array.isArray(j.works)
-          ? j.works
-          : [];
-      setWorks(normalizeWorks(rows));
+      const sorted = sortWorksByDisplayNoDesc(
+        await fetchStaticWorksFromJson(controller.signal)
+      );
+      setWorks(sorted);
     } catch (err) {
-      console.error("useWorksList: /api/works request failed", err);
+      console.error("useWorksList: /data.json failed", err);
+      clearStaticWorksJsonCache();
       setWorks([]);
     } finally {
       window.clearTimeout(timeoutId);
@@ -214,7 +233,7 @@ export function useWorksList(): {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
+    void (async () => {
       setLoading(true);
       try {
         await refresh();
@@ -222,7 +241,9 @@ export function useWorksList(): {
         if (!cancelled) setLoading(false);
       }
     })();
-    const on = () => {
+    const on = (e: Event) => {
+      if (!eventReloadWorks(e)) return;
+      clearStaticWorksJsonCache();
       void refresh();
     };
     window.addEventListener(VOTE_DATA_CHANGED_EVENT, on);

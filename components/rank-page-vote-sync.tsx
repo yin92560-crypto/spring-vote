@@ -17,12 +17,26 @@ export function RankPageVoteSync() {
       router.refresh();
     };
 
-    window.addEventListener(VOTE_DATA_CHANGED_EVENT, refresh);
+    const onVoteEvent = (e: Event) => {
+      if (
+        e instanceof CustomEvent &&
+        (e.detail as { reloadWorks?: boolean } | undefined)?.reloadWorks ===
+          false
+      ) {
+        return;
+      }
+      refresh();
+    };
+    window.addEventListener(VOTE_DATA_CHANGED_EVENT, onVoteEvent);
 
     let bc: BroadcastChannel | null = null;
     try {
       bc = new BroadcastChannel(VOTE_BROADCAST_CHANNEL);
-      bc.onmessage = refresh;
+      bc.onmessage = (ev) => {
+        const t = (ev.data as { type?: string } | undefined)?.type;
+        if (t === "vote-quota-changed") return;
+        refresh();
+      };
     } catch {
       /* ignore */
     }
@@ -36,7 +50,7 @@ export function RankPageVoteSync() {
     const timer = window.setInterval(refresh, 8000);
 
     return () => {
-      window.removeEventListener(VOTE_DATA_CHANGED_EVENT, refresh);
+      window.removeEventListener(VOTE_DATA_CHANGED_EVENT, onVoteEvent);
       bc?.close();
       document.removeEventListener("visibilitychange", onVisible);
       window.clearInterval(timer);

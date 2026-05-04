@@ -7,16 +7,26 @@ import { RankLeaderboard } from "@/components/rank-leaderboard";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useI18n } from "@/lib/i18n-context";
 import type { Work } from "@/lib/types";
+import {
+  parseStaticWorksJsonArray,
+  RANK_LEADERBOARD_LIMIT,
+  sortWorksRankedByVotes,
+} from "@/lib/static-works-from-json";
 
-const fetcher = async (url: string): Promise<{ works: Work[] }> => {
-  const res = await fetch(url, { cache: "no-store" });
+const rankDataFetcher = async (): Promise<{ works: Work[] }> => {
+  const res = await fetch("/data.json", { cache: "no-store" });
   if (!res.ok) throw new Error("加载失败");
-  return (await res.json()) as { works: Work[] };
+  const raw = await res.json();
+  const works = sortWorksRankedByVotes(parseStaticWorksJsonArray(raw)).slice(
+    0,
+    RANK_LEADERBOARD_LIMIT
+  );
+  return { works };
 };
 
 export function RankPageView() {
   const { t } = useI18n();
-  const { data, error, isLoading } = useSWR("/api/rank", fetcher, {
+  const { data, error, isLoading } = useSWR("rank-static-data.json", rankDataFetcher, {
     revalidateOnFocus: true,
     revalidateOnReconnect: true,
     dedupingInterval: 0,

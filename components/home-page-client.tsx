@@ -21,7 +21,7 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { SpringLoadingIndicator } from "@/components/spring-loading";
 import { VotePillButton } from "@/components/vote-pill-button";
 import { useI18n } from "@/lib/i18n-context";
-import { notifyVoteDataChanged } from "@/lib/vote-sync";
+import { notifyVoteQuotaChanged } from "@/lib/vote-sync";
 import { useVoteHomeState } from "@/lib/use-vote-store";
 import { incrementClientDailyVoteUsed } from "@/lib/client-vote-daily";
 import { getOrCreateClientVoterId } from "@/lib/client-voter-id";
@@ -29,6 +29,7 @@ import {
   hydrateVoteStateFromStorage,
   markLocalDailyLimitReachedFromServer,
 } from "@/lib/huaqin-voted-list";
+import { fetchStaticWorksFromJson } from "@/lib/static-works-from-json";
 import { DAILY_VOTE_LIMIT, VOTING_DISABLED } from "@/lib/vote-config";
 
 function SpringFooter() {
@@ -215,39 +216,8 @@ function HomePageContent() {
   /** 避免「先 setState 再 replaceQuery」时 effect 因 id 尚未写入而误关弹窗 */
   const skipUrlSyncOnceRef = useRef(false);
   const voteCooldownUntilRef = useRef<Map<string, number>>(new Map());
-  const deepLinkFetchIdRef = useRef<string | null>(null);
   const [deepLinkLoading, setDeepLinkLoading] = useState(false);
   const [jumpPage, setJumpPage] = useState("");
-  const toDisplayNo = (raw: unknown): string => {
-    const digits = String(raw ?? "").replace(/\D/g, "");
-    if (!digits) return "";
-    return String(Number(digits)).padStart(3, "0");
-  };
-
-  const mapApiWorkToWork = (item: unknown): Work => {
-    const row = item as {
-      id?: unknown;
-      displayNo?: unknown;
-      title?: unknown;
-      workTitle?: unknown;
-      authorName?: unknown;
-      imageUrl?: unknown;
-      votes_count?: unknown;
-      votes?: unknown;
-    };
-    return {
-      id: String(row.id ?? ""),
-      displayNo: toDisplayNo(row.displayNo),
-      title: String(row.title ?? ""),
-      workTitle: String(row.workTitle ?? row.title ?? ""),
-      authorName: String(row.authorName ?? ""),
-      imageUrl: String(row.imageUrl ?? ""),
-      votes: Number(row.votes_count ?? row.votes ?? 0),
-      createdAt: "",
-      isVoted: false,
-    };
-  };
-
 
   const normalizedSearch = searchQuery.trim();
 
@@ -260,7 +230,7 @@ function HomePageContent() {
     return () => window.clearTimeout(timer);
   }, [normalizedSearch, setPage]);
 
-  /** 本地、/api/works、votes 表取「已用票数」较大值，与数据库真实投票一致 */
+  /** 本地、/api/votes/today、votes 表取「已用票数」较大值 */
   const effectiveUsedVotes = useMemo(() => {
     const cap = dailyVoteLimit > 0 ? dailyVoteLimit : DAILY_VOTE_LIMIT;
     const usedFromApiWorks = Math.max(0, cap - apiRemaining);
@@ -285,7 +255,7 @@ function HomePageContent() {
       })),
     [worksList, votedWorkIdsToday]
   );
-  /** 搜索结果由后端 /api/works?search= 返回，前端不再做本地 24 条过滤 */
+  /** 作品数据来自 /data.json，搜索与分页在前端完成 */
   const filteredWorks = worksWithVoteFlags;
   const pagedWorks = filteredWorks;
   const detailWorkWithLiveVotes = useMemo(() => {
@@ -331,7 +301,6 @@ function HomePageContent() {
   };
 
   useEffect(() => {
-    if (worksWithVoteFlags.length === 0) return;
     if (skipUrlSyncOnceRef.current) {
       skipUrlSyncOnceRef.current = false;
       return;
@@ -339,73 +308,44 @@ function HomePageContent() {
     const idParam = searchParams.get("id");
     if (!idParam) {
       setDetailWork(null);
-      return;
-    }
-    const w = findWorkByDisplayQuery(worksWithVoteFlags, idParam);
-    if (w) {
-      deepLinkFetchIdRef.current = null;
       setDeepLinkLoading(false);
-      setDetailWork(w);
       return;
     }
-    if (deepLinkFetchIdRef.current === idParam) return;
-    deepLinkFetchIdRef.current = idParam;
-    setDeepLinkLoading(true);
     let cancelled = false;
+    setDeepLinkLoading(true);
     void (async () => {
       try {
-        const r = await fetch(`/api/works?id=${encodeURIComponent(idParam)}`, {
-          cache: "no-store",
+        const all = await fetchStaticWorksFromJson();
+        if (cancelled) return;
+        const w = findWorkByDisplayQuery(all, idParam);
+        if (!w) {
+          console.error("deep-link work not found in /data.json:", idParam);
+          setDetailWork(null);
+          setToast("作品信息加载失败");
+          setTimeout(() => setToast(null), 2400);
+          setDeepLinkLoading(false);
+          return;
+        }
+        setDetailWork({
+          ...w,
+          isVoted: votedWorkIdsToday.includes(w.id),
         });
-        if (!r.ok || cancelled) {
-          const text = await r.text().catch(() => "");
-          console.error("deep-link fetch failed:", {
-            status: r.status,
-            statusText: r.statusText,
-            id: idParam,
-            body: text,
-          });
-          if (!cancelled && r.status >= 500) {
-            setToast("作品信息加载失败");
-            setTimeout(() => setToast(null), 2400);
-          }
-          setDeepLinkLoading(false);
-          setDetailWork(null);
-          return;
-        }
-        const j = (await r.json()) as { data?: unknown[]; work?: unknown };
-        const item = Array.isArray(j.data) && j.data.length > 0 ? j.data[0] : j.work;
-        if (!item) {
-          console.error("deep-link empty result:", { id: idParam, payload: j });
-          setDeepLinkLoading(false);
-          setDetailWork(null);
-          return;
-        }
-        const remoteWork = mapApiWorkToWork(item);
-        if (!remoteWork.id) {
-          console.error("deep-link invalid work payload:", { id: idParam, item });
-          setDeepLinkLoading(false);
-          setDetailWork(null);
-          return;
-        }
-        remoteWork.isVoted = votedWorkIdsToday.includes(remoteWork.id);
-        setDeepLinkLoading(false);
-        setDetailWork(remoteWork);
       } catch (err) {
-        console.error("deep-link fetch exception:", { id: idParam, err });
+        console.error("deep-link /data.json failed:", { id: idParam, err });
         if (!cancelled) {
           setToast("作品信息加载失败");
           setTimeout(() => setToast(null), 2400);
         }
-        setDeepLinkLoading(false);
         setDetailWork(null);
+      } finally {
+        if (!cancelled) setDeepLinkLoading(false);
       }
     })();
     return () => {
       cancelled = true;
       setDeepLinkLoading(false);
     };
-  }, [searchParams, worksWithVoteFlags, votedWorkIdsToday]);
+  }, [searchParams, votedWorkIdsToday]);
 
   useLayoutEffect(() => {
     if (typeof window === "undefined") return;
@@ -547,27 +487,7 @@ function HomePageContent() {
     setLocalUsedVotes(cap);
     setTodayUsedFromVotesTable(cap);
     setToast(t("toastVoteDailyLimit", { n: cap }));
-    notifyVoteDataChanged();
-    void refresh();
-  };
-
-  const refetchDetailWork = async (displayNo: string) => {
-    try {
-      const r = await fetch(`/api/works?id=${encodeURIComponent(displayNo)}`, {
-        cache: "no-store",
-      });
-      if (!r.ok) return;
-      const j = (await r.json()) as { data?: unknown[]; work?: unknown };
-      const item = Array.isArray(j.data) && j.data.length > 0 ? j.data[0] : j.work;
-      if (!item) return;
-      const latest = mapApiWorkToWork(item);
-      if (!latest.id) return;
-      latest.isVoted = votedWorkIdsToday.includes(latest.id);
-      setDetailWork((prev) => (prev && prev.id === latest.id ? latest : prev));
-      setOptimisticVotes((prev) => ({ ...prev, [latest.id]: latest.votes }));
-    } catch {
-      // ignore detail revalidate failure
-    }
+    notifyVoteQuotaChanged();
   };
 
   const shouldRetryVote = (res: Response | null, errMsg?: string): boolean => {
@@ -637,7 +557,7 @@ function HomePageContent() {
         prev.includes(workId) ? prev : [...prev, workId]
       );
       setToast(t("toastVoteOk"));
-      notifyVoteDataChanged();
+      notifyVoteQuotaChanged();
       return { ok: true, votes: Number(j.votes ?? NaN) };
     }
     if (voteResponseImpliesDailyLimitExhausted(j)) {
@@ -705,11 +625,6 @@ function HomePageContent() {
             prev ? { ...prev, votes: Number(result.votes ?? optimisticNext) } : prev
           );
         }
-      }
-      // 成功后做一次轻量同步：刷新当前页与剩余票数（不重载整页）。
-      void refresh();
-      if (detailWork?.id === workId && detailWork.displayNo) {
-        void refetchDetailWork(detailWork.displayNo);
       }
     } finally {
       setVotePendingWorkId(null);
