@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getClientIp } from "@/lib/get-client-ip";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { VOTING_DISABLED } from "@/lib/vote-config";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -22,6 +23,13 @@ type VoteBody = {
 
 export async function POST(request: Request) {
   try {
+    if (VOTING_DISABLED) {
+      return NextResponse.json(
+        { ok: false, reason: "voting_closed" },
+        { status: 403 }
+      );
+    }
+
     let body: VoteBody;
     try {
       body = (await request.json()) as VoteBody;

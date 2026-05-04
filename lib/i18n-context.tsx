@@ -31,6 +31,7 @@ export type MessageKey =
   | "searchAria"
   | "vote"
   | "voteCard"
+  | "voteClosed"
   | "votesLabel"
   | "authorLabel"
   | "votesUnit"
@@ -105,6 +106,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     searchAria: "搜索作品",
     vote: "投票",
     voteCard: "投一票",
+    voteClosed: "投票已结束",
     votesLabel: "得票",
     authorLabel: "作者",
     votesUnit: "票",
@@ -181,6 +183,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     searchAria: "Search works",
     vote: "Vote",
     voteCard: "Vote",
+    voteClosed: "Voting closed",
     votesLabel: "Votes",
     authorLabel: "Author",
     votesUnit: "votes",
@@ -256,6 +259,7 @@ const MESSAGES: Record<Locale, Record<MessageKey, string>> = {
     searchAria: "作品を検索",
     vote: "投票する",
     voteCard: "投票する",
+    voteClosed: "投票は終了しました",
     votesLabel: "得票",
     authorLabel: "作者",
     votesUnit: "票",

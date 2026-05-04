@@ -29,7 +29,7 @@ import {
   hydrateVoteStateFromStorage,
   markLocalDailyLimitReachedFromServer,
 } from "@/lib/huaqin-voted-list";
-import { DAILY_VOTE_LIMIT } from "@/lib/vote-config";
+import { DAILY_VOTE_LIMIT, VOTING_DISABLED } from "@/lib/vote-config";
 
 function SpringFooter() {
   const { t } = useI18n();
@@ -663,6 +663,7 @@ function HomePageContent() {
   };
 
   const submitVote = async (workId: string) => {
+    if (VOTING_DISABLED) return;
     if (votePendingWorkId) return;
     if (votedWorkIdsToday.includes(workId)) {
       setToast(t("toastVoteAlreadyToday"));
@@ -998,17 +999,20 @@ function HomePageContent() {
                             </div>
                             <VotePillButton
                               disabled={
+                                VOTING_DISABLED ||
                                 remainingVotes <= 0 ||
                                 Boolean(w.isVoted) ||
                                 Boolean(votePendingWorkId)
                               }
-                              loading={votePendingWorkId === w.id}
+                              loading={!VOTING_DISABLED && votePendingWorkId === w.id}
                               onVote={() => voteFromCard(w.id)}
                               className="min-w-[80px] shrink-0"
                             >
-                              {votePendingWorkId === w.id
-                                ? t("voteSubmitting")
-                                : t("voteCard")}
+                              {VOTING_DISABLED
+                                ? t("voteClosed")
+                                : votePendingWorkId === w.id
+                                  ? t("voteSubmitting")
+                                  : t("voteCard")}
                             </VotePillButton>
                           </div>
                         </article>

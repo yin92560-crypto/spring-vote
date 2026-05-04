@@ -11,6 +11,7 @@ import {
 import { WorkRemoteImage } from "@/components/work-remote-image";
 import { VotePillButton } from "@/components/vote-pill-button";
 import { useI18n } from "@/lib/i18n-context";
+import { VOTING_DISABLED } from "@/lib/vote-config";
 import type { Work } from "@/lib/types";
 
 type Props = {
@@ -285,12 +286,21 @@ export function WorkDetailModal({
                 {t("close")}
               </button>
               <VotePillButton
-                disabled={remaining <= 0 || voting || Boolean(work?.isVoted)}
-                loading={voting}
+                disabled={
+                  VOTING_DISABLED ||
+                  remaining <= 0 ||
+                  voting ||
+                  Boolean(work?.isVoted)
+                }
+                loading={voting && !VOTING_DISABLED}
                 onVote={onVote}
                 className="vote-pill-btn-lg order-2 w-full sm:order-3 sm:min-w-[200px]"
               >
-                {voting ? t("voteSubmitting") : t("voteForTa")}
+                {VOTING_DISABLED
+                  ? t("voteClosed")
+                  : voting
+                    ? t("voteSubmitting")
+                    : t("voteForTa")}
               </VotePillButton>
             </div>
           </div>
