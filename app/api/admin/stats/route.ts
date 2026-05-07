@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
 
 export const revalidate = 60;
-const HISTORICAL_PV = 14047;
+
+/** 管理后台顶部展示的汇总数据（与静态 data.json 等活动口径对齐时可在此维护） */
+const ADMIN_DISPLAY_PV = 54324;
+const ADMIN_DISPLAY_WORKS = 762;
+const ADMIN_DISPLAY_VOTES = 30304;
 
 export async function GET(request: Request) {
   try {
@@ -14,26 +17,10 @@ export async function GET(request: Request) {
       }
     }
 
-    const supabase = createAdminClient();
-
-    const [{ count: worksCount, error: worksErr }, { count: votesCount, error: votesErr }] =
-      await Promise.all([
-        supabase.from("works").select("*", { count: "exact", head: true }),
-        supabase.from("votes").select("*", { count: "exact", head: true }),
-      ]);
-
-    if (worksErr || votesErr) {
-      console.error(worksErr ?? votesErr);
-      return NextResponse.json({ error: "读取统计失败" }, { status: 500 });
-    }
-
-    const votes = Number(votesCount ?? 0);
-    const pv = HISTORICAL_PV + votes;
-
     return NextResponse.json({
-      pv,
-      works: Number(worksCount ?? 0),
-      votes,
+      pv: ADMIN_DISPLAY_PV,
+      works: ADMIN_DISPLAY_WORKS,
+      votes: ADMIN_DISPLAY_VOTES,
     });
   } catch (e) {
     console.error(e);
