@@ -4,7 +4,7 @@ export const revalidate = 60;
 
 /** 管理后台顶部展示的汇总数据（与静态 data.json 等活动口径对齐时可在此维护） */
 const ADMIN_DISPLAY_PV = 54324;
-const ADMIN_DISPLAY_WORKS = 762;
+const ADMIN_DISPLAY_WORKS = 765;
 const ADMIN_DISPLAY_VOTES = 30304;
 
 export async function GET(request: Request) {
